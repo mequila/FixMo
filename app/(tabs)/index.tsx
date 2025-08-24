@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ScrollView ,Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import SearchBar from "../../components/searchbar";
-
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { homeStyles } from "../components/homeStyles";
+import SearchBar from "../components/searchbar";
 
 export default function Index() {
   const router = useRouter();
@@ -11,21 +11,33 @@ export default function Index() {
 
   return (
     <View>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
+        style={{marginTop: 35}}>
 
-      <SafeAreaView style={homeStyles.safeArea}>
+      <SafeAreaView style={[homeStyles.safeArea]}>
+
         <View style={homeStyles.header}>
-          <TouchableOpacity style={homeStyles.header}
-          onPress={() => router.push("/(tabs)/profile")}>
-              <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
-                <Text style={homeStyles.profileText}>Good day, User!</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile")}
+             style={{flexDirection: "row", alignItems: "center"}}>
+          
+            <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
+                    
+            <Text style={{fontSize: 18}}>Good day, User!</Text>
+              
           </TouchableOpacity>
           
-
-          <TouchableOpacity onPress={() => router.push ("/notification")} style={{ padding: 8 }}>
+          <TouchableOpacity onPress={() => router.push ("/components/notification")}>
               <Ionicons name="notifications" size={30} color={"#399d9d"} />
           </TouchableOpacity>
+
         </View>
       </SafeAreaView>
+
+
 
       <View>
         <TouchableOpacity onPress={() => router.push("/search")}>
@@ -66,90 +78,134 @@ export default function Index() {
 
       </View>
 
-        <View style={{ marginTop: 25, marginHorizontal: 20, marginBottom: 10 }}>
+        <View style={{ marginTop: 25, marginHorizontal: 20, marginBottom: 10, flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={{ fontSize: 18, color: "black", fontWeight: "bold" }}>
-            Services
+            Construction Services
           </Text>
-
-
-          <TouchableOpacity 
-            onPress={() => router.push("/services")}
-            style={{ position: "absolute", right: 0, top: 0 }}>
-
-          <Text style={{ fontSize: 18, color: "#399d9d", fontWeight: "bold" }}>
-            See All
-          </Text>
-          </TouchableOpacity>
-
         </View>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginBottom: 20 }}>
-        <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
+      <View style={[homeStyles.iconGrid]}>
+        <ScrollView horizontal={true} showsHorizontalScrollIndicator= {false}>
+          <TouchableOpacity
+            onPress={() => router.push("/carpentry")}>
+              <Image
+                source={require("../../assets/images/carpentry.png")}
+                style={[homeStyles.iconBackground, homeStyles.icons]} />
+                  <Text style={homeStyles.iconText}>
+                    Carpentry
+                  </Text>
+          </TouchableOpacity>
 
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/welding")}>
+              <View>
+                <Image 
+                  source={require("../../assets/images/welding.png")}
+                  style={[homeStyles.iconBackground, homeStyles.icons]}
+                  resizeMode="contain"
+                />
+              </View>
+                <Text style={homeStyles.iconText}>
+                  Welding
+                </Text>
+          </TouchableOpacity>
 
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => router.push("/electrical")}> 
+            <Image 
+              source={require("../../assets/images/electrical.png")}
+              style={[homeStyles.iconBackground, homeStyles.icons]} />
+                <Text style={homeStyles.iconText}>
+                  Electrical
+                </Text>
+          </TouchableOpacity>
 
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+          onPress={() => router.push("/masonry")}> 
+            <Image 
+              source={require("../../assets/images/masonry.png")}
+              style={[homeStyles.iconBackground, homeStyles.icons]} />
+                <Text style={homeStyles.iconText}>
+                  Masonry
+                </Text>
+          </TouchableOpacity>
+
+              <TouchableOpacity
+          onPress={() => router.push("/masonry")}> 
+            <Image 
+              source={require("../../assets/images/painting.png")}
+              style={[homeStyles.iconBackground, homeStyles.icons]} />
+                <Text style={homeStyles.iconText}>
+                  Painting
+                </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
-       <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginBottom: 20 }}>
-        <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
-
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
-
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
-
-         <TouchableOpacity> 
-          <Ionicons name="construct" size={40} color={"#399d9d"}
-            style={homeStyles.iconBackground} />
-              <Text style={homeStyles.iconText}>
-                Repairing
-              </Text>
-        </TouchableOpacity>
+      <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
+        <Text style={{ fontSize: 18, color: "black", fontWeight: "bold" }}>
+          Electronics Services
+        </Text>
       </View>
+
+      <View style={[homeStyles.iconGrid]}>
+        
+        <TouchableOpacity>
+          <Image 
+            source={require("../../assets/images/painting.png")}
+            style={[homeStyles.iconBackground, homeStyles.icons]} />
+              <Text style={homeStyles.iconText}>
+                Painting
+              </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity> 
+          <Image 
+            source={require("../../assets/images/rac.png")}
+            style={[homeStyles.iconBackground, homeStyles.icons]} />
+              <Text style={homeStyles.iconText}>
+                Aircondition
+              </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity>
+        <Image 
+          source={require("../../assets/images/computer.png")}
+          style={[homeStyles.iconBackground, homeStyles.icons]} />
+            <Text style={homeStyles.iconText}>
+              Computer              
+            </Text>
+      </TouchableOpacity>
+      </View>
+
+      <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
+        <Text style={{ fontSize: 18, color: "black", fontWeight: "bold" }}>
+          Utility Services
+        </Text>
+      </View>
+
+      <View style={[homeStyles.iconGrid]}>
+        
+        <TouchableOpacity>
+          <Image 
+            source={require("../../assets/images/plumbing.png")}
+            style={[homeStyles.iconBackground, homeStyles.icons]} />
+              <Text style={homeStyles.iconText}>
+                Plumbing
+              </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity>
+          <Image 
+            source={require("../../assets/images/carpentry.png")}
+            style={[homeStyles.iconBackground, homeStyles.icons]} />
+              <Text style={homeStyles.iconText}>
+                Carpentry                
+              </Text>
+        </TouchableOpacity>
+
+      </View>
+
 
       <View style={{ marginTop: 20, marginHorizontal: 20, marginBottom: 10 }}>
           <Text style={{ fontSize: 18, fontFamily: "", color: "black", fontWeight: "bold" }}>
@@ -199,58 +255,10 @@ export default function Index() {
           </View>
         </ScrollView>
       </View>
-
-
+      
+    </ScrollView>
     </View>
   );
 }
 
-const homeStyles = StyleSheet.create
-({
-  safeArea: {
-    marginTop: 50,
-    marginBottom: 10,
-    paddingHorizontal: 16
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    
-  },
-  profileText: {
-    fontSize: 18,
-    color: "black",
-  },
-  gradientBox: {
-    marginHorizontal: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  iconBackground: {
-    backgroundColor: "#cceded",
-    width:70,
-    height: 70,
-    borderRadius: 35,
-    padding: 15,
-  },
-  iconText: {
-    color: "gray",
-    fontSize: 16,
-    marginTop: 5,
-    textAlign: "center"
-  },
-  serviceBorder: {
-    borderWidth: 1,
-    borderColor: "#399d9d",
-    borderRadius: 20,
-    paddingLeft: 20,
-    paddingRight: 20,
-    padding: 10,
-    marginRight: 5,
-    marginLeft: 5,
-  },
-  
 
-});

@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const date = () => {
+const tile = () => {
   return (
     <View>
-      <Text>date</Text>
+      <Text>tile-setting</Text>
     </View>
   )
 }
 
-export default date
+export default tile

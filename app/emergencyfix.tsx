@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const mail = () => {
+const emergencyfix = () => {
   return (
     <View>
-      <Text>mail</Text>
+      <Text>emergencyfix</Text>
     </View>
   )
 }
 
-export default mail
+export default emergencyfix

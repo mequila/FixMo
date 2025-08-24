@@ -1,8 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
+import { useNavigation } from 'expo-router'
 import React from 'react'
+import { TouchableOpacity } from 'react-native'
 
 const _layout = () => {
+  const navigation = useNavigation();
+
   return (
     <Tabs
         screenOptions={{
@@ -19,8 +23,8 @@ const _layout = () => {
         }}>
         <Tabs.Screen name="index"
             options={{ 
-                    title: 'Home',
-                    tabBarLabel: '',
+                title: 'Home',
+                tabBarLabel: '',
                 headerShown: false,  
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='home' size={25} color={color}/>
@@ -30,33 +34,39 @@ const _layout = () => {
 
         />
     
-     <Tabs.Screen name="bookmark"
+     <Tabs.Screen name="bookings"
             options={{ 
-                title: 'Bookmarks',
+                title: 'Bookings',
                 tabBarLabel: '',
-                headerShown: false,
+                headerShown: true,
+                headerStyle: { backgroundColor: "#e7ecec" },
+                headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='bookmark' size={25} color={color}/>
                 )   
             }}
         />
 
-         <Tabs.Screen name="date"
+         <Tabs.Screen name="schedule"
             options={{ 
                 title: 'Schedule',
                 tabBarLabel: '',
-                headerShown: false, 
+                headerShown: true, 
+                headerStyle: { backgroundColor: "#e7ecec" },
+                headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='calendar' size={25} color={color}/>
                 )   
             }}
         />
 
-         <Tabs.Screen name="mail"
+         <Tabs.Screen name="messages"
             options={{ 
-                title: 'Mails',
+                title: 'Messages',
                 tabBarLabel: '',
-                headerShown: false,
+                headerShown: true,
+                headerStyle: { backgroundColor: "#e7ecec" },
+                headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='mail' size={25} color={color}/>
                 )   
@@ -67,7 +77,9 @@ const _layout = () => {
             options={{ 
                 title: 'Profile',
                 tabBarLabel: '',
-                headerShown: false,
+                headerShown: true,
+                headerStyle: { backgroundColor: "#e7ecec" },
+                headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='person' size={25} color={color}/>
                 )    
