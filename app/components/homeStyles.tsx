@@ -1,18 +1,17 @@
 import { StyleSheet } from "react-native";
 
-export const homeStyles = StyleSheet.create
-({
-  safeArea:{
+export const homeStyles = StyleSheet.create({
+  safeArea: {
     marginBottom: 20,
     backgroundColor: "#e7ecec",
-    borderBottomColor: "#4c8080"
+    borderBottomColor: "#4c8080",
   },
-  header:{
-    paddingTop: 8,
+  header: {
+    paddingTop: 5,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginHorizontal: 20
+    marginHorizontal: 20,
   },
   gradientBox: {
     marginHorizontal: 20,
@@ -20,32 +19,37 @@ export const homeStyles = StyleSheet.create
     paddingHorizontal: 20,
     borderRadius: 20,
   },
-  iconGrid:{ 
-    flexDirection: "row", 
-    justifyContent: "flex-start", 
-    marginHorizontal: 20, 
-    marginBottom: 20 
+  iconGrid: {
+    // service icons container
+    flexDirection: "column",
+    alignContent: "center",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
   },
   iconBackground: {
+    // service icon background
     backgroundColor: "#cceded",
-    width:70,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 70,
     height: 70,
     borderRadius: 35,
-    padding: 15,
-    paddingTop: 15,
-    marginRight: 12
   },
-  icons:{
-    width: 70, 
+  icons: {
+    // service icon
+    width: 70,
     height: 70,
-    tintColor:"#399d9d"
+    tintColor: "#399d9d",
   },
   iconText: {
+    // service icon text
     color: "gray",
     fontSize: 16,
     marginTop: 5,
     textAlign: "center",
-    flexDirection: "row", 
+    marginHorizontal: 16,
+    flexDirection: "row",
   },
   serviceBorder: {
     borderWidth: 1,
@@ -54,37 +58,75 @@ export const homeStyles = StyleSheet.create
     paddingLeft: 20,
     paddingRight: 20,
     padding: 10,
-    marginRight: 5,
-    marginLeft: 5,
   },
   calendar: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'column',
-    marginTop: 30
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "column",
+    marginTop: 30,
   },
-  calendarWrap:{
+  calendarWrap: {
     width: 350,
     height: 370,
     borderRadius: 15,
     elevation: 5,
   },
-  bookings:{
+  bookings: {
     backgroundColor: "#e7ecec",
     borderRadius: 15,
     padding: 25,
     marginVertical: 10,
     marginHorizontal: 20,
     flexDirection: "row",
-    alignItems: "center"
-  }, 
+    alignItems: "center",
+  },
   profile: {
     marginTop: 10,
     marginHorizontal: 30,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-}
+  },
+  border: {
+    backgroundColor: "#cceded",
+    marginVertical: 5,
+    marginHorizontal: 20,
+    borderRadius: 15,
+    padding: 10,
+    alignContent: "center",
+    flexDirection: "column",
+  },
+  borderTitle: {
+    paddingTop: 10,
+    paddingBottom: 5,
+    fontSize: 20,
+    fontWeight: "500",
+    marginHorizontal: 18,
+  },
+  borderDesc: {
+    fontSize: 13,
+    color: "gray",
+    lineHeight: 16,
+    marginHorizontal: 18,
+    marginBottom: 10,
+  },
+  marginEmergencyFix: { // Emergency Fix outside button
+    alignContent: "center",
+    justifyContent: "space-around",
+    flexDirection: "row",
+    marginHorizontal: 50,
+    marginBottom: 8,
+    marginTop: 8,
+},
+  emergencyFix: { // Emergency Fix button
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#399d9d",
+    borderRadius: 15,
+    paddingVertical: 20,
+    paddingHorizontal: 25,
+  },
 });
-  
-export default homeStyles
+
+export default homeStyles;

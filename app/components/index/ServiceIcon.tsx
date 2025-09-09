@@ -1,19 +1,30 @@
+import { useRouter } from "expo-router";
 import React from "react";
-import { Image, ImageSourcePropType, StyleProp,} from "react-native";
-import { ImageStyle } from "react-native";
+import { Image, ImageSourcePropType, StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
+import { homeStyles } from "../homeStyles";
 
-interface ServiceIconProps{
-    source: ImageSourcePropType;
-    style?: StyleProp<ImageStyle>;  
+interface ServiceIconProps {
+  label: string;
+  source: ImageSourcePropType;
+  route?: string; 
+  containerStyle?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 }
 
-const ServiceIcon: React.FC<ServiceIconProps> = ({ source, style }) => {
+const ServiceIcon: React.FC<ServiceIconProps> = ({ label, source, route, containerStyle, textStyle }) => {
+  const router = useRouter();
+
   return (
-    <Image
-      source={source}
-      style={[{  width: 70,  height: 70,  tintColor:"#399d9d" }, style]}
-      resizeMode="contain"
-    />
+    <TouchableOpacity
+      style={[ homeStyles.iconGrid, containerStyle]}
+      onPress={() => route && router.push(route)}
+    >
+      <View style={homeStyles.iconBackground}>
+        <Image source={source} style={homeStyles.icons} resizeMode="contain" />
+      </View>
+
+      <Text style={[homeStyles.iconText, textStyle]}>{label}</Text>
+    </TouchableOpacity>
   );
 };
 

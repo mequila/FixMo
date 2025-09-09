@@ -5,7 +5,7 @@ import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Tile = () => {
+const Aircon = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Tile = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="tile"
+            name="aircon"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -24,15 +24,15 @@ const Tile = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Tile Works and Installation</Text>
+            <Text style={homeStyles.borderTitle}>AC Repair & Maintenance</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Uneven or cracked floor surfaces, need for tile surface 
-              preparation, tiles not aligned properly, chipped or broken 
-              tiles, difficulty cutting tiles to fit edges, loose or 
-              hollow-sounding tiles, gaps between tiles, missing or 
-              damaged grout, water seepage through joints, request 
-              for new tile installation or replacement.
+              Weak or no airflow, foul odor, water leaks, ice on coils, 
+              reduced cooling, AC not turning on, sudden shutdowns, faulty 
+              thermostat, refrigerant leaks, unusual noises (buzzing, 
+              rattling), remote not responding, frozen evaporator coils, 
+              dirty filters or clogged drainage, electrical or circuit board 
+              issues, need for regular cleaning and preventive servicing.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
@@ -95,4 +95,4 @@ const Tile = () => {
   );
 };
 
-export default Tile;
+export default Aircon;

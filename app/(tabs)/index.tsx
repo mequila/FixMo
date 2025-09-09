@@ -4,11 +4,30 @@ import { useRouter } from "expo-router";
 import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { homeStyles } from "../components/homeStyles";
 import SearchBar from "../components/searchbar";
+import ServiceIcon from "../components/index/ServiceIcon";
 
-export default function Index() {
   const router = useRouter();
   
+  const constructionServices = [
+  { label: "Carpentry", source: require("../../assets/images/carpentry.png"), route: "/carpentry" },
+  { label: "Welding", source: require("../../assets/images/welding.png"), route: "/welding" },
+  { label: "Tile Setting", source: require("../../assets/images/tile.png"), route: "/tile" },
+  { label: "Masonry", source: require("../../assets/images/masonry.png"), route: "/masonry" },
+  { label: "Painting", source: require("../../assets/images/painting.png"), route: "/painting" },
+];
 
+const electronicsServices = [
+  { label: "Appliances", source: require("../../assets/images/appliances.png"), route: "/appliances" },
+  { label: "Aircon", source: require("../../assets/images/rac.png"), route: "/aircon" },
+  { label: "Computer", source: require("../../assets/images/computer.png"), route: "/computer" },
+];
+
+const utilityServices = [
+  { label: "Plumbing", source: require("../../assets/images/plumbing.png"), route: "/plumbing" },
+  { label: "Electrical", source: require("../../assets/images/electrical.png"), route: "/electrical" },
+];
+
+export default function Index() {
   return (
     <View>
       <ScrollView 
@@ -84,63 +103,16 @@ export default function Index() {
           </Text>
         </View>
 
-      <View style={[homeStyles.iconGrid]}>
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator= {false}>
-          <TouchableOpacity
-            onPress={() => router.push("/carpentry")}>
-              <Image
-                source={require("../../assets/images/carpentry.png")}
-                style={[homeStyles.iconBackground, homeStyles.icons]} />
-                  <Text style={homeStyles.iconText}>
-                    Carpentry
-                  </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/welding")}>
-              <View>
-                <Image 
-                  source={require("../../assets/images/welding.png")}
-                  style={[homeStyles.iconBackground, homeStyles.icons]}
-                  resizeMode="contain"
-                />
-              </View>
-                <Text style={homeStyles.iconText}>
-                  Welding
-                </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            onPress={() => router.push("/electrical")}> 
-            <Image 
-              source={require("../../assets/images/electrical.png")}
-              style={[homeStyles.iconBackground, homeStyles.icons]} />
-                <Text style={homeStyles.iconText}>
-                  Electrical
-                </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-          onPress={() => router.push("/masonry")}> 
-            <Image 
-              source={require("../../assets/images/masonry.png")}
-              style={[homeStyles.iconBackground, homeStyles.icons]} />
-                <Text style={homeStyles.iconText}>
-                  Masonry
-                </Text>
-          </TouchableOpacity>
-
-              <TouchableOpacity
-          onPress={() => router.push("/masonry")}> 
-            <Image 
-              source={require("../../assets/images/painting.png")}
-              style={[homeStyles.iconBackground, homeStyles.icons]} />
-                <Text style={homeStyles.iconText}>
-                  Painting
-                </Text>
-          </TouchableOpacity>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {constructionServices.map((service, index) => (
+            <ServiceIcon
+              key={index}
+              label={service.label}
+              source={service.source}
+              route={service.route}
+            />
+          ))}
         </ScrollView>
-      </View>
 
       <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
         <Text style={{ fontSize: 18, color: "black", fontWeight: "bold" }}>
@@ -148,35 +120,16 @@ export default function Index() {
         </Text>
       </View>
 
-      <View style={[homeStyles.iconGrid]}>
-        
-        <TouchableOpacity>
-          <Image 
-            source={require("../../assets/images/painting.png")}
-            style={[homeStyles.iconBackground, homeStyles.icons]} />
-              <Text style={homeStyles.iconText}>
-                Painting
-              </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity> 
-          <Image 
-            source={require("../../assets/images/rac.png")}
-            style={[homeStyles.iconBackground, homeStyles.icons]} />
-              <Text style={homeStyles.iconText}>
-                Aircondition
-              </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-        <Image 
-          source={require("../../assets/images/computer.png")}
-          style={[homeStyles.iconBackground, homeStyles.icons]} />
-            <Text style={homeStyles.iconText}>
-              Computer              
-            </Text>
-      </TouchableOpacity>
-      </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {electronicsServices.map((service, index) => (
+            <ServiceIcon
+              key={index}
+              label={service.label}
+              source={service.source}
+              route={service.route}
+            />
+          ))}
+        </ScrollView>
 
       <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
         <Text style={{ fontSize: 18, color: "black", fontWeight: "bold" }}>
@@ -184,28 +137,16 @@ export default function Index() {
         </Text>
       </View>
 
-      <View style={[homeStyles.iconGrid]}>
-        
-        <TouchableOpacity>
-          <Image 
-            source={require("../../assets/images/plumbing.png")}
-            style={[homeStyles.iconBackground, homeStyles.icons]} />
-              <Text style={homeStyles.iconText}>
-                Plumbing
-              </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Image 
-            source={require("../../assets/images/carpentry.png")}
-            style={[homeStyles.iconBackground, homeStyles.icons]} />
-              <Text style={homeStyles.iconText}>
-                Carpentry                
-              </Text>
-        </TouchableOpacity>
-
-      </View>
-
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {utilityServices.map((service, index) => (
+          <ServiceIcon
+            key={index}
+            label={service.label}
+            source={service.source}
+            route={service.route}
+          />
+        ))}
+      </ScrollView>
 
       <View style={{ marginTop: 20, marginHorizontal: 20, marginBottom: 10 }}>
           <Text style={{ fontSize: 18, fontFamily: "", color: "black", fontWeight: "bold" }}>

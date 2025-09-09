@@ -1,141 +1,133 @@
-import { View, ScrollView, Text, SafeAreaView, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
+import { homeStyles } from "./components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const welding = () => {
+const Welding = () => {
+  const router = useRouter();
+
   return (
-    <View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-            <SafeAreaView style={homeStyles.safeArea}>
-                <Stack.Screen 
-                    name="welding" 
-                    options={{ 
-                        title: "Welding",
-                        headerTintColor: "#399d9d",
-                        headerTitleStyle: { color: "black", fontSize: 20 },
-                        headerStyle: { backgroundColor: "#e7ecec"}
-                    }}
-                />
-            </SafeAreaView>
+    <View style={{ flex: 1 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+        <SafeAreaView style={homeStyles.safeArea}>
+          <Stack.Screen
+            name="welding"
+            options={{
+              title: "",
+              headerTintColor: "#399d9d",
+              headerStyle: { backgroundColor: "#e7ecec" }
+            }}
+          />
+        </SafeAreaView>
 
-             <View style={{marginHorizontal: 25, marginTop: 10}}>
-                <Text style={{ fontSize: 20, color: "black", fontWeight: "bold" }}>
-                    Repair Services
+        <View>
+          <View style={homeStyles.border}>
+            <Text style={homeStyles.borderTitle}>Welding & Metal Works</Text>
+
+            <Text style={homeStyles.borderDesc}>
+              Rusty or corroded gates, broken or detached metal 
+              hinges, cracked or weak welds on railings, bent 
+              or misaligned frames, holes or gaps in metal 
+              surfaces, damaged window grills, unstable or 
+              wobbly metal furniture, need for reinforcement 
+              welding, fabrication of custom metal parts, 
+              replacement of worn-out metal joints.
+            </Text>
+
+            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity onPress={() => router.push('/booknow')}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    backgroundColor: "#399d9d",
+                    borderRadius: 8,
+                    color: "white",
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                  }}
+                >
+                  Find Providers
                 </Text>
+              </TouchableOpacity>
             </View>
+          </View>
+        </View>
 
-            <View>
-                <TouchableOpacity style={homeStyles.border}>
-                    <Text style={[homeStyles.borderTitle]}>
-                        Gate Repair
-                    </Text>
+        <View>
+          <View style={homeStyles.border}>
+            <Text style={homeStyles.borderTitle}>Metal Furniture Repair</Text>
 
-                    <View>
-                       <Text style={[homeStyles.borderDesc]}>
-                          Gate not opening/closing, slow/jerky movement, 
-                          motor failure, remote or sensor issues, misaligned 
-                          tracks, broken hinges/rollers, rust, wiring faults, 
-                          control board defects, obstructions.
-                        </Text>
-                    </View>
+            <Text style={homeStyles.borderDesc}>
+              Loose or broken metal joints, cracked or weak 
+              welds on chairs and tables, bent or misaligned 
+              metal frames, rusty or corroded surfaces, 
+              unstable or wobbly legs, damaged hinges or 
+              latches, dents or holes in panels, peeling 
+              paint or finish, need for reinforcement welding, 
+              replacement of broken metal parts.
+            </Text>
 
-                    <View style={{flexDirection: "row-reverse"}}>
-                        <Ionicons name="chevron-forward-outline"
-                            size={25} 
-                            color={"#399d9d"}>
-                        </Ionicons>
-                    </View>
-
-                </TouchableOpacity>
-            </View>
-
-            <View>
-                <TouchableOpacity style={homeStyles.border}>
-                    <Text style={[homeStyles.borderTitle]}>
-                        Metal Furniture Repair 
-                    </Text>
-
-                    <View>
-                        <Text style={[homeStyles.borderDesc]}>
-                          Loose joints, rust, bent frames, broken welds, 
-                          missing hardware, chipped paint, dents, cracks, 
-                          misaligned parts, weak structure, stuck or noisy 
-                          moving parts.
-                        </Text>
-                    </View>
-
-                    <View style={{flexDirection: "row-reverse"}}>
-                        <Ionicons name="chevron-forward-outline"
-                            size={25} 
-                            color={"#399d9d"}>
-                        </Ionicons>
-                    </View>
-
-                </TouchableOpacity>
-            </View>
-
-            <View style={{marginHorizontal: 25, marginTop: 10}}>
-                <Text style={{ fontSize: 20, color: "black", fontWeight: "bold" }}>
-                    Installation Services
+            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity onPress={() => router.push('/booknow')}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    backgroundColor: "#399d9d",
+                    borderRadius: 8,
+                    color: "white",
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                  }}
+                >
+                  Find Providers
                 </Text>
+              </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </ScrollView>
 
-            <View>
-                <TouchableOpacity style={homeStyles.border}>
-                    <Text style={[homeStyles.borderTitle]}>
-                        Welding Operation
-                    </Text>
-
-                 <View>
-                        <Text style={[homeStyles.borderDesc]}>
-                        Align metal parts, set up and adjust welding 
-                        equipment, join the pieces with heat, inspect 
-                        the welds, and finish or smooth the surfaces.
-                        </Text>
-                    </View>
-
-                    <View style={{flexDirection: "row-reverse"}}>
-                        <Ionicons name="chevron-forward-outline"
-                            size={25} 
-                            color={"#399d9d"}>
-                        </Ionicons>
-                    </View>
-
-                </TouchableOpacity>
-            </View>
-
-        </ScrollView>
+      <View
+        style={{
+          alignContent: "center",
+          justifyContent: "space-around",
+          flexDirection: "row",
+          marginHorizontal: 50,
+          marginBottom: 15,
+        }}
+      >
+        <TouchableOpacity onPress={() => router.push('/emergencyfix')}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#399d9d",
+              borderRadius: 15,
+              paddingVertical: 20,
+              paddingHorizontal: 25,
+            }}
+          >
+            <Ionicons name="alert-circle-outline" size={24} color="white" />
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "600",
+                color: "white",
+                marginLeft: 8,
+              }}
+            >
+              Emergency Fix
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
-const homeStyles = StyleSheet.create
-({
-safeArea: {
-    paddingHorizontal: 16,
-    marginBottom: 10
-},
-border:{
-    backgroundColor: "#cceded",
-    marginVertical: 5,
-    marginHorizontal: 20,
-    borderRadius: 15,
-    padding: 10,
-    alignContent: "center",
-    flexDirection: "column",
-},
-borderTitle:{
-    paddingTop: 10,
-    paddingBottom: 5,
-    fontSize: 20,
-    fontWeight: 500,
-    marginHorizontal: 18
-},
-borderDesc:{
-    fontSize: 13, 
-    color: "gray", 
-    lineHeight: 16, 
-    marginHorizontal: 18}
-});
 
-export default welding;
+export default Welding;
