@@ -16,7 +16,7 @@ export default function Profile() {
       </View>
 
       <TouchableOpacity 
-        onPress={() => router.push("/account")}
+        onPress={() => router.push("/editprofile")}
         style={homeStyles.profile}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>

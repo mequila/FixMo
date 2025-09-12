@@ -1,5 +1,5 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
@@ -36,7 +36,7 @@ const Tile = () => {
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/booknow')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,

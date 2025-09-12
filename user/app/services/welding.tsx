@@ -1,11 +1,11 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Carpentry = () => {
+const Welding = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Carpentry = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="carpentry"
+            name="welding"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -24,18 +24,20 @@ const Carpentry = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Carpentry & Woodworks</Text>
+            <Text style={homeStyles.borderTitle}>Welding & Metal Works</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Uneven or rough wooden surfaces, broken wooden frames,
-              need for custom shelves or cabinets, gaps in wooden joints,
-              unfinished edges, damaged wooden partitions, cracked wood panels,
-              request for wooden framing, need for polishing or varnishing,
-              misaligned trims or moldings.
+              Rusty or corroded gates, broken or detached metal 
+              hinges, cracked or weak welds on railings, bent 
+              or misaligned frames, holes or gaps in metal 
+              surfaces, damaged window grills, unstable or 
+              wobbly metal furniture, need for reinforcement 
+              welding, fabrication of custom metal parts, 
+              replacement of worn-out metal joints.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/booknow')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -56,13 +58,16 @@ const Carpentry = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Furniture Setup & Repair</Text>
+            <Text style={homeStyles.borderTitle}>Metal Furniture Repair</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Loose or broken chair legs, wobbly tables, cracked panels,
-              scratches or dents, missing screws or hinges, stuck drawers,
-              sagging bed frames, difficulty assembling flat-pack furniture,
-              cabinet doors misaligned, furniture not stable after setup.
+              Loose or broken metal joints, cracked or weak 
+              welds on chairs and tables, bent or misaligned 
+              metal frames, rusty or corroded surfaces, 
+              unstable or wobbly legs, damaged hinges or 
+              latches, dents or holes in panels, peeling 
+              paint or finish, need for reinforcement welding, 
+              replacement of broken metal parts.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
@@ -125,4 +130,4 @@ const Carpentry = () => {
   );
 };
 
-export default Carpentry;
+export default Welding;

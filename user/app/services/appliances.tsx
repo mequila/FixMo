@@ -1,11 +1,11 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Computer = () => {
+const Appliances = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Computer = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="computer"
+            name="appliances"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -23,12 +23,41 @@ const Computer = () => {
         </SafeAreaView>
 
         <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>PC Troubleshooting</Text>
+          <Text style={homeStyles.borderTitle}>TV Repair</Text>
           <Text style={homeStyles.borderDesc}>
-            Computer not powering on, frequent system crashes, slow performance, 
-            overheating issues, blue screen errors, hardware malfunctions, faulty 
-            power supply, unresponsive keyboard or mouse, corrupted operating 
-            system, need for diagnostic checks.
+            No power, distorted or no display, lines or flickering 
+            on screen, no sound or weak audio, buzzing or static 
+            noise, HDMI or input ports not working, overheating 
+            unit, remote not responding, intermittent signal, 
+            sudden shutdowns.
+          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  backgroundColor: "#399d9d",
+                  borderRadius: 8,
+                  color: "white",
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                }}
+              >
+                Find Providers
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={homeStyles.border}>
+          <Text style={homeStyles.borderTitle}>Audio Systems Repair</Text>
+          <Text style={homeStyles.borderDesc}>
+            No sound output, distorted or muffled audio, crackling or 
+            buzzing noise, rattling speakers, weak bass or treble, 
+            intermittent connection, volume control not working, 
+            blown speakers, input/output jacks damaged, system not 
+            powering on.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
             <TouchableOpacity onPress={() => router.push('/booknow')}>
@@ -50,12 +79,12 @@ const Computer = () => {
         </View>
 
         <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>Network Setup (Wi-Fi & Printer Sharing)</Text>
+          <Text style={homeStyles.borderTitle}>Washing Machine Circuit Repair</Text>
           <Text style={homeStyles.borderDesc}>
-            Slow or no internet connection, Wi-Fi not detected, router setup 
-            issues, weak signal coverage, devices not connecting to network, 
-            printer not shared across devices, IP conflicts, network security 
-            setup, unstable or intermittent connectivity.
+            Unit not starting, buttons not responding, control board malfunction, 
+            drum not spinning, water not draining, power surges affecting operation, 
+            intermittent power supply, overheating circuits, blown fuses, error 
+            codes showing on display.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
             <TouchableOpacity onPress={() => router.push('/booknow')}>
@@ -77,39 +106,14 @@ const Computer = () => {
         </View>
 
         <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>Virus Removal</Text>
+          <Text style={homeStyles.borderTitle}>Refrigerator Diagnosis & Maintenance</Text>
           <Text style={homeStyles.borderDesc}>
-            Computer infected with malware, pop-up ads appearing, slow or 
-            freezing system, corrupted files, unauthorized programs installed, 
-            antivirus not functioning, browser hijacking, phishing or ransomware 
-            signs, need for full system scan and cleaning.
-          </Text>
-          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  backgroundColor: "#399d9d",
-                  borderRadius: 8,
-                  color: "white",
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                }}
-              >
-                Find Providers
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>Data Backup</Text>
-          <Text style={homeStyles.borderDesc}>
-            Risk of data loss, need to transfer important files, setting up 
-            external storage, cloud backup configuration, restoring deleted 
-            files, creating system restore points, securing sensitive documents, 
-            scheduled automatic backups, migration to new device.
+            Refrigerator not cooling, uneven temperature, water leaks, excessive 
+            frost build-up, compressor not running or overworking, control panel 
+            issues, frequent breaker trips, unusual noises (clicking, buzzing, 
+            humming), dirty condenser coils, worn-out door gaskets, foul odors, 
+            faulty relay or capacitor, need for cleaning, inspection, or circuit 
+            board check.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
             <TouchableOpacity onPress={() => router.push('/booknow')}>
@@ -152,4 +156,4 @@ const Computer = () => {
   );
 };
 
-export default Computer;
+export default Appliances;

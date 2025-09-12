@@ -1,11 +1,11 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Aircon = () => {
+const Painting = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Aircon = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="aircon"
+            name="painting"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -24,19 +24,19 @@ const Aircon = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>AC Repair & Maintenance</Text>
+            <Text style={homeStyles.borderTitle}>Surface Painting & Coating</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Weak or no airflow, foul odor, water leaks, ice on coils, 
-              reduced cooling, AC not turning on, sudden shutdowns, faulty 
-              thermostat, refrigerant leaks, unusual noises (buzzing, 
-              rattling), remote not responding, frozen evaporator coils, 
-              dirty filters or clogged drainage, electrical or circuit board 
-              issues, need for regular cleaning and preventive servicing.
+              Uneven or rough wall surfaces, need for surface sanding,
+               peeling or old paint removal, patching cracks or holes 
+               before painting, applying primer for better paint adhesion, 
+               faded or discolored walls, stains or marks on surfaces, 
+               uneven paint application, request for new wall color or 
+               repainting, need for protective coatings.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/booknow')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -95,4 +95,4 @@ const Aircon = () => {
   );
 };
 
-export default Aircon;
+export default Painting;

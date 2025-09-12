@@ -1,11 +1,11 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Painting = () => {
+const Masonry = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Painting = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="painting"
+            name="masonry"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -24,19 +24,20 @@ const Painting = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Surface Painting & Coating</Text>
+            <Text style={homeStyles.borderTitle}>Masonry Works</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Uneven or rough wall surfaces, need for surface sanding,
-               peeling or old paint removal, patching cracks or holes 
-               before painting, applying primer for better paint adhesion, 
-               faded or discolored walls, stains or marks on surfaces, 
-               uneven paint application, request for new wall color or 
-               repainting, need for protective coatings.
+              Cracked or damaged walls, uneven block or brick 
+              layering, loose or hollow blocks, need for plastering 
+              on rough surfaces, chipped or broken bricks, gaps or 
+              misaligned masonry joints, damaged partitions or 
+              foundations, request for new wall construction, surface 
+              finishing for painting, basic structural repairs or 
+              reinforcement.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/booknow')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -95,4 +96,4 @@ const Painting = () => {
   );
 };
 
-export default Painting;
+export default Masonry;

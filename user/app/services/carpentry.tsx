@@ -1,11 +1,11 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
-import { homeStyles } from "./components/homeStyles";
+import { homeStyles } from "../components/homeStyles";
 import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const Masonry = () => {
+const Carpentry = () => {
   const router = useRouter();
 
   return (
@@ -13,7 +13,7 @@ const Masonry = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="masonry"
+            name="carpentry"
             options={{
               title: "",
               headerTintColor: "#399d9d",
@@ -24,20 +24,47 @@ const Masonry = () => {
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Masonry Works</Text>
+            <Text style={homeStyles.borderTitle}>Carpentry & Woodworks</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Cracked or damaged walls, uneven block or brick 
-              layering, loose or hollow blocks, need for plastering 
-              on rough surfaces, chipped or broken bricks, gaps or 
-              misaligned masonry joints, damaged partitions or 
-              foundations, request for new wall construction, surface 
-              finishing for painting, basic structural repairs or 
-              reinforcement.
+              Uneven wooden surfaces, broken frames, custom shelves or 
+              cabinets, gaps in joints, damaged partitions, cracked panels, 
+              framing requests, need for polishing or varnishing, misaligned 
+              trims.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
               <TouchableOpacity onPress={() => router.push('/booknow')}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    backgroundColor: "#399d9d",
+                    borderRadius: 8,
+                    color: "white",
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                  }}
+                >
+                  Find Providers
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View>
+          <View style={homeStyles.border}>
+            <Text style={homeStyles.borderTitle}>Furniture Setup & Repair</Text>
+
+            <Text style={homeStyles.borderDesc}>
+              Loose chair legs, wobbly tables, cracked panels, scratches 
+              or dents, missing screws or hinges, stuck drawers, sagging 
+              bed frames, misaligned cabinet doors, unstable furniture.
+            </Text>
+
+            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -96,4 +123,4 @@ const Masonry = () => {
   );
 };
 
-export default Masonry;
+export default Carpentry;

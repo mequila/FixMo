@@ -3,7 +3,7 @@ import React from 'react';
 import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { homeStyles } from "./components/homeStyles";
 
-const BookNow = () => {
+const Service = () => {
   const router = useRouter();
   return (
     <View style={{ flex: 1 }}>
@@ -13,7 +13,7 @@ const BookNow = () => {
       >
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen 
-            name="booknow"
+            name="serviceprovider"
             options={{
               title: "Service Provider",
               headerTintColor: "#399d9d",
@@ -81,4 +81,4 @@ const BookNow = () => {
   );
 };
 
-export default BookNow;
+export default Service;
