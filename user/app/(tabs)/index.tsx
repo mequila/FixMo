@@ -49,9 +49,17 @@ export default function Index() {
               
           </TouchableOpacity>
           
-          <TouchableOpacity onPress={() => router.push ("/components/notification")}>
-              <Ionicons name="notifications" size={30} color={"#399d9d"} />
-          </TouchableOpacity>
+          <View style={{flexDirection: "row", alignItems: "center"}}>
+            <TouchableOpacity 
+              onPress={() => router.push("/login")}
+              style={{marginRight: 15, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: "#399d9d", borderRadius: 5}}>
+              <Text style={{color: "white", fontSize: 12}}>Login</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => router.push ("/components/notification")}>
+                <Ionicons name="notifications" size={30} color={"#399d9d"} />
+            </TouchableOpacity>
+          </View>
 
         </View>
       </SafeAreaView>
