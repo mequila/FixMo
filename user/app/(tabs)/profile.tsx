@@ -9,10 +9,10 @@ import {
   ScrollView, 
   ActivityIndicator,
   StyleSheet,
-  RefreshControl 
+  RefreshControl,
+  Image
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { homeStyles } from "../components/homeStyles";
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -23,46 +23,22 @@ interface UserData {
   token: string;
 }
 
-interface Appointment {
-  appointment_id: number;
-  appointment_status: string;
-  scheduled_date: string;
-  repairDescription?: string;
-  final_price?: number;
-  serviceProvider: {
-    provider_first_name: string;
-    provider_last_name: string;
-    provider_phone_number: string;
-  };
-  serviceListing: {
-    service_title: string;
-    service_description: string;
-  };
-}
-
-interface Rating {
+interface CustomerData {
   id: number;
-  rating_value: number;
-  rating_comment?: string;
-  created_at: string;
-  serviceProvider: {
-    provider_first_name: string;
-    provider_last_name: string;
-  };
-  appointment: {
-    scheduled_date: string;
-    service: {
-      service_title: string;
-    };
-  };
+  first_name: string;
+  last_name: string;
+  userName: string;
+  email: string;
+  phone_number: string;
+  user_location: string;
+  profile_photo?: string;
+  is_verified: boolean;
 }
 
 export default function Profile() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [ratingsGiven, setRatingsGiven] = useState<Rating[]>([]);
-  const [ratingsReceived, setRatingsReceived] = useState<Rating[]>([]);
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,7 +54,7 @@ export default function Profile() {
 
       if (token && userId && userName) {
         setUserData({ token, userId, userName });
-        await fetchDashboardData(token, userId);
+        await fetchCustomerProfile(token);
       } else {
         Alert.alert('Error', 'Please login first');
       }
@@ -89,24 +65,9 @@ export default function Profile() {
     }
   };
 
-  const fetchDashboardData = async (token: string, userId: string) => {
+  const fetchCustomerProfile = async (token: string) => {
     try {
-      // Fetch user appointments
-      await fetchAppointments(token, userId);
-      
-      // Fetch user ratings given by user
-      await fetchRatingsGiven(token, userId);
-      
-      // Fetch ratings received by user
-      await fetchRatingsReceived(userId);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    }
-  };
-
-  const fetchAppointments = async (token: string, userId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/appointments?customer_id=${userId}&limit=5`, {
+      const response = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -115,64 +76,21 @@ export default function Profile() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setAppointments(data.data || []);
-        console.log('Appointments fetched:', data.data?.length || 0);
+        const result = await response.json();
+        setCustomerData(result.data);
+        console.log('Customer profile loaded:', result.data);
       } else {
-        console.log('Failed to fetch appointments:', response.status);
+        console.error('Failed to fetch customer profile');
       }
     } catch (error) {
-      console.error('Error fetching appointments:', error);
-    }
-  };
-
-  const fetchRatingsGiven = async (token: string, userId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/ratings/customer/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRatingsGiven(data.data || []);
-        console.log('Ratings given fetched:', data.data?.length || 0);
-      } else {
-        console.log('Failed to fetch ratings given:', response.status);
-      }
-    } catch (error) {
-      console.error('Error fetching ratings given:', error);
-    }
-  };
-
-  const fetchRatingsReceived = async (userId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/ratings/customer/${userId}/received-ratings?limit=5`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRatingsReceived(data.data?.ratings || []);
-        console.log('Ratings received fetched:', data.data?.ratings?.length || 0);
-      } else {
-        console.log('Failed to fetch ratings received:', response.status);
-      }
-    } catch (error) {
-      console.error('Error fetching ratings received:', error);
+      console.error('Error fetching customer profile:', error);
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     if (userData) {
-      await fetchDashboardData(userData.token, userData.userId);
+      await fetchCustomerProfile(userData.token);
     }
     setRefreshing(false);
   };
@@ -182,36 +100,24 @@ export default function Profile() {
       "Log out",
       "Are you sure you want to log out?",
       [
-        { text: "No", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         { 
-          text: "Yes", 
+          text: "Log out", 
+          style: "destructive",
           onPress: async () => {
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('userId');
-            await AsyncStorage.removeItem('userName');
-            router.push('/login');
-          } 
+            await AsyncStorage.multiRemove(['token', 'userId', 'userName']);
+            router.replace('/login');
+          }
         }
       ]
     );
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <Ionicons 
-        key={index}
-        name={index < rating ? "star" : "star-outline"} 
-        size={16} 
-        color="#FFD700" 
-      />
-    ));
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#399d9d" />
-        <Text>Loading dashboard...</Text>
+        <Text style={{ marginTop: 10 }}>Loading profile...</Text>
       </View>
     );
   }
@@ -225,142 +131,91 @@ export default function Profile() {
     >
       {/* User Info Section */}
       <View style={styles.userSection}>
-        <Ionicons name="person-circle" size={100} color={"#399d9d"} />
-        <Text style={styles.userName}>{userData?.userName || 'User'}</Text>
-        <Text style={styles.userInfo}>User ID: {userData?.userId}</Text>
-      </View>
-
-      {/* Dashboard Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{appointments.length}</Text>
-          <Text style={styles.statLabel}>Appointments</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{ratingsGiven.length}</Text>
-          <Text style={styles.statLabel}>Reviews Given</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{ratingsReceived.length}</Text>
-          <Text style={styles.statLabel}>Reviews Received</Text>
-        </View>
-      </View>
-
-      {/* Recent Appointments */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Appointments</Text>
-        {appointments.length > 0 ? (
-          appointments.slice(0, 3).map((appointment) => (
-            <View key={appointment.appointment_id} style={styles.appointmentCard}>
-              <Text style={styles.appointmentTitle}>
-                {appointment.serviceListing?.service_title || 'Service'}
-              </Text>
-              <Text style={styles.appointmentProvider}>
-                Provider: {appointment.serviceProvider?.provider_first_name} {appointment.serviceProvider?.provider_last_name}
-              </Text>
-              <Text style={styles.appointmentStatus}>
-                Status: {appointment.appointment_status}
-              </Text>
-              <Text style={styles.appointmentDate}>
-                Date: {new Date(appointment.scheduled_date).toLocaleDateString()}
-              </Text>
-              {appointment.final_price && (
-                <Text style={styles.appointmentPrice}>
-                  Price: ₱{appointment.final_price}
-                </Text>
-              )}
-            </View>
-          ))
+        {customerData?.profile_photo ? (
+          <Image 
+            source={{ uri: `${BACKEND_URL}/${customerData.profile_photo}` }} 
+            style={{ width: 100, height: 100, borderRadius: 50, marginBottom: 10 }}
+            onError={() => console.log('Error loading profile image')}
+          />
         ) : (
-          <Text style={styles.emptyText}>No appointments found</Text>
+          <Ionicons name="person-circle" size={100} color={"#399d9d"} />
         )}
+        
+        <Text style={styles.userName}>
+          {customerData ? `${customerData.first_name} ${customerData.last_name}` : userData?.userName || 'User'}
+        </Text>
       </View>
 
-      {/* Recent Reviews Given */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Reviews Given</Text>
-        {ratingsGiven.length > 0 ? (
-          ratingsGiven.slice(0, 3).map((rating) => (
-            <View key={rating.id} style={styles.ratingCard}>
-              <View style={styles.ratingHeader}>
-                <View>{renderStars(rating.rating_value)}</View>
-                <Text style={styles.ratingDate}>
-                  {new Date(rating.created_at).toLocaleDateString()}
-                </Text>
-              </View>
-              {rating.rating_comment && (
-                <Text style={styles.ratingComment}>{rating.rating_comment}</Text>
-              )}
-              <Text style={styles.ratingProvider}>
-                For: {rating.serviceProvider?.provider_first_name} {rating.serviceProvider?.provider_last_name}
+      {/* Profile Information */}
+      {customerData && (
+        <View style={styles.profileInfoContainer}>
+          <View style={styles.infoCard}>
+            <Ionicons name="person-outline" size={20} color="#399d9d" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Username</Text>
+              <Text style={styles.infoValue}>{customerData.userName}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons name="mail-outline" size={20} color="#399d9d" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{customerData.email}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons name="call-outline" size={20} color="#399d9d" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Mobile Number</Text>
+              <Text style={styles.infoValue}>{customerData.phone_number}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons name="location-outline" size={20} color="#399d9d" />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Location</Text>
+              <Text style={styles.infoValue}>{customerData.user_location}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Ionicons 
+              name={customerData.is_verified ? "checkmark-circle" : "close-circle"} 
+              size={20} 
+              color={customerData.is_verified ? "#28a745" : "#dc3545"} 
+            />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Account Status</Text>
+              <Text style={[
+                styles.infoValue, 
+                { color: customerData.is_verified ? "#28a745" : "#dc3545" }
+              ]}>
+                {customerData.is_verified ? "Verified" : "Not Verified"}
               </Text>
             </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No reviews given yet</Text>
-        )}
-      </View>
+          </View>
+        </View>
+      )}
 
-      {/* Recent Reviews Received */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Reviews Received</Text>
-        {ratingsReceived.length > 0 ? (
-          ratingsReceived.slice(0, 3).map((rating) => (
-            <View key={rating.id} style={styles.ratingCard}>
-              <View style={styles.ratingHeader}>
-                <View>{renderStars(rating.rating_value)}</View>
-                <Text style={styles.ratingDate}>
-                  {new Date(rating.created_at).toLocaleDateString()}
-                </Text>
-              </View>
-              {rating.rating_comment && (
-                <Text style={styles.ratingComment}>{rating.rating_comment}</Text>
-              )}
-              <Text style={styles.ratingProvider}>
-                From: {rating.serviceProvider?.provider_first_name} {rating.serviceProvider?.provider_last_name}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No reviews received yet</Text>
-        )}
-      </View>
-
-      {/* Action Buttons */}
+      {/* Edit Profile Button */}
       <TouchableOpacity 
         onPress={() => router.push("/editprofile")}
-        style={homeStyles.profile}
+        style={styles.editButton}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ fontSize: 18, marginLeft: 10 }}>
-            Edit Profile
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={25} color={"#399d9d"} />
+        <Ionicons name="create-outline" size={20} color="white" />
+        <Text style={styles.editButtonText}>Edit Profile</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        onPress={onRefresh}
-        style={homeStyles.profile}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ fontSize: 18, marginLeft: 10 }}>
-            Refresh Data
-          </Text>
-        </View>
-        <Ionicons name="refresh" size={25} color={"#399d9d"} />
-      </TouchableOpacity>
-
+      {/* Logout Button */}
       <TouchableOpacity 
         onPress={handleLogout}
-        style={homeStyles.profile}
+        style={styles.logoutButton}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ fontSize: 18, marginLeft: 10 }}>
-            Log out
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={25} color={"#399d9d"} />
+        <Ionicons name="log-out-outline" size={20} color="#dc3545" />
+        <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -379,118 +234,76 @@ const styles = StyleSheet.create({
   },
   userSection: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 20,
-    marginBottom: 10,
+    backgroundColor: 'white',
+    padding: 30,
+    marginBottom: 20,
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#399d9d',
-    marginTop: 10,
-  },
-  userInfo: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    padding: 20,
-    marginBottom: 10,
-  },
-  statCard: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#399d9d',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-  section: {
-    backgroundColor: '#fff',
-    padding: 20,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  appointmentCard: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#399d9d',
-  },
-  appointmentTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
   },
-  appointmentProvider: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
+  profileInfoContainer: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
   },
-  appointmentStatus: {
-    fontSize: 14,
-    color: '#399d9d',
-    fontWeight: '600',
-    marginBottom: 3,
-  },
-  appointmentDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
-  },
-  appointmentPrice: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  ratingCard: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  ratingHeader: {
+  infoCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  ratingDate: {
-    fontSize: 12,
-    color: '#666',
+  infoTextContainer: {
+    marginLeft: 16,
+    flex: 1,
   },
-  ratingComment: {
+  infoLabel: {
     fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 16,
     color: '#333',
-    fontStyle: 'italic',
-    marginBottom: 8,
+    fontWeight: '500',
   },
-  ratingProvider: {
-    fontSize: 12,
-    color: '#666',
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#399d9d',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: 20,
+  editButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginBottom: 32,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#dc3545',
+  },
+  logoutButtonText: {
+    color: '#dc3545',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

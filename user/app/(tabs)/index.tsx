@@ -1,14 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { homeStyles } from "../components/homeStyles";
 import SearchBar from "../components/searchbar";
 import ServiceIcon from "../components/index/ServiceIcon";
 
-  const router = useRouter();
-  
-  const constructionServices = [
+interface CustomerData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  userName: string;
+  email: string;
+  phone_number: string;
+  user_location: string;
+  profile_photo?: string;
+}
+
+// Get backend URL from environment variables
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
+
+const constructionServices = [
   { label: "Carpentry", source: require("../../assets/images/carpentry.png"), route: "/services/carpentry" },
   { label: "Welding", source: require("../../assets/images/welding.png"), route: "/services/welding" },
   { label: "Tile Setting", source: require("../../assets/images/tile.png"), route: "/services/tile" },
@@ -28,6 +42,49 @@ const utilityServices = [
 ];
 
 export default function Index() {
+  const router = useRouter();
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCustomerData();
+  }, []);
+
+  const fetchCustomerData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setCustomerData(result.data);
+        console.log('Customer data loaded:', result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+  
   return (
     <View>
       <ScrollView 
@@ -43,18 +100,26 @@ export default function Index() {
             onPress={() => router.push("/(tabs)/profile")}
              style={{flexDirection: "row", alignItems: "center"}}>
           
-            <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
+            {customerData?.profile_photo ? (
+              <Image 
+                source={{ uri: `${BACKEND_URL}/${customerData.profile_photo}` }} 
+                style={{ width: 70, height: 70, borderRadius: 35 }}
+                onError={() => console.log('Image failed to load:', customerData.profile_photo)}
+              />
+            ) : (
+              <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
+            )}
                     
-            <Text style={{fontSize: 18}}>Good day, User!</Text>
+            <Text style={{fontSize: 18, marginLeft: 10}}>
+              {loading ? "Loading..." : 
+               customerData?.first_name ? 
+               `${getGreeting()}, ${customerData.first_name}!` : 
+               "Good day, User!"}
+            </Text>
               
           </TouchableOpacity>
           
           <View style={{flexDirection: "row", alignItems: "center"}}>
-            <TouchableOpacity 
-              onPress={() => router.push("/login")}
-              style={{marginRight: 15, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: "#399d9d", borderRadius: 5}}>
-              <Text style={{color: "white", fontSize: 12}}>Login</Text>
-            </TouchableOpacity>
             
           <TouchableOpacity onPress={() => router.push ("/components/notification")}>
               <Ionicons name="notifications" size={30} color={"#399d9d"} />

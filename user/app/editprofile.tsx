@@ -1,235 +1,99 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import {
-  Image,
   SafeAreaView,
-  ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
+  StyleSheet
 } from 'react-native';
-import homeStyles from './components/homeStyles';
 
-export default function Account() {
-  const [homeAddress, setHomeAddress] = useState('');
-  const [addressOptions, setAddressOptions] = useState<string[]>([]); // To be filled by API
-  const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [email, setEmail] = useState('');
-  const [verifyEmail, setVerifyEmail] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [profileUri, setProfileUri] = useState<string | null>(null);
-
-  const handleVerifyEmail = () => {
-    setEmailVerified(true);
-    setVerifyEmail(false);
-    alert('Email address verified!');
-  };
-
-  const handleSave = () => {
-    alert('Profile changes saved!');
-  };
-
-  const openCamera = async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setProfileUri(result.assets[0].uri);
-    }
-  };
+export default function EditProfile() {
+  const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
-      >
-        <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="account"
-            options={{
-              title: 'Edit profile',
-              headerTintColor: '#399d9d',
-              headerTitleStyle: { color: 'black', fontSize: 20 },
-              headerStyle: { backgroundColor: '#e7ecec' },
-              headerRight: () => (
-                <TouchableOpacity onPress={handleSave} style={{ marginRight: 15 }}>
-                  <Text style={{ color: '#399d9d', fontWeight: 'bold', fontSize: 20 }}>
-                    Save
-                  </Text>
-                </TouchableOpacity>
-              ),
-            }}
-          />
-        </SafeAreaView>
-
-        {/* Profile Avatar */}
-        <View style={{ alignItems: 'center', marginTop: 20 }}>
-          <View style={{ position: 'relative', width: 100, height: 100 }}>
-            {profileUri ? (
-              <Image
-                source={{ uri: profileUri }}
-                style={{ width: 90, height: 90, borderRadius: 45 }}
-              />
-            ) : (
-              <Ionicons name="person-circle" size={100} color={'#399d9d'} />
-            )}
-
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                right: 5,
-                bottom: 5,
-                backgroundColor: '#ecececff',
-                borderRadius: 20,
-                padding: 3,
-              }}
-              onPress={openCamera}
-            >
-              <Ionicons name="camera" size={30} color="#399d9d" />
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#399d9d" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Edit Profile</Text>
+      </View>
+      
+      <View style={styles.content}>
+        <View style={styles.placeholderCard}>
+          <Ionicons name="construct-outline" size={60} color="#399d9d" />
+          <Text style={styles.placeholderTitle}>Coming Soon</Text>
+          <Text style={styles.placeholderText}>
+            Profile editing functionality will be available here.
+          </Text>
+          <Text style={styles.placeholderSubtext}>
+            You can implement location editing and other profile features as needed.
+          </Text>
         </View>
-
-        {/* Form Inputs */}
-        <View style={{ alignItems: 'center', padding: 20, gap: 25, width: '100%' }}>
-          {/* Phone Number */}
-          <View style={{ width: '85%' }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Phone Number</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 16 }}>🇵🇭 +63</Text>
-              <TextInput
-                style={{
-                  backgroundColor: '#ecececff',
-                  marginLeft: 10,
-                  borderRadius: 10,
-                  paddingLeft: 15,
-                  paddingRight: 15,
-                  fontSize: 18,
-                  flex: 1,
-                }}
-                placeholder="9123456789"
-                keyboardType="number-pad"
-                value={phone}
-                onChangeText={text => {
-                  const cleaned = text.replace(/[^0-9]/g, '').slice(0, 10);
-                  setPhone(cleaned);
-                }}
-              />
-            </View>
-          </View>
-
-          {/* Home Address */}
-          <View style={{ width: '85%' }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Home Address</Text>
-            <View>
-              <TextInput
-                style={{
-                  backgroundColor: '#ecececff',
-                  borderRadius: 10,
-                  paddingLeft: 15,
-                  paddingRight: 15,
-                  fontSize: 18,
-                  marginBottom: 2,
-                }}
-                placeholder="Type your location"
-                value={homeAddress}
-                onFocus={() => setShowDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                onChangeText={text => {
-                  setHomeAddress(text);
-                  setShowDropdown(true);
-                  // update filteredOptions with API response here
-                }}
-              />
-              {showDropdown && filteredOptions.length > 0 && (
-                <View
-                  style={{
-                    backgroundColor: '#fff',
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: '#ecececff',
-                    maxHeight: 120,
-                  }}
-                >
-                  {filteredOptions.map(option => (
-                    <TouchableOpacity
-                      key={option}
-                      onPress={() => {
-                        setHomeAddress(option);
-                        setShowDropdown(false);
-                      }}
-                      style={{ padding: 10 }}
-                    >
-                      <Text>{option}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Email Address */}
-          <View style={{ width: '85%' }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Email Address</Text>
-            <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-              <TextInput
-                style={{
-                  backgroundColor: '#ecececff',
-                  borderRadius: 10,
-                  paddingLeft: 15,
-                  paddingRight: 15,
-                  fontSize: 18,
-                  width: '100%',
-                }}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={text => {
-                  setEmail(text);
-                  setEmailVerified(false);
-                }}
-              />
-              {!emailVerified && (
-                <TouchableOpacity
-                  onPress={() => setVerifyEmail(true)}
-                  style={{
-                    marginTop: 8,
-                    alignSelf: 'center',
-                    borderColor: '#399d9d',
-                    borderWidth: 1,
-                    borderRadius: 5,
-                    backgroundColor: '#339d9d',
-                    paddingHorizontal: 15,
-                    paddingVertical: 8,
-                  }}
-                >
-                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>
-                    Verify
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {verifyEmail && (
-              <TouchableOpacity onPress={handleVerifyEmail} style={{ marginTop: 5 }}>
-                <Text style={{ color: '#399d9d', alignSelf: 'center' }}>
-                  Send verification code to email
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  placeholderCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 30,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  placeholderTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#399d9d',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  placeholderSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+});

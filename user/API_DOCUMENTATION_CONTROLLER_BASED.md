@@ -169,32 +169,66 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   exact_location: string?,
   birthday: string?,               // ISO date string
   otp: string,                     // Required - 6-digit OTP
-  profile_photo?: File,            // Image file (max 5MB)
-  valid_id?: File                  // Image file (max 5MB)
+  profile_photo?: File,            // Image file (max 5MB) - uploaded to Cloudinary
+  valid_id?: File                  // Image file (max 5MB) - uploaded to Cloudinary
 }
 ```
 - **Validation:**
   - Verifies OTP (10-minute expiry)
   - Checks email/phone uniqueness across users and providers
   - Hashes password with bcrypt
+  - Uploads files to Cloudinary cloud storage
 - **Success Response (201):**
 ```javascript
 {
   message: "User registered successfully",
   userId: number,
-  profile_photo: string?,          // File path if uploaded
-  valid_id: string?                // File path if uploaded
+  profile_photo: string?,          // Cloudinary URL if uploaded
+  valid_id: string?                // Cloudinary URL if uploaded
 }
 ```
 - **Error Responses:**
   - `400`: Invalid OTP / User already exists / Phone number already registered
-  - `500`: Server error during registration
+  - `500`: Server error during registration / Image upload error
+
+#### 4. Get Customer Profile Data
+- **Endpoint:** `GET /auth/customer-profile`
+- **Description:** Get authenticated customer's complete profile information
+- **Headers:** `Authorization: Bearer <token>` (Customer JWT required)
+- **Success Response (200):**
+```javascript
+{
+  success: true,
+  message: "Customer profile retrieved successfully",
+  data: {
+    user_id: number,
+    first_name: string,
+    last_name: string,
+    full_name: string,              // Concatenated first + last name
+    userName: string,
+    email: string,
+    phone_number: string,
+    profile_photo: string?,         // Cloudinary URL or null
+    user_location: string?,
+    exact_location: string?,
+    birthday: string?,              // ISO date string
+    is_activated: boolean,          // Account activation status
+    is_verified: boolean,           // Email verification status
+    created_at: string              // ISO datetime string
+  }
+}
+```
+- **Error Responses:**
+  - `400`: User ID not found in session
+  - `401`: Unauthorized - Invalid or missing token
+  - `404`: Customer not found
+  - `500`: Internal server error
 
 ---
 
 ## Service Provider Authentication (`/auth`)
 
-#### 4. Provider Registration - Request OTP
+#### 5. Provider Registration - Request OTP
 - **Endpoint:** `POST /auth/provider-request-otp`
 - **Body:**
 ```javascript
@@ -212,7 +246,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 5. Provider Complete Registration
+#### 6. Provider Complete Registration
 - **Endpoint:** `POST /auth/provider-verify-register`
 - **Content-Type:** `multipart/form-data`
 - **Body:**
@@ -229,8 +263,8 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   provider_birthday: string?,      // ISO date string
   provider_exact_location: string?,
   otp: string,                     // Required - 6-digit OTP
-  provider_profile_photo?: File,   // Image file
-  provider_valid_id?: File,        // Image file
+  provider_profile_photo?: File,   // Image file - uploaded to Cloudinary
+  provider_valid_id?: File,        // Image file - uploaded to Cloudinary
   certificateNames?: string[],     // Array of certificate names
   certificateNumbers?: string[],   // Array of certificate numbers
   expiryDates?: string[]           // Array of expiry dates
@@ -240,9 +274,10 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   - Verifies OTP
   - Checks email/phone uniqueness across providers and customers
   - Hashes password with bcrypt
-- **Success Response (201):** Similar to customer registration
+  - Uploads files to Cloudinary cloud storage
+- **Success Response (201):** Similar to customer registration with Cloudinary URLs
 
-#### 6. Provider Login
+#### 7. Provider Login
 - **Endpoint:** `POST /auth/provider-login` or `POST /auth/loginProvider`
 - **Body:**
 ```javascript
@@ -265,7 +300,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Service Management (`/api/services`)
 
-#### 7. Get Provider Services
+#### 8. Get Provider Services
 - **Endpoint:** `GET /api/services/services`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Description:** Get all services for authenticated provider with enhanced data
@@ -281,7 +316,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
       service_title: string,
       description: string,
       service_description: string,
-      service_picture: string?,        // Validated path or null
+      service_picture: string?,        // Cloudinary URL or null
       price: number,
       service_startingprice: number,
       price_per_hour: number,
@@ -300,7 +335,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 8. Get Service Categories
+#### 9. Get Service Categories
 - **Endpoint:** `GET /api/services/categories`
 - **Description:** Get all available service categories (Public endpoint)
 - **Success Response (200):**
@@ -313,7 +348,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 ]
 ```
 
-#### 9. Create New Service
+#### 10. Create New Service
 - **Endpoint:** `POST /api/services/services`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Content-Type:** `multipart/form-data`
@@ -324,11 +359,11 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   service_description: string,     // Required
   service_startingprice: number,   // Required
   category_id: number,             // Required
-  service_picture?: File           // Image file (processed by middleware)
+  service_picture?: File           // Image file - uploaded to Cloudinary
 }
 ```
 
-#### 10. Update Service
+#### 11. Update Service
 - **Endpoint:** `PUT /api/services/services/:serviceId`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `serviceId` (number)
@@ -591,7 +626,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   provider_id: number,             // Required
   rating_value: number,            // Required - 1-5 stars (validated)
   rating_comment?: string,
-  rating_photo?: File              // Image file for review proof
+  rating_photo?: File              // Image file - uploaded to Cloudinary
 }
 ```
 - **Validation:**
@@ -608,7 +643,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
     id: number,
     rating_value: number,
     rating_comment: string?,
-    rating_photo: string?,
+    rating_photo: string?,          // Cloudinary URL if uploaded
     appointment_id: number,
     user_id: number,
     provider_id: number,
@@ -618,7 +653,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
       user_id: number,
       first_name: string,
       last_name: string,
-      profile_photo: string?
+      profile_photo: string?        // Cloudinary URL
     },
     serviceProvider: {
       provider_id: number,
@@ -712,7 +747,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   customer_id: number,             // Required
   rating_value: number,            // Required - 1-5 stars (validated)
   rating_comment?: string,
-  rating_photo?: File              // Image file for review proof
+  rating_photo?: File              // Image file - uploaded to Cloudinary
 }
 ```
 - **Validation:**
@@ -729,7 +764,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
     id: number,
     rating_value: number,
     rating_comment: string?,
-    rating_photo: string?,
+    rating_photo: string?,          // Cloudinary URL if uploaded
     appointment_id: number,
     user_id: number,
     provider_id: number,
@@ -739,7 +774,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
       user_id: number,
       first_name: string,
       last_name: string,
-      profile_photo: string?
+      profile_photo: string?        // Cloudinary URL
     },
     serviceProvider: {
       provider_id: number,
@@ -936,16 +971,28 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ---
 
-## File Upload & Static Files
+## File Upload & Cloud Storage
 
-#### 32. Static File Access
+#### 32. Cloudinary Integration
+- **Cloud Storage:** All file uploads are stored using Cloudinary cloud service
+- **URL Format:** Database stores Cloudinary URLs instead of local file paths
+- **Example URL:** `https://res.cloudinary.com/your-cloud-name/image/upload/v1234567890/fixmo/customer-profiles/profile_photo-1234567890.jpg`
+
+#### 33. File Organization Structure
+- **Cloudinary Folders:**
+  - `fixmo/customer-profiles/` - Customer profile photos
+  - `fixmo/customer-ids/` - Customer ID documents
+  - `fixmo/provider-profiles/` - Provider profile photos
+  - `fixmo/provider-ids/` - Provider ID documents
+  - `fixmo/certificates/` - Certificate files
+  - `fixmo/service-images/` - Service listing images
+  - `fixmo/rating-photos/` - Review photos
+  - `fixmo/message-attachments/` - Message file attachments
+
+#### 34. Static File Access (Legacy)
 - **Endpoint:** `GET /uploads/:filePath`
-- **Description:** Access uploaded files (profile photos, IDs, certificates, service images, rating photos)
-- **Parameters:** `filePath` (string) - Path to the uploaded file
-- **Examples:**
-  - `/uploads/customer-profiles/profile_photo-1234567890.jpg`
-  - `/uploads/certificates/certificateFile-1234567890.pdf`
-  - `/uploads/rating-photos/rating_photo-1234567890.jpg`
+- **Description:** Legacy endpoint for locally stored files (deprecated)
+- **Note:** New implementations should use Cloudinary URLs directly
 
 ---
 
