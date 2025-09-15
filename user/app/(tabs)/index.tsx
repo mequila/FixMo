@@ -56,9 +56,9 @@ export default function Index() {
               <Text style={{color: "white", fontSize: 12}}>Login</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={() => router.push ("/components/notification")}>
-                <Ionicons name="notifications" size={30} color={"#399d9d"} />
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push ("/components/notification")}>
+              <Ionicons name="notifications" size={30} color={"#399d9d"} />
+          </TouchableOpacity>
           </View>
 
         </View>
