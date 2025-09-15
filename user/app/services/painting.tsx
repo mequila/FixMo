@@ -1,6 +1,5 @@
 import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from 'expo-router';
 import React from 'react'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,14 +11,7 @@ const Painting = () => {
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
         <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="painting"
-            options={{
-              title: "",
-              headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" }
-            }}
-          />
+
         </SafeAreaView>
 
         <View>
@@ -96,3 +88,4 @@ const Painting = () => {
 };
 
 export default Painting;
+
