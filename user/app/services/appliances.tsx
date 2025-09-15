@@ -60,7 +60,7 @@ const Appliances = () => {
             powering on.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
@@ -87,7 +87,7 @@ const Appliances = () => {
             codes showing on display.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
@@ -116,7 +116,7 @@ const Appliances = () => {
             board check.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,

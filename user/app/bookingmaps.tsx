@@ -5,9 +5,9 @@ import homeStyles from './components/homeStyles';
 
 export default function BookingMaps() {
   const router = useRouter();
-  const region = {
-    latitude: 14.5995,
-    longitude: 120.9842,
+  const region = { //dapat yung location na nilagay ng user
+    latitude: 14.6042,
+    longitude: 121.0153,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   };

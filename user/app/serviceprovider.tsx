@@ -22,7 +22,7 @@ const Service = () => {
             }}
           />
         </SafeAreaView>
-      <TouchableOpacity onPress={() => router.push ('/bookingmaps')}>
+      <TouchableOpacity onPress={() => router.push ('/profile_serviceprovider')}>
 
         <View style={{
           marginHorizontal: 25, 

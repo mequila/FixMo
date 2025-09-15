@@ -34,7 +34,7 @@ const Carpentry = () => {
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/booknow')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
                 <Text
                   style={{
                     fontSize: 16,

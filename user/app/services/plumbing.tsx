@@ -30,7 +30,7 @@ const Computer = () => {
             interruptions, dripping joints, noisy water flow.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
@@ -84,7 +84,7 @@ const Computer = () => {
             issues affecting heaters.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,

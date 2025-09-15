@@ -58,7 +58,7 @@ const Computer = () => {
             setup, unstable or intermittent connectivity.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
@@ -85,7 +85,7 @@ const Computer = () => {
             signs, need for full system scan and cleaning.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
@@ -112,7 +112,7 @@ const Computer = () => {
             scheduled automatic backups, migration to new device.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
               <Text
                 style={{
                   fontSize: 16,
