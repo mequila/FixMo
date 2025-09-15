@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";  
 import { homeStyles } from "../components/homeStyles";
 import SearchBar from "../components/searchbar";
 import ServiceIcon from "../components/index/ServiceIcon";
 
-  const router = useRouter();
   
   const constructionServices = [
   { label: "Carpentry", source: require("../../assets/images/carpentry.png"), route: "/services/carpentry" },
@@ -28,6 +28,8 @@ const utilityServices = [
 ];
 
 export default function Index() {
+  const router = useRouter();
+
   return (
     <View>
       <ScrollView 

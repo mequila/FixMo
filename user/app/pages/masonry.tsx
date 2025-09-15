@@ -1,42 +1,46 @@
-import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
+import { View, ScrollView, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from 'expo-router';
-import React from 'react'
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Stack } from "expo-router";
+import React from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-const Tile = () => {
+const Masonry = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 10 }}
+      >
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
-            name="tile"
+            name="masonry"
             options={{
               title: "",
               headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" }
+              headerStyle: { backgroundColor: "#e7ecec" },
             }}
           />
         </SafeAreaView>
 
         <View>
           <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Tile Works and Installation</Text>
+            <Text style={homeStyles.borderTitle}>Masonry Works</Text>
 
             <Text style={homeStyles.borderDesc}>
-              Uneven or cracked floor surfaces, need for tile surface 
-              preparation, tiles not aligned properly, chipped or broken 
-              tiles, difficulty cutting tiles to fit edges, loose or 
-              hollow-sounding tiles, gaps between tiles, missing or 
-              damaged grout, water seepage through joints, request 
-              for new tile installation or replacement.
+              Cracked or damaged walls, uneven block or brick layering, loose or
+              hollow blocks, need for plastering on rough surfaces, chipped or
+              broken bricks, gaps or misaligned masonry joints, damaged
+              partitions or foundations, request for new wall construction,
+              surface finishing for painting, basic structural repairs or
+              reinforcement.
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -65,7 +69,7 @@ const Tile = () => {
           marginBottom: 15,
         }}
       >
-        <TouchableOpacity onPress={() => router.push('/emergencyfix')}>
+        <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
           <View
             style={{
               flexDirection: "row",
@@ -95,4 +99,4 @@ const Tile = () => {
   );
 };
 
-export default Tile;
+export default Masonry;

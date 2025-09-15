@@ -1,4 +1,10 @@
-import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from "react-native";
+import {
+  View,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";  
 import { homeStyles } from "../components/homeStyles";
 import { Stack, useRouter } from "expo-router";
 import React from "react";

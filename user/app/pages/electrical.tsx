@@ -1,36 +1,40 @@
-import { View, ScrollView, Text, SafeAreaView, TouchableOpacity } from 'react-native'
+import { View, ScrollView, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from 'expo-router';
-import React from 'react'
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Stack } from "expo-router";
+import React from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 const Computer = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 10 }}
+      >
         <SafeAreaView style={homeStyles.safeArea}>
           <Stack.Screen
             name="computer"
             options={{
               title: "",
               headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" }
+              headerStyle: { backgroundColor: "#e7ecec" },
             }}
           />
         </SafeAreaView>
 
         <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>Pipe Fitting & Leak Repair</Text>
+          <Text style={homeStyles.borderTitle}>Wiring & Connections</Text>
           <Text style={homeStyles.borderDesc}>
-            Leaking or burst pipes, low water pressure, clogged pipelines, 
-            rusted or corroded pipes, improper pipe connections, water supply 
+            Leaking or burst pipes, low water pressure, clogged pipelines,
+            rusted or corroded pipes, improper pipe connections, water supply
             interruptions, dripping joints, noisy water flow.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
               <Text
                 style={{
                   fontSize: 16,
@@ -51,13 +55,12 @@ const Computer = () => {
         <View style={homeStyles.border}>
           <Text style={homeStyles.borderTitle}>Fixture Installation</Text>
           <Text style={homeStyles.borderDesc}>
-            Leaking or dripping faucets, broken or loose toilets, 
-            clogged sinks or toilets, misaligned or unstable fixtures, 
-            poor drainage, faulty flush mechanisms, replacement of old 
-            or damaged fixtures.
+            Leaking or dripping faucets, broken or loose toilets, clogged sinks
+            or toilets, misaligned or unstable fixtures, poor drainage, faulty
+            flush mechanisms, replacement of old or damaged fixtures.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
               <Text
                 style={{
                   fontSize: 16,
@@ -76,15 +79,17 @@ const Computer = () => {
         </View>
 
         <View style={homeStyles.border}>
-          <Text style={homeStyles.borderTitle}>Shower & Water Heater Installation</Text>
+          <Text style={homeStyles.borderTitle}>
+            Shower & Water Heater Installation
+          </Text>
           <Text style={homeStyles.borderDesc}>
-            Weak or inconsistent water flow, no hot water, faulty water 
-            heater connection, fluctuating water temperature, leaking 
-            showerheads, improper shower setup, electrical or plumbing 
-            issues affecting heaters.
+            Weak or inconsistent water flow, no hot water, faulty water heater
+            connection, fluctuating water temperature, leaking showerheads,
+            improper shower setup, electrical or plumbing issues affecting
+            heaters.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
               <Text
                 style={{
                   fontSize: 16,
@@ -101,11 +106,10 @@ const Computer = () => {
             </TouchableOpacity>
           </View>
         </View>
-
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>
-        <TouchableOpacity onPress={() => router.push('/emergencyfix')}>
+        <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
           <View style={homeStyles.emergencyFix}>
             <Ionicons name="alert-circle-outline" size={24} color="white" />
             <Text
