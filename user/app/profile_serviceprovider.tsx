@@ -1,23 +1,13 @@
-import { View, Text, Image, SafeAreaView, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { homeStyles } from "./components/homeStyles";
-import { Stack } from "expo-router";
+import homeStyles from "./components/homeStyles";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function profile_serviceprovider() {
   return (
     <View>
-      <SafeAreaView style={homeStyles.safeArea}>
-        <Stack.Screen
-          name="profile_serviceprovider"
-          options={{
-            title: "",
-            headerTintColor: "#399d9d",
-            headerStyle: { backgroundColor: "transparent" },
-            headerTransparent: true,
-          }}
-        />
-      </SafeAreaView>
+      <SafeAreaView style={homeStyles.safeArea} />
 
       {/* Main content */}
       <View>

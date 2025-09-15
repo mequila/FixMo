@@ -1,10 +1,9 @@
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from "expo-router";
-import React from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
 
 const Painting = () => {
   const router = useRouter();
@@ -16,17 +15,6 @@ const Painting = () => {
         contentContainerStyle={{ paddingBottom: 10 }}
       >
         <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="painting"
-            options={{
-              title: "",
-              headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" },
-            }}
-          />
-        </SafeAreaView>
-
-        <View>
           <View style={homeStyles.border}>
             <Text style={homeStyles.borderTitle}>
               Surface Painting & Coating
@@ -59,7 +47,7 @@ const Painting = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </ScrollView>
 
       <View

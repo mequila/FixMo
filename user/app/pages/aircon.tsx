@@ -1,14 +1,9 @@
-import {
-  View,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";  
+import { View, ScrollView, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack, useRouter } from "expo-router";
-import React from "react";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
 
 const Aircon = () => {
   const router = useRouter();
@@ -20,36 +15,35 @@ const Aircon = () => {
         contentContainerStyle={{ paddingBottom: 10 }}
       >
         <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="aircon"
-            options={{
-              title: "",
-              headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" },
-            }}
-          />
-        </SafeAreaView>
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                AC Repair & Maintenance
+              </Text>
 
-        <View>
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>AC Repair & Maintenance</Text>
+              <Text style={homeStyles.borderDesc}>
+                Weak or no airflow, foul odor, water leaks, ice on coils,
+                reduced cooling, AC not turning on, sudden shutdowns, faulty
+                thermostat, refrigerant leaks, unusual noises (buzzing,
+                rattling), remote not responding, frozen evaporator coils, dirty
+                filters or clogged drainage, electrical or circuit board issues,
+                need for regular cleaning and preventive servicing.
+              </Text>
 
-            <Text style={homeStyles.borderDesc}>
-              Weak or no airflow, foul odor, water leaks, ice on coils, reduced
-              cooling, AC not turning on, sudden shutdowns, faulty thermostat,
-              refrigerant leaks, unusual noises (buzzing, rattling), remote not
-              responding, frozen evaporator coils, dirty filters or clogged
-              drainage, electrical or circuit board issues, need for regular
-              cleaning and preventive servicing.
-            </Text>
-
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text style={homeStyles.findProvidersbtn}>Find Providers</Text>
-              </TouchableOpacity>
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
+                >
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

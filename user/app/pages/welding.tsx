@@ -1,10 +1,9 @@
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from "expo-router";
-import React from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
 
 const Welding = () => {
   const router = useRouter();
@@ -16,20 +15,8 @@ const Welding = () => {
         contentContainerStyle={{ paddingBottom: 10 }}
       >
         <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="welding"
-            options={{
-              title: "",
-              headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" },
-            }}
-          />
-        </SafeAreaView>
-
-        <View>
           <View style={homeStyles.border}>
             <Text style={homeStyles.borderTitle}>Welding & Metal Works</Text>
-
             <Text style={homeStyles.borderDesc}>
               Rusty or corroded gates, broken or detached metal hinges, cracked
               or weak welds on railings, bent or misaligned frames, holes or
@@ -37,7 +24,6 @@ const Welding = () => {
               metal furniture, need for reinforcement welding, fabrication of
               custom metal parts, replacement of worn-out metal joints.
             </Text>
-
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
               <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
                 <Text
@@ -56,9 +42,7 @@ const Welding = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
 
-        <View>
           <View style={homeStyles.border}>
             <Text style={homeStyles.borderTitle}>Metal Furniture Repair</Text>
 
@@ -88,9 +72,8 @@ const Welding = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </ScrollView>
-
       <View
         style={{
           alignContent: "center",

@@ -9,22 +9,22 @@ import ServiceIcon from "../components/index/ServiceIcon";
 
   
   const constructionServices = [
-  { label: "Carpentry", source: require("../../assets/images/carpentry.png"), route: "/services/carpentry" },
-  { label: "Welding", source: require("../../assets/images/welding.png"), route: "/services/welding" },
-  { label: "Tile Setting", source: require("../../assets/images/tile.png"), route: "/services/tile" },
-  { label: "Masonry", source: require("../../assets/images/masonry.png"), route: "/services/masonry" },
-  { label: "Painting", source: require("../../assets/images/painting.png"), route: "/services/painting" },
+  { label: "Carpentry", source: require("../../assets/images/carpentry.png"), route: "/pages/carpentry" },
+  { label: "Welding", source: require("../../assets/images/welding.png"), route: "/pages/welding" },
+  { label: "Tile Setting", source: require("../../assets/images/tile.png"), route: "/pages/tile" },
+  { label: "Masonry", source: require("../../assets/images/masonry.png"), route: "/pages/masonry" },
+  { label: "Painting", source: require("../../assets/images/painting.png"), route: "/pages/painting" },
 ];
 
 const electronicsServices = [
-  { label: "Appliances", source: require("../../assets/images/appliances.png"), route: "/services/appliances" },
-  { label: "Aircon", source: require("../../assets/images/rac.png"), route: "/services/aircon" },
-  { label: "Computer", source: require("../../assets/images/computer.png"), route: "/services/computer" },
+  { label: "Appliances", source: require("../../assets/images/appliances.png"), route: "/pages/appliances" },
+  { label: "Aircon", source: require("../../assets/images/rac.png"), route: "/pages/aircon" },
+  { label: "Computer", source: require("../../assets/images/computer.png"), route: "/pages/computer" },
 ];
 
 const utilityServices = [
-  { label: "Plumbing", source: require("../../assets/images/plumbing.png"), route: "/services/plumbing" },
-  { label: "Electrical", source: require("../../assets/images/electrical.png"), route: "/services/electrical" },
+  { label: "Plumbing", source: require("../../assets/images/plumbing.png"), route: "/pages/plumbing" },
+  { label: "Electrical", source: require("../../assets/images/electrical.png"), route: "/pages/electrical" },
 ];
 
 export default function Index() {

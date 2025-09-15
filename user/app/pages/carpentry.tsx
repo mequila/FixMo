@@ -1,10 +1,9 @@
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { Stack } from "expo-router";
-import React from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
 
 const Carpentry = () => {
   const router = useRouter();
@@ -16,28 +15,15 @@ const Carpentry = () => {
         contentContainerStyle={{ paddingBottom: 10 }}
       >
         <SafeAreaView style={homeStyles.safeArea}>
-          <Stack.Screen
-            name="carpentry"
-            options={{
-              title: "",
-              headerTintColor: "#399d9d",
-              headerStyle: { backgroundColor: "#e7ecec" },
-            }}
-          />
-        </SafeAreaView>
-
-        <View>
           <View style={homeStyles.border}>
             <Text style={homeStyles.borderTitle}>Carpentry & Woodworks</Text>
-
             <Text style={homeStyles.borderDesc}>
               Uneven wooden surfaces, broken frames, custom shelves or cabinets,
               gaps in joints, damaged partitions, cracked panels, framing
               requests, need for polishing or varnishing, misaligned trims.
             </Text>
-
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
+              <TouchableOpacity onPress={() => router.push("../serviceprovider")}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -54,9 +40,7 @@ const Carpentry = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
 
-        <View>
           <View style={homeStyles.border}>
             <Text style={homeStyles.borderTitle}>Furniture Setup & Repair</Text>
 
@@ -84,9 +68,8 @@ const Carpentry = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
       </ScrollView>
-
       <View
         style={{
           alignContent: "center",
