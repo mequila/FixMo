@@ -24,7 +24,10 @@ const Appliances = () => {
             sudden shutdowns.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push({
+              pathname: '/serviceprovider',
+              params: { serviceTitle: 'TV Repair', category: 'Appliances' }
+            })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -52,7 +55,10 @@ const Appliances = () => {
             powering on.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({
+              pathname: '/serviceprovider',
+              params: { serviceTitle: 'Audio Systems Repair', category: 'Appliances' }
+            })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -79,7 +85,10 @@ const Appliances = () => {
             codes showing on display.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({
+              pathname: '/serviceprovider',
+              params: { serviceTitle: 'Washing Machine Circuit Repair', category: 'Appliances' }
+            })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -108,7 +117,10 @@ const Appliances = () => {
             board check.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({
+              pathname: '/serviceprovider',
+              params: { serviceTitle: 'Refrigerator Diagnosis & Maintenance', category: 'Appliances' }
+            })}>
               <Text
                 style={{
                   fontSize: 16,

@@ -28,6 +28,12 @@ export default function RootLayout() {
           headerShown: false
         }} 
       />
+      <Stack.Screen 
+        name="serviceprovider" 
+        options={{ 
+          headerShown: false
+        }} 
+      />
     </Stack>
   );
 }

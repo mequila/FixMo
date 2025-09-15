@@ -348,7 +348,72 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 ]
 ```
 
-#### 10. Create New Service
+#### 10. Get Public Service Listings (Customer Browse)
+- **Endpoint:** `GET /auth/service-listings`
+- **Description:** Public endpoint for customers to browse all available service listings with filtering, search, and pagination
+- **Query Parameters:**
+```javascript
+{
+  page?: number,                  // Default: 1
+  limit?: number,                 // Default: 12
+  search?: string,                // Search in service title, description, provider name
+  category?: string,              // Filter by category name
+  location?: string,              // Filter by provider location
+  sortBy?: string                 // Default: 'rating'
+}
+```
+- **Sort Options:**
+  - `'rating'` - Sort by provider rating (highest first)
+  - `'price-low'` - Sort by price (lowest first)
+  - `'price-high'` - Sort by price (highest first)
+  - `'newest'` - Sort by service creation date (newest first)
+- **Success Response (200):**
+```javascript
+{
+  message: "Service listings retrieved successfully",
+  listings: [
+    {
+      id: number,                       // service_id
+      title: string,                    // service_title
+      description: string,              // service_description
+      startingPrice: number,            // service_startingprice
+      service_picture: string?,         // Cloudinary URL or null
+      provider: {
+        id: number,                     // provider_id
+        name: string,                   // Full provider name
+        userName: string,               // provider_userName
+        rating: number,                 // provider_rating (0-5)
+        location: string?,              // provider_location
+        profilePhoto: string?           // Cloudinary URL or null
+      },
+      categories: string[],             // Array of category names
+      specificServices: [
+        {
+          id: number,                   // specific_service_id
+          title: string,                // specific_service_title
+          description: string           // specific_service_description
+        }
+      ]
+    }
+  ],
+  pagination: {
+    currentPage: number,
+    totalPages: number,
+    totalCount: number,
+    hasNext: boolean,
+    hasPrev: boolean
+  }
+}
+```
+- **Filtering Logic:**
+  - Only shows services from verified (`provider_isVerified: true`) and activated (`provider_isActivated: true`) providers
+  - Search matches service title, description, and provider name (case-insensitive)
+  - Location filter matches provider location (case-insensitive partial match)
+  - Category filter matches exact category name (case-insensitive)
+- **Error Responses:**
+  - `500`: Server error retrieving service listings
+
+#### 11. Create New Service
 - **Endpoint:** `POST /api/services/services`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Content-Type:** `multipart/form-data`
@@ -363,17 +428,17 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 11. Update Service
+#### 12. Update Service
 - **Endpoint:** `PUT /api/services/services/:serviceId`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `serviceId` (number)
 
-#### 11. Delete Service
+#### 13. Delete Service
 - **Endpoint:** `DELETE /api/services/services/:serviceId`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `serviceId` (number)
 
-#### 12. Toggle Service Availability
+#### 14. Toggle Service Availability
 - **Endpoint:** `PATCH /api/services/services/:serviceId/toggle`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `serviceId` (number)
@@ -383,7 +448,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Appointment Management (`/api/appointments`)
 
-#### 13. Get All Appointments (with Advanced Filtering)
+#### 15. Get All Appointments (with Advanced Filtering)
 - **Endpoint:** `GET /api/appointments/`
 - **Query Parameters:**
 ```javascript
@@ -449,7 +514,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 14. Get Appointment by ID
+#### 16. Get Appointment by ID
 - **Endpoint:** `GET /api/appointments/:appointmentId`
 - **Parameters:** `appointmentId` (number)
 - **Success Response (200):**
@@ -469,7 +534,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 15. Create Appointment
+#### 17. Create Appointment
 - **Endpoint:** `POST /api/appointments/`
 - **Body:**
 ```javascript
@@ -497,7 +562,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 16. Update Appointment
+#### 18. Update Appointment
 - **Endpoint:** `PUT /api/appointments/:appointmentId`
 - **Parameters:** `appointmentId` (number)
 - **Body:**
@@ -514,7 +579,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   - Date format validation
   - Conflict checking for date changes
 
-#### 17. Update Appointment Status
+#### 19. Update Appointment Status
 - **Endpoint:** `PUT /api/appointments/:appointmentId/status` (Legacy)
 - **Parameters:** `appointmentId` (number)
 - **Body:**
@@ -536,7 +601,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 18. Cancel Appointment
+#### 20. Cancel Appointment
 - **Endpoint:** `PUT /api/appointments/:appointmentId/cancel`
 - **Parameters:** `appointmentId` (number)
 - **Body:**
@@ -556,7 +621,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 19. Delete Appointment
+#### 21. Delete Appointment
 - **Endpoint:** `DELETE /api/appointments/:appointmentId`
 - **Parameters:** `appointmentId` (number)
 - **Description:** Permanently deletes appointment and related ratings
@@ -568,7 +633,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 20. Get Appointment Statistics
+#### 22. Get Appointment Statistics
 - **Endpoint:** `GET /api/appointments/stats`
 - **Query Parameters:**
 ```javascript
@@ -596,12 +661,12 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 21. Get Provider Appointments
+#### 23. Get Provider Appointments
 - **Endpoint:** `GET /api/appointments/provider/:providerId`
 - **Parameters:** `providerId` (number)
 - **Query Parameters:** Same as Get All Appointments
 
-#### 22. Get Customer Appointments
+#### 24. Get Customer Appointments
 - **Endpoint:** `GET /api/appointments/customer/:customerId`
 - **Parameters:** `customerId` (number)
 - **Query Parameters:** Same as Get All Appointments
@@ -610,12 +675,12 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Rating System (`/api/ratings`)
 
-#### 23. Get Rateable Appointments
+#### 25. Get Rateable Appointments
 - **Endpoint:** `GET /api/ratings/rateable-appointments`
 - **Headers:** `Authorization: Bearer <token>` (Customer auth required)
 - **Description:** Get completed appointments that customer can rate
 
-#### 24. Create Rating
+#### 26. Create Rating
 - **Endpoint:** `POST /api/ratings/create`
 - **Headers:** `Authorization: Bearer <token>` (Customer auth required)
 - **Content-Type:** `multipart/form-data`
@@ -667,7 +732,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   - `400`: Missing required fields / Invalid rating value / Already rated
   - `404`: Appointment not found or not authorized
 
-#### 25. Update Rating
+#### 27. Update Rating
 - **Endpoint:** `PUT /api/ratings/update/:ratingId`
 - **Headers:** `Authorization: Bearer <token>` (Customer auth required)
 - **Parameters:** `ratingId` (number)
@@ -685,18 +750,18 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   - Rating value validation (1-5)
   - Handles old photo deletion if new photo uploaded
 
-#### 26. Delete Rating
+#### 28. Delete Rating
 - **Endpoint:** `DELETE /api/ratings/delete/:ratingId`
 - **Headers:** `Authorization: Bearer <token>` (Customer auth required)
 - **Parameters:** `ratingId` (number)
 - **Description:** Deletes rating and associated photo file
 
-#### 27. Get Customer Ratings
+#### 29. Get Customer Ratings
 - **Endpoint:** `GET /api/ratings/customer/:customerId`
 - **Headers:** `Authorization: Bearer <token>` (Customer auth required)
 - **Parameters:** `customerId` (number)
 
-#### 28. Get Provider Ratings (Public)
+#### 30. Get Provider Ratings (Public)
 - **Endpoint:** `GET /api/ratings/provider/:providerId`
 - **Parameters:** `providerId` (number)
 - **Description:** Public endpoint to view provider ratings and reviews
@@ -705,7 +770,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Provider Rating Customer Endpoints (NEW)
 
-#### 29. Get Provider Rateable Appointments
+#### 31. Get Provider Rateable Appointments
 - **Endpoint:** `GET /api/ratings/provider/rateable-appointments`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Description:** Get appointments that provider can rate (finished appointments not yet rated)
@@ -736,7 +801,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 30. Create Provider Rating for Customer
+#### 32. Create Provider Rating for Customer
 - **Endpoint:** `POST /api/ratings/provider/rate-customer`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Content-Type:** `multipart/form-data`
@@ -792,7 +857,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 31. Get Provider Given Ratings
+#### 33. Get Provider Given Ratings
 - **Endpoint:** `GET /api/ratings/provider/given-ratings`
 - **Headers:** `Authorization: Bearer <token>` (Provider auth required)
 - **Query Parameters:** 
@@ -838,7 +903,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 32. Get Customer Received Ratings
+#### 34. Get Customer Received Ratings
 - **Endpoint:** `GET /api/ratings/customer/:customerId/received-ratings`
 - **Parameters:** `customerId` (number)
 - **Query Parameters:** 
@@ -899,7 +964,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Appointment Rating Endpoints (Alternative Implementation)
 
-#### 33. Submit Rating for Appointment
+#### 35. Submit Rating for Appointment
 - **Endpoint:** `POST /api/appointments/:appointmentId/ratings`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `appointmentId` (number)
@@ -916,7 +981,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
   - Rating value between 1-5
   - Cannot rate same appointment twice with same rater_type
 
-#### 34. Get Appointment Ratings
+#### 36. Get Appointment Ratings
 - **Endpoint:** `GET /api/appointments/:appointmentId/ratings`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `appointmentId` (number)
@@ -947,7 +1012,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 31. Check if User Can Rate Appointment
+#### 37. Check if User Can Rate Appointment
 - **Endpoint:** `GET /api/appointments/:appointmentId/can-rate`
 - **Headers:** `Authorization: Bearer <token>`
 - **Parameters:** `appointmentId` (number)
@@ -998,7 +1063,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## Health Check & System
 
-#### 33. Health Check
+#### 38. Health Check
 - **Endpoint:** `GET /`
 - **Description:** System health check and API status
 - **Success Response (200):**
@@ -1011,7 +1076,7 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 }
 ```
 
-#### 34. Admin Web Interface
+#### 39. Admin Web Interface
 - **Endpoint:** `GET /admin`
 - **Description:** Serves admin access HTML page
 - **Endpoint:** `GET /admin-login`
@@ -1086,27 +1151,26 @@ The Fixmo Backend API is a comprehensive service management platform that connec
 
 ## File Upload Specifications
 
+### Cloudinary Integration
+- **Cloud Storage:** All files uploaded to Cloudinary cloud service
+- **Database Storage:** Cloudinary URLs stored in database instead of local paths
+- **Auto-optimization:** Images automatically optimized and transformed by Cloudinary
+
 ### Supported File Types
-- **Images:** JPG, PNG, GIF
+- **Images:** JPG, PNG, GIF, WEBP
 - **Documents:** PDF, DOC, DOCX
 - **Size Limits:** 5MB (images), 10MB (certificates)
 
 ### Upload Middleware
-- **Multer Configuration:** Handles multipart/form-data
-- **File Naming:** `{fieldname}-{timestamp}-{random}.{ext}`
-- **Path Validation:** Ensures proper directory structure
+- **Multer Configuration:** Memory storage for cloud uploads
+- **File Processing:** Buffer processing for Cloudinary upload
+- **File Naming:** Cloudinary auto-generates secure public IDs
 
-### Upload Directories
-```
-uploads/
-├── customer-profiles/    # Customer profile photos
-├── customer-ids/         # Customer ID documents
-├── profiles/             # Provider profile photos
-├── ids/                  # Provider ID documents
-├── certificates/         # Certificate files
-├── service-images/       # Service listing images
-└── rating-photos/        # Review photos
-```
+### Cloud Storage Benefits
+- **CDN Delivery:** Fast global content delivery
+- **Auto-optimization:** Automatic image compression and format conversion
+- **Secure URLs:** HTTPS delivery with optional transformations
+- **Backup & Redundancy:** Built-in backup and disaster recovery
 
 ---
 

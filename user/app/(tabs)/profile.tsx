@@ -41,6 +41,7 @@ export default function Profile() {
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -78,6 +79,7 @@ export default function Profile() {
       if (response.ok) {
         const result = await response.json();
         setCustomerData(result.data);
+        setImageError(false); // Reset image error when new data loads
         console.log('Customer profile loaded:', result.data);
       } else {
         console.error('Failed to fetch customer profile');
@@ -131,11 +133,18 @@ export default function Profile() {
     >
       {/* User Info Section */}
       <View style={styles.userSection}>
-        {customerData?.profile_photo ? (
+        {customerData?.profile_photo && !imageError ? (
           <Image 
-            source={{ uri: `${BACKEND_URL}/${customerData.profile_photo}` }} 
+            source={{ 
+              uri: customerData.profile_photo.startsWith('http') 
+                ? customerData.profile_photo 
+                : `${BACKEND_URL}/${customerData.profile_photo}` 
+            }} 
             style={{ width: 100, height: 100, borderRadius: 50, marginBottom: 10 }}
-            onError={() => console.log('Error loading profile image')}
+            onError={(error) => {
+              console.log('Error loading profile image:', customerData.profile_photo);
+              setImageError(true);
+            }}
           />
         ) : (
           <Ionicons name="person-circle" size={100} color={"#399d9d"} />

@@ -23,7 +23,7 @@ const Computer = () => {
             system, need for diagnostic checks.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'PC Troubleshooting', category: 'computer' } })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -50,7 +50,7 @@ const Computer = () => {
             setup, unstable or intermittent connectivity.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Network Setup', category: 'computer' } })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -77,7 +77,7 @@ const Computer = () => {
             signs, need for full system scan and cleaning.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Virus Removal', category: 'computer' } })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -104,7 +104,7 @@ const Computer = () => {
             scheduled automatic backups, migration to new device.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Data Backup', category: 'computer' } })}>
               <Text
                 style={{
                   fontSize: 16,

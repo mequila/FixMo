@@ -22,7 +22,7 @@ const Computer = () => {
             interruptions, dripping joints, noisy water flow.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Wiring & Connections', category: 'electrical' } })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -49,7 +49,7 @@ const Computer = () => {
             or damaged fixtures.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Fixture Installation', category: 'electrical' } })}>
               <Text
                 style={{
                   fontSize: 16,
@@ -76,7 +76,7 @@ const Computer = () => {
             issues affecting heaters.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/booknow')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'Water Heater Installation', category: 'electrical' } })}>
               <Text
                 style={{
                   fontSize: 16,

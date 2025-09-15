@@ -45,6 +45,7 @@ export default function Index() {
   const router = useRouter();
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     fetchCustomerData();
@@ -69,6 +70,7 @@ export default function Index() {
       if (response.ok) {
         const result = await response.json();
         setCustomerData(result.data);
+        setImageError(false); // Reset image error when new data loads
         console.log('Customer data loaded:', result.data);
       }
     } catch (error) {
@@ -100,11 +102,18 @@ export default function Index() {
             onPress={() => router.push("/(tabs)/profile")}
              style={{flexDirection: "row", alignItems: "center"}}>
           
-            {customerData?.profile_photo ? (
+            {customerData?.profile_photo && !imageError ? (
               <Image 
-                source={{ uri: `${BACKEND_URL}/${customerData.profile_photo}` }} 
+                source={{ 
+                  uri: customerData.profile_photo.startsWith('http') 
+                    ? customerData.profile_photo 
+                    : `${BACKEND_URL}/${customerData.profile_photo}` 
+                }} 
                 style={{ width: 70, height: 70, borderRadius: 35 }}
-                onError={() => console.log('Image failed to load:', customerData.profile_photo)}
+                onError={(error) => {
+                  console.log('Image failed to load:', customerData.profile_photo);
+                  setImageError(true);
+                }}
               />
             ) : (
               <Ionicons name="person-circle" size={70} color={"#399d9d"}/>

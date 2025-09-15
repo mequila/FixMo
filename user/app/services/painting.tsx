@@ -28,7 +28,7 @@ const Painting = () => {
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider?category=painting')}>
                 <Text
                   style={{
                     fontSize: 16,

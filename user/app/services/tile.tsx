@@ -28,7 +28,7 @@ const Tile = () => {
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider?category=tile')}>
                 <Text
                   style={{
                     fontSize: 16,

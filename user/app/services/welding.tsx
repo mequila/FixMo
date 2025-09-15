@@ -29,7 +29,7 @@ const Welding = () => {
             </Text>
 
             <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push('/serviceprovider')}>
+              <TouchableOpacity onPress={() => router.push('/serviceprovider?category=welding')}>
                 <Text
                   style={{
                     fontSize: 16,
