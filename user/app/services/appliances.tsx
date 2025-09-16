@@ -26,7 +26,7 @@ const Appliances = () => {
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
             <TouchableOpacity onPress={() => router.push({
               pathname: '/serviceprovider',
-              params: { serviceTitle: 'TV Repair', category: 'Appliances' }
+              params: { serviceTitle: 'TV Repair' }
             })}>
               <Text
                 style={{

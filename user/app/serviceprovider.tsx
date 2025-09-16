@@ -19,37 +19,53 @@ import { homeStyles } from "./components/homeStyles";
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
 interface ServiceProvider {
-  id: number;
-  title: string;
-  description: string;
-  startingPrice: number;
+  service_id: number;
+  service_title: string;
+  service_description: string;
+  service_startingprice: number;
+  provider_id: number;
+  servicelisting_isActive: boolean;
   service_picture?: string;
   provider: {
-    id: number;
-    name: string;
-    userName: string;
-    rating: number;
-    location?: string;
-    profilePhoto?: string;
+    provider_id: number;
+    provider_name: string;
+    provider_first_name: string;
+    provider_last_name: string;
+    provider_email: string;
+    provider_phone_number: string;
+    provider_location?: string;
+    provider_exact_location?: string;
+    provider_rating: number;
+    provider_isVerified: boolean;
+    provider_profile_photo?: string;
+    provider_member_since: string;
   };
-  categories: string[];
-  specificServices: Array<{
-    id: number;
-    title: string;
-    description: string;
+  categories: Array<{
+    category_id: number;
+    category_name: string;
+  }>;
+  certificates: Array<{
+    certificate_id: number;
+    certificate_name: string;
+    certificate_status: string;
+  }>;
+  specific_services: Array<{
+    specific_service_id: number;
+    specific_service_title: string;
+    specific_service_description: string;
   }>;
 }
 
 const ServiceProvider = () => {
   const router = useRouter();
-  const { serviceTitle, category } = useLocalSearchParams();
+  const { serviceTitle } = useLocalSearchParams(); // Remove category since we're only using serviceTitle
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchServiceProviders();
-  }, [serviceTitle, category]);
+  }, [serviceTitle]); // Remove category dependency
 
   const fetchServiceProviders = async () => {
     try {
@@ -59,18 +75,21 @@ const ServiceProvider = () => {
         return;
       }
 
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (serviceTitle) {
-        params.append('search', serviceTitle as string);
+      if (!serviceTitle) {
+        console.log('❌ No service title provided');
+        setProviders([]);
+        return;
       }
-      if (category) {
-        params.append('category', category as string);
-      }
-      params.append('limit', '20'); // Get more providers
-      params.append('sortBy', 'rating'); // Sort by rating
 
-      const response = await fetch(`${BACKEND_URL}/auth/service-listings?${params.toString()}`, {
+      // Use the new by-title endpoint for exact title matching
+      const params = new URLSearchParams();
+      params.append('title', serviceTitle as string);
+
+      const apiUrl = `${BACKEND_URL}/api/serviceProvider/services/by-title?${params.toString()}`;
+      console.log('🔍 API Request URL:', apiUrl);
+      console.log('🔍 Searching for exact title:', serviceTitle);
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -78,16 +97,29 @@ const ServiceProvider = () => {
         },
       });
 
+      console.log('📡 API Response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
-        setProviders(result.listings || []);
-        console.log(`Found ${result.listings?.length || 0} providers for ${serviceTitle || category}`);
+        console.log('📦 API Response:', result);
+        
+        // Use the new response structure from section 12
+        setProviders(result.data || []);
+        console.log(`✅ Found ${result.count || 0} providers for service: "${serviceTitle}"`);
+        
+        if (result.data && result.data.length > 0) {
+          console.log('📋 Service providers found:');
+          result.data.forEach((service: ServiceProvider, index: number) => {
+            console.log(`  ${index + 1}. ${service.provider.provider_name} - "${service.service_title}" (₱${service.service_startingprice})`);
+          });
+        }
       } else {
-        console.error('Failed to fetch service providers');
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
         Alert.alert('Error', 'Failed to load service providers');
       }
     } catch (error) {
-      console.error('Error fetching service providers:', error);
+      console.error('❌ Error fetching service providers:', error);
       Alert.alert('Error', 'Network error while loading providers');
     } finally {
       setLoading(false);
@@ -166,7 +198,7 @@ const ServiceProvider = () => {
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
             <Ionicons name="search-outline" size={60} color="#ccc" />
             <Text style={{ marginTop: 20, fontSize: 18, color: '#666', textAlign: 'center' }}>
-              No providers found for "{serviceTitle || category}"
+              No providers found for "{serviceTitle || 'this service'}"
             </Text>
             <Text style={{ marginTop: 10, fontSize: 14, color: '#999', textAlign: 'center' }}>
               Try searching for a different service or check back later
@@ -175,7 +207,7 @@ const ServiceProvider = () => {
         ) : (
           providers.map((provider) => (
             <TouchableOpacity 
-              key={provider.id} 
+              key={provider.service_id} 
               onPress={() => router.push('/bookingmaps')}
               style={{
                 marginHorizontal: 15, 
@@ -195,19 +227,19 @@ const ServiceProvider = () => {
                 elevation: 5,
               }}
             >
-              {provider.provider.profilePhoto ? (
+              {provider.provider.provider_profile_photo ? (
                 <Image 
                   source={{ 
-                    uri: provider.provider.profilePhoto.startsWith('http') 
-                      ? provider.provider.profilePhoto 
-                      : `${BACKEND_URL}/${provider.provider.profilePhoto}` 
+                    uri: provider.provider.provider_profile_photo.startsWith('http') 
+                      ? provider.provider.provider_profile_photo 
+                      : `${BACKEND_URL}/${provider.provider.provider_profile_photo}` 
                   }} 
                   style={{ 
                     width: 80, 
                     height: 80,
                     borderRadius: 15
                   }} 
-                  onError={() => console.log('Failed to load provider image:', provider.provider.profilePhoto)}
+                  onError={() => console.log('Failed to load provider image:', provider.provider.provider_profile_photo)}
                 />
               ) : (
                 <View style={{
@@ -229,7 +261,7 @@ const ServiceProvider = () => {
                   fontWeight: '600',
                   marginBottom: 5,
                 }}>
-                  {provider.provider.name}
+                  {provider.provider.provider_name}
                 </Text>
 
                 <Text style={{
@@ -238,23 +270,23 @@ const ServiceProvider = () => {
                   marginBottom: 5,
                   color: '#333'
                 }}>
-                  {provider.title}
+                  {provider.service_title}
                 </Text>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                  {renderStars(provider.provider.rating)}
+                  {renderStars(provider.provider.provider_rating)}
                   <Text style={{ marginLeft: 5, fontSize: 14, color: '#666' }}>
-                    ({provider.provider.rating.toFixed(1)})
+                    ({provider.provider.provider_rating.toFixed(1)})
                   </Text>
                 </View>
 
-                {provider.provider.location && (
+                {provider.provider.provider_location && (
                   <Text style={{
                     fontSize: 14,
                     color: '#666',
                     marginBottom: 5,
                   }}>
-                    📍 {provider.provider.location}
+                    📍 {provider.provider.provider_location}
                   </Text>
                 )}
 
@@ -263,7 +295,7 @@ const ServiceProvider = () => {
                   fontWeight: '600',
                   color: '#399d9d'
                 }}>
-                  Starting at ₱{provider.startingPrice.toFixed(2)}
+                  Starting at ₱{provider.service_startingprice.toFixed(2)}
                 </Text>
               </View>
 

@@ -23,7 +23,7 @@ const Computer = () => {
             system, need for diagnostic checks.
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'PC Troubleshooting', category: 'computer' } })}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/serviceprovider', params: { serviceTitle: 'PC Troubleshooting' } })}>
               <Text
                 style={{
                   fontSize: 16,
