@@ -12,100 +12,69 @@ const Welding = () => {
     <View style={{ flex: 1 }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <SafeAreaView style={homeStyles.safeArea}>
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Welding & Metal Works</Text>
-            <Text style={homeStyles.borderDesc}>
-              Rusty or corroded gates, broken or detached metal hinges, cracked
-              or weak welds on railings, bent or misaligned frames, holes or
-              gaps in metal surfaces, damaged window grills, unstable or wobbly
-              metal furniture, need for reinforcement welding, fabrication of
-              custom metal parts, replacement of worn-out metal joints.
-            </Text>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    backgroundColor: "#399d9d",
-                    borderRadius: 8,
-                    color: "white",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                Welding & Metal Works
+              </Text>
+
+              <Text style={homeStyles.borderDesc}>
+                Rusty or corroded gates, broken or detached metal hinges, cracked
+                or weak welds on railings, bent or misaligned frames, holes or
+                gaps in metal surfaces, damaged window grills, unstable or wobbly
+                metal furniture, need for reinforcement welding, fabrication of
+                custom metal parts, replacement of worn-out metal joints.
+              </Text>
+
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
                 >
-                  Find Providers
-                </Text>
-              </TouchableOpacity>
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Metal Furniture Repair</Text>
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                Metal Furniture Repair
+              </Text>
 
-            <Text style={homeStyles.borderDesc}>
-              Loose or broken metal joints, cracked or weak welds on chairs and
-              tables, bent or misaligned metal frames, rusty or corroded
-              surfaces, unstable or wobbly legs, damaged hinges or latches,
-              dents or holes in panels, peeling paint or finish, need for
-              reinforcement welding, replacement of broken metal parts.
-            </Text>
+              <Text style={homeStyles.borderDesc}>
+                Loose or broken metal joints, cracked or weak welds on chairs and
+                tables, bent or misaligned metal frames, rusty or corroded
+                surfaces, unstable or wobbly legs, damaged hinges or latches,
+                dents or holes in panels, peeling paint or finish, need for
+                reinforcement welding, replacement of broken metal parts.
+              </Text>
 
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    backgroundColor: "#399d9d",
-                    borderRadius: 8,
-                    color: "white",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
                 >
-                  Find Providers
-                </Text>
-              </TouchableOpacity>
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </SafeAreaView>
       </ScrollView>
-      <View
-        style={{
-          alignContent: "center",
-          justifyContent: "space-around",
-          flexDirection: "row",
-          marginHorizontal: 50,
-          marginBottom: 15,
-        }}
-      >
+
+      <View style={homeStyles.marginEmergencyFix}>
         <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#399d9d",
-              borderRadius: 15,
-              paddingVertical: 20,
-              paddingHorizontal: 25,
-            }}
-          >
+          <View style={homeStyles.emergencyFix}>
             <Ionicons name="alert-circle-outline" size={24} color="white" />
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "600",
-                color: "white",
-                marginLeft: 8,
-              }}
-            >
-              Emergency Fix
-            </Text>
+            <Text style={homeStyles.emergencyFixText}>Emergency Fix</Text>
           </View>
         </TouchableOpacity>
       </View>

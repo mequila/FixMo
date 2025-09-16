@@ -10,7 +10,7 @@ export default function RootLayout() {
         options={{
           headerShown: true,
           title: "Notifications",
-          headerTintColor: "#399d9d",
+          headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
         }}
       />
@@ -18,7 +18,7 @@ export default function RootLayout() {
         name="serviceprovider"
         options={{
           title: "Service Provider",
-          headerTintColor: "#399d9d",
+          headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
         }}
@@ -27,7 +27,7 @@ export default function RootLayout() {
         name="bookingmaps"
         options={{
           title: "Booking",
-          headerTintColor: "#399d9d",
+          headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
         }}
@@ -36,7 +36,7 @@ export default function RootLayout() {
         name="editprofile"
         options={{
           title: "Edit profile",
-          headerTintColor: "#399d9d",
+          headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
         }}
@@ -46,7 +46,7 @@ export default function RootLayout() {
         options={{
           title: "",
           headerTransparent: true,
-          headerTintColor: "#399d9d",
+          headerTintColor: "#008080",
           headerStyle: { backgroundColor: "transparent" },
         }}
       />

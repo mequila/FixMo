@@ -63,7 +63,7 @@ export default function Account() {
                 style={{ width: 90, height: 90, borderRadius: 45 }}
               />
             ) : (
-              <Ionicons name="person-circle" size={100} color={"#399d9d"} />
+              <Ionicons name="person-circle" size={100} color={"#008080"} />
             )}
 
             <TouchableOpacity
@@ -77,7 +77,7 @@ export default function Account() {
               }}
               onPress={openCamera}
             >
-              <Ionicons name="camera" size={30} color="#399d9d" />
+              <Ionicons name="camera" size={30} color="#008080" />
             </TouchableOpacity>
           </View>
         </View>
@@ -195,10 +195,10 @@ export default function Account() {
                   style={{
                     marginTop: 8,
                     alignSelf: "center",
-                    borderColor: "#399d9d",
+                    borderColor: "#008080",
                     borderWidth: 1,
                     borderRadius: 5,
-                    backgroundColor: "#339d9d",
+                    backgroundColor: "#008080",
                     paddingHorizontal: 15,
                     paddingVertical: 8,
                   }}
@@ -217,7 +217,7 @@ export default function Account() {
                 onPress={handleVerifyEmail}
                 style={{ marginTop: 5 }}
               >
-                <Text style={{ color: "#399d9d", alignSelf: "center" }}>
+                <Text style={{ color: "#008080", alignSelf: "center" }}>
                   Send verification code to email
                 </Text>
               </TouchableOpacity>

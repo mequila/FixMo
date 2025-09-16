@@ -12,9 +12,7 @@ const Aircon = () => {
     <View style={{ flex: 1 }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <SafeAreaView style={homeStyles.safeArea}>
           <View>
             <View style={homeStyles.border}>
               <Text style={homeStyles.borderTitle}>
@@ -43,7 +41,6 @@ const Aircon = () => {
               </View>
             </View>
           </View>
-        </SafeAreaView>
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

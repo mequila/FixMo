@@ -12,107 +12,92 @@ const Plumbing = () => {
     <View style={{ flex: 1 }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <SafeAreaView style={homeStyles.safeArea}>
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>
-              Pipe Fitting & Leak Repair
-            </Text>
-            <Text style={homeStyles.borderDesc}>
-              Leaking or burst pipes, low water pressure, clogged pipelines,
-              rusted or corroded pipes, improper pipe connections, water supply
-              interruptions, dripping joints, noisy water flow.
-            </Text>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    backgroundColor: "#399d9d",
-                    borderRadius: 8,
-                    color: "white",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                Pipe Fitting & Leak Repair
+              </Text>
+
+              <Text style={homeStyles.borderDesc}>
+                Leaking or burst pipes, low water pressure, clogged pipelines,
+                rusted or corroded pipes, improper pipe connections, water supply
+                interruptions, dripping joints, noisy water flow.
+              </Text>
+
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
                 >
-                  Find Providers
-                </Text>
-              </TouchableOpacity>
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>Fixture Installation</Text>
-            <Text style={homeStyles.borderDesc}>
-              Leaking or dripping faucets, broken or loose toilets, clogged
-              sinks or toilets, misaligned or unstable fixtures, poor drainage,
-              faulty flush mechanisms, replacement of old or damaged fixtures.
-            </Text>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    backgroundColor: "#399d9d",
-                    borderRadius: 8,
-                    color: "white",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                Fixture Installation
+              </Text>
+
+              <Text style={homeStyles.borderDesc}>
+                Leaking or dripping faucets, broken or loose toilets, clogged
+                sinks or toilets, misaligned or unstable fixtures, poor drainage,
+                faulty flush mechanisms, replacement of old or damaged fixtures.
+              </Text>
+
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
                 >
-                  Find Providers
-                </Text>
-              </TouchableOpacity>
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
-          <View style={homeStyles.border}>
-            <Text style={homeStyles.borderTitle}>
-              Shower & Water Heater Installation
-            </Text>
-            <Text style={homeStyles.borderDesc}>
-              Weak or inconsistent water flow, no hot water, faulty water heater
-              connection, fluctuating water temperature, leaking showerheads,
-              improper shower setup, electrical or plumbing issues affecting
-              heaters.
-            </Text>
-            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-              <TouchableOpacity onPress={() => router.push("/serviceprovider")}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    backgroundColor: "#399d9d",
-                    borderRadius: 8,
-                    color: "white",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                  }}
+          <View>
+            <View style={homeStyles.border}>
+              <Text style={homeStyles.borderTitle}>
+                Shower & Water Heater Installation
+              </Text>
+
+              <Text style={homeStyles.borderDesc}>
+                Weak or inconsistent water flow, no hot water, faulty water heater
+                connection, fluctuating water temperature, leaking showerheads,
+                improper shower setup, electrical or plumbing issues affecting
+                heaters.
+              </Text>
+
+              <View
+                style={{ flexDirection: "row", justifyContent: "flex-end" }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/serviceprovider")}
                 >
-                  Find Providers
-                </Text>
-              </TouchableOpacity>
+                  <Text style={homeStyles.findProvidersbtn}>
+                    Find Providers
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </SafeAreaView>
       </ScrollView>
+
       <View style={homeStyles.marginEmergencyFix}>
         <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
           <View style={homeStyles.emergencyFix}>
             <Ionicons name="alert-circle-outline" size={24} color="white" />
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "600",
-                color: "white",
-                marginLeft: 8,
-              }}
-            >
-              Emergency Fix
-            </Text>
+            <Text style={homeStyles.emergencyFixText}>Emergency Fix</Text>
           </View>
         </TouchableOpacity>
       </View>

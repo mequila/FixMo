@@ -11,7 +11,7 @@ const searchbar = () => {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#399d9d",
+          backgroundColor: "#008080",
           borderRadius: 999,
           paddingHorizontal: 20,
           marginHorizontal: 20,

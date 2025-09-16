@@ -9,7 +9,7 @@ export default function Profile() {
   return (
     <View>
       <View style={{ alignItems: "center" }}>
-        <Ionicons name="person-circle" size={100} color={"#399d9d"} />
+        <Ionicons name="person-circle" size={100} color={"#008080"} />
 
         <Text>Name</Text>
         <Text>Number</Text>
@@ -26,7 +26,7 @@ export default function Profile() {
           </Text>
         </View>
 
-        <Ionicons name="chevron-forward" size={25} color={"#399d9d"} />
+        <Ionicons name="chevron-forward" size={25} color={"#008080"} />
       </TouchableOpacity>
 
       <TouchableOpacity 
@@ -49,7 +49,7 @@ export default function Profile() {
           </Text>
         </View>
 
-        <Ionicons name="chevron-forward" size={25} color={"#399d9d"} />
+        <Ionicons name="chevron-forward" size={25} color={"#008080"} />
       </TouchableOpacity>
     </View>
   )

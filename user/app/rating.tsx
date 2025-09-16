@@ -20,7 +20,7 @@ const Rating = () => {
           Type of Provider
         </Text>
 
-        <Text style={{ color: "#399d9d", fontSize: 16, fontWeight: "500", marginBottom: 5 }}>
+        <Text style={{ color: "#008080", fontSize: 16, fontWeight: "500", marginBottom: 5 }}>
           Provider Name
         </Text>
 
@@ -30,7 +30,7 @@ const Rating = () => {
           </View>
 
           <TouchableOpacity onPress={() => router.push("/messages")}>
-            <Ionicons name="chatbox-ellipses" size={25} color="#399d9d" />
+            <Ionicons name="chatbox-ellipses" size={25} color="#008080" />
           </TouchableOpacity>
 
         </View>

@@ -2,14 +2,14 @@ import { Stack } from "expo-router";
 import React from "react";
 
 const common = {
-  headerTintColor: "#399d9d",
+  headerTintColor: "#008080",
   headerStyle: { backgroundColor: "#e7ecec" },
 };
 
 export default function PagesLayout() {
   return (
     <Stack screenOptions={common}>
-      <Stack.Screen name="aircon" options={{ title: "" }} />
+      <Stack.Screen name="aircon" options={{ title: ""}} />
       <Stack.Screen name="appliances" options={{ title: "" }} />
       <Stack.Screen name="carpentry" options={{ title: "" }} />
       <Stack.Screen name="computer" options={{ title: "" }} />

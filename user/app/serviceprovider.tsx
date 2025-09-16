@@ -1,73 +1,111 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import homeStyles from "./components/homeStyles";
+import React from "react";
 
 const Service = () => {
   const router = useRouter();
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <SafeAreaView style={homeStyles.safeArea} />
-        <TouchableOpacity
-          onPress={() => router.push("/profile_serviceprovider")}
-        >
-          <View
-            style={{
-              marginHorizontal: 25,
-              marginTop: 10,
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#cceded",
-              borderRadius: 15,
-              padding: 20,
-            }}
-          >
-            <Image
-              source={require("../assets/images/service-provider.jpg")}
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 15,
-              }}
-            />
-            <View style={{ marginLeft: 15 }}>
-              <Text
-                style={{
-                  color: "#399d9d",
-                  fontSize: 16,
-                  fontWeight: 500,
-                  marginBottom: 5,
-                }}
-              >
-                Name Provider
-              </Text>
+        <View>
+          <TouchableOpacity onPress={() => router.push("/profile_serviceprovider")}>
+            <View style={homeStyles.serviceproviderContainer}>
+              <Image
+                source={require("../assets/images/service-provider.jpg")}
+                style={{ width: 90, height: 90, borderRadius: 15 }}
+              />
 
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 600,
-                  marginBottom: 5,
-                }}
-              >
-                Type of Provider
-              </Text>
+              <View style={{ marginLeft: 15 }}>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "bold",
+                  }}
+                >
+                  Type of Service Provider
+                </Text>
 
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                }}
-              >
-                ₱500.00
-              </Text>
+                <Text
+                  style={{
+                    color: "#008080",
+                    fontSize: 16,
+                    fontWeight: "500",
+                  }}
+                >
+                  Service Provider Name
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {"\u20B1"}500.00
+                </Text>
+
+                <View style={{ flexDirection: "row" }}>
+                  <Ionicons name="star" size={16} color={"#FFD700"} />
+                  <Text>4.5 (20 reviews)</Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+
+        <View>
+          <TouchableOpacity onPress={() => router.push("/profile_serviceprovider")}>
+            <View style={homeStyles.serviceproviderContainer}>
+              <Image
+                source={require("../assets/images/service-provider.jpg")}
+                style={{ width: 90, height: 90, borderRadius: 15 }}
+              />
+
+              <View style={{ marginLeft: 15 }}>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "bold",
+                  }}
+                >
+                  Type of Service Provider
+                </Text>
+
+                <Text
+                  style={{
+                    color: "#008080",
+                    fontSize: 16,
+                    fontWeight: "500",
+                  }}
+                >
+                  Service Provider Name
+                </Text>
+
+                <Text
+                  style={{
+                    fontSize: 25,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {"\u20B1"}500.00
+                </Text>
+
+                <View style={{ flexDirection: "row" }}>
+                  <Ionicons name="star" size={16} color={"#FFD700"} />
+                  <Text>4.5 (20 reviews)</Text>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+        
       </ScrollView>
     </View>
   );

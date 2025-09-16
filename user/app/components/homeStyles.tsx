@@ -4,7 +4,7 @@ export const homeStyles = StyleSheet.create({
   safeArea: {
     marginBottom: 20,
     backgroundColor: "#e7ecec",
-    borderBottomColor: "#4c8080",
+    borderBottomColor: "#008080",
   },
   header: {
     paddingTop: 5,
@@ -40,7 +40,7 @@ export const homeStyles = StyleSheet.create({
     // service icon
     width: 70,
     height: 70,
-    tintColor: "#399d9d",
+    tintColor: "#008080",
   },
   iconText: {
     // service icon text
@@ -51,9 +51,9 @@ export const homeStyles = StyleSheet.create({
     marginHorizontal: 16,
     flexDirection: "row",
   },
-  serviceBorder: {
+  serviceBorder: { // most popular services border
     borderWidth: 1,
-    borderColor: "#399d9d",
+    borderColor: "#008080",
     borderRadius: 20,
     paddingLeft: 20,
     paddingRight: 20,
@@ -87,23 +87,23 @@ export const homeStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  border: {
+  border: { //services background
     backgroundColor: "#cceded",
-    marginVertical: 5,
     marginHorizontal: 20,
+    marginTop: 12,
     borderRadius: 15,
     padding: 10,
     alignContent: "center",
     flexDirection: "column",
   },
-  borderTitle: {
+  borderTitle: { //services title
     paddingTop: 10,
     paddingBottom: 5,
     fontSize: 20,
     fontWeight: "500",
     marginHorizontal: 18,
   },
-  borderDesc: {
+  borderDesc: { //services description
     fontSize: 13,
     color: "gray",
     lineHeight: 16,
@@ -115,14 +115,14 @@ export const homeStyles = StyleSheet.create({
     justifyContent: "space-around",
     flexDirection: "row",
     marginHorizontal: 50,
-    marginBottom: 8,
-    marginTop: 8,
+    marginBottom: 15,
+    marginTop: 10,
 },
   emergencyFix: { // Emergency Fix button
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#399d9d",
+    backgroundColor: "#008080",
     borderRadius: 15,
     paddingVertical: 20,
     paddingHorizontal: 25,
@@ -136,23 +136,41 @@ export const homeStyles = StyleSheet.create({
   findProvidersbtn:{
     fontSize: 16,
     fontWeight: "600",
-    backgroundColor: "#399d9d",
+    backgroundColor: "#008080",
     borderRadius: 8,
     color: "white",
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-   service_container: {
-    backgroundColor: "#399d9d",
+   service_container: { 
+    backgroundColor: "#008080",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     alignSelf: "flex-end",
   },
-  service_text: {
+  service_text: { 
     fontSize: 16,
     fontWeight: "600",
     color: "white",
+  },
+  serviceproviderContainer: { // service provider container and background
+    marginHorizontal: 25,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#cceded",
+    borderRadius: 15,
+    padding: 20,
+  },
+  providerText: { // type of service provider text
+    color: "#000",
+    fontWeight: "bold",
+    fontSize: 20,
+  },
+  providerTextContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
   },
 });
 

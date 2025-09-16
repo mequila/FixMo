@@ -18,19 +18,19 @@ const schedule = () => {
           markedDates={{
             [selectedDate]: {
               selected: true,
-              selectedColor: '#399d9d',
+              selectedColor: '#008080',
             },
           }}
           theme={{
             calendarBackground: '#fff',
-            selectedDayBackgroundColor: '#399d9d',
-            todayTextColor: '#399d9d',
-            arrowColor: '#399d9d',
+            selectedDayBackgroundColor: '#008080',
+            todayTextColor: '#008080',
+            arrowColor: '#008080',
             textDayHeaderFontWeight: 700,
             textMonthFontWeight: 'bold',
             textDayFontWeight: 600,
             textSectionTitleColor: 'gray',
-            monthTextColor: '#399d9d',
+            monthTextColor: '#008080',
           }}
           style={[homeStyles.calendarWrap]}
         />
@@ -52,8 +52,8 @@ const schedule = () => {
                 <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 5 }}>
                   Type of Provider
                 </Text>
-      
-                <Text style={{ color: "#399d9d", fontSize: 16, fontWeight: "500", marginBottom: 5 }}>
+
+                <Text style={{ color: "#008080", fontSize: 16, fontWeight: "500", marginBottom: 5 }}>
                   Provider Name
                 </Text>
       
@@ -63,7 +63,7 @@ const schedule = () => {
                   </View>
       
                   <TouchableOpacity onPress={() => router.push("/messages")}> 
-                    <Ionicons name="chatbox-ellipses" size={25} color="#399d9d" />
+                    <Ionicons name="chatbox-ellipses" size={25} color="#008080" />
                   </TouchableOpacity>
                   
                 </View>

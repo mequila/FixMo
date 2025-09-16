@@ -35,7 +35,7 @@ export default function Index() {
       <ScrollView 
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
-        style={{marginTop: 35}}>
+        >
 
       <SafeAreaView style={[homeStyles.safeArea]}>
 
@@ -44,15 +44,15 @@ export default function Index() {
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/profile")}
              style={{flexDirection: "row", alignItems: "center"}}>
-          
-            <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
-                    
+
+            <Ionicons name="person-circle" size={65} color={"#008080"}/>
+
             <Text style={{fontSize: 18}}>Good day, User!</Text>
               
           </TouchableOpacity>
           
           <TouchableOpacity onPress={() => router.push ("/components/notification")}>
-              <Ionicons name="notifications" size={30} color={"#399d9d"} />
+              <Ionicons name="notifications" size={30} color={"#008080"} />
           </TouchableOpacity>
 
         </View>

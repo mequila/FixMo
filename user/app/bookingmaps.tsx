@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
@@ -12,8 +13,8 @@ import homeStyles from "./components/homeStyles";
 
 export default function BookingMaps() {
   const router = useRouter();
+
   const region = {
-    //dapat yung location na nilagay ng user
     latitude: 14.6042,
     longitude: 121.0153,
     latitudeDelta: 0.01,
@@ -21,47 +22,52 @@ export default function BookingMaps() {
   };
 
   return (
-    <SafeAreaView style={[homeStyles.safeArea, styles.safeArea]}>
-      {/* Header options now provided via root layout Stack.Screen */}
-
-      {/* Main layout */}
       <View style={styles.container}>
-        {/* Map takes full space */}
         <MapView style={styles.map} initialRegion={region}>
           <Marker coordinate={region} title="Service Location" />
         </MapView>
 
-        {/* Button at bottom */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/schedule")}
-        >
-          <Text style={styles.buttonText}>Book</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/schedule")}
+          >
+            <Text style={styles.buttonText}>Book</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1, // important so children fill screen
+    flex: 1,
+    backgroundColor: "#fff",
   },
   container: {
     flex: 1,
+    position: "relative",
   },
   map: {
-    flex: 1, // map fills available space
+    flex: 1,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 30 : 20,
+    left: 30,
+    right: 30,
   },
   button: {
-    backgroundColor: "#399d9d",
+    backgroundColor: "#008080 ",
     paddingVertical: 16,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 30,
-    marginBottom: 20, // respect safe area at bottom
     elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
   },
   buttonText: {
     color: "#fff",
