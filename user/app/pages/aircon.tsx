@@ -4,43 +4,29 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const AirconServiceCardDetails = [
+  {
+    title: "AC Repair & Maintenance",
+    description: "Weak or no airflow, foul odor, water leaks, ice on coils, reduced cooling, AC not turning on, sudden shutdowns, faulty thermostat, refrigerant leaks, unusual noises (buzzing, rattling), remote not responding, frozen evaporator coils, dirty filters or clogged drainage, electrical or circuit board issues, need for regular cleaning and preventive servicing."
+  }
+];
 
 const Aircon = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                AC Repair & Maintenance
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Weak or no airflow, foul odor, water leaks, ice on coils,
-                reduced cooling, AC not turning on, sudden shutdowns, faulty
-                thermostat, refrigerant leaks, unusual noises (buzzing,
-                rattling), remote not responding, frozen evaporator coils, dirty
-                filters or clogged drainage, electrical or circuit board issues,
-                need for regular cleaning and preventive servicing.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {AirconServiceCardDetails.map((aircon, idx) => (
+          <ServiceCard
+            key={idx}
+            title={aircon.title}
+            description={aircon.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

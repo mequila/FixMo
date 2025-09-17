@@ -4,93 +4,40 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const PlumbingServiceCardDetails = [
+  {
+    title: "Pipe Fitting & Leak Repair",
+    description:
+      "Leaking or burst pipes, low water pressure, clogged pipelines, rusted or corroded pipes, improper pipe connections, water supply interruptions, dripping joints, noisy water flow.",
+  },
+  {
+    title: "Fixture Installation",
+    description:  
+      "Leaking or dripping faucets, broken or loose toilets, clogged sinks or toilets, misaligned or unstable fixtures, poor drainage, faulty flush mechanisms, replacement of old or damaged fixtures.",
+  },
+  {
+    title: "Shower & Water Heater Installation",
+    description:
+      "Weak or inconsistent water flow, no hot water, faulty water heater connection, fluctuating water temperature, leaking showerheads, improper shower setup, electrical or plumbing issues affecting heaters.",
+  },
+];
 
 const Plumbing = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Pipe Fitting & Leak Repair
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Leaking or burst pipes, low water pressure, clogged pipelines,
-                rusted or corroded pipes, improper pipe connections, water supply
-                interruptions, dripping joints, noisy water flow.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Fixture Installation
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Leaking or dripping faucets, broken or loose toilets, clogged
-                sinks or toilets, misaligned or unstable fixtures, poor drainage,
-                faulty flush mechanisms, replacement of old or damaged fixtures.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Shower & Water Heater Installation
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Weak or inconsistent water flow, no hot water, faulty water heater
-                connection, fluctuating water temperature, leaking showerheads,
-                improper shower setup, electrical or plumbing issues affecting
-                heaters.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {PlumbingServiceCardDetails.map((plumbing, idx) => (
+          <ServiceCard
+            key={idx}
+            title={plumbing.title}
+            description={plumbing.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

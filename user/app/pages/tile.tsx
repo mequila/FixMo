@@ -4,42 +4,30 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
 
-const Aircon = () => {
+const TileServiceCardDetails = [
+  {
+    title: "Tile Works and Installation",
+    description:
+      "Uneven or cracked floor surfaces, need for tile surface preparation, tiles not aligned properly, chipped or broken tiles, difficulty cutting tiles to fit edges, loose or hollow-sounding tiles, gaps between tiles, missing or damaged grout, water seepage through joints, request for new tile installation or replacement.",
+  },
+];
+
+const Tile = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Tile Works and Installation
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Uneven or cracked floor surfaces, need for tile surface
-                preparation, tiles not aligned properly, chipped or broken tiles,
-                difficulty cutting tiles to fit edges, loose or hollow-sounding
-                tiles, gaps between tiles, missing or damaged grout, water seepage
-                through joints, request for new tile installation or replacement.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {TileServiceCardDetails.map((tile, idx) => (
+          <ServiceCard
+            key={idx}
+            title={tile.title}
+            description={tile.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>
@@ -54,4 +42,4 @@ const Aircon = () => {
   );
 };
 
-export default Aircon;
+export default Tile;

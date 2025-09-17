@@ -4,43 +4,30 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const PaintingServiceCardDetails = [
+  {
+    title: "Surface Painting & Coating",  
+    description:
+      "Uneven or rough wall surfaces, need for surface sanding, peeling or old paint removal, patching cracks or holes before painting, applying primer for better paint adhesion, faded or discolored walls, stains or marks on surfaces, uneven paint application, request for new wall color or repainting, need for protective coatings.",
+  },
+];
 
 const Painting = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Surface Painting & Coating
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Uneven or rough wall surfaces, need for surface sanding, peeling
-                or old paint removal, patching cracks or holes before painting,
-                applying primer for better paint adhesion, faded or discolored
-                walls, stains or marks on surfaces, uneven paint application,
-                request for new wall color or repainting, need for protective
-                coatings.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {PaintingServiceCardDetails.map((painting, idx) => (
+          <ServiceCard
+            key={idx}
+            title={painting.title}
+            description={painting.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

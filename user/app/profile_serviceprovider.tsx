@@ -46,27 +46,24 @@ export default function profile_serviceprovider() {
                 </Text>
               </View>
 
-              <View style={{ flexDirection: "row" }}>
+              <View style={{ flexDirection: "row",   }}>
                 <Ionicons name="star" size={16} color={"#FFD700"} />
 
-                <Text>4.5 (20 reviews)</Text>
+                <Text style={{ marginLeft: 4 }}>4.5 (20 reviews)</Text>
               </View>
             </View>
 
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text
-                style={{ color: "#008080", fontSize: 35, fontWeight: "bold" }}
-              >
-                {"\u20B1"}450
-              </Text>
+              <View style={{ flexDirection: "column" }}>
+                <Text
+                  style={{ color: "#008080", fontSize: 35, fontWeight: "bold", marginRight: 5 }}
+                >
+                  {"\u20B1"}450
+                </Text>
 
-              <View
-                style={{ flexDirection: "column", justifyContent: "center" }}
-              >
-                <Text style={{ fontSize: 12 }}>Service Fee</Text>
-                <Text style={{ fontSize: 12 }}>
+                <Text style={{ fontSize: 10 }}>
                   Additional Charges may apply.
                 </Text>
               </View>

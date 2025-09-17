@@ -4,95 +4,40 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const ComputerServiceCardDetails = [
+  {
+    title: "Computer Troubleshooting & Data Backup",
+    description:  
+      "Startup failures, frequent crashes, slow or overheating systems, hardware or OS errors, unresponsive peripherals, risk of data loss, file recovery, backup setup, and data migration.",
+  },
+  {
+    title: "Network Setup (Wi-Fi & Printer Sharing)",
+    description:
+      "Slow or no internet connection, Wi-Fi not detected, router setup issues, weak signal coverage, devices not connecting to network, printer not shared across devices, IP conflicts, network security setup, unstable or intermittent connectivity.",
+  },
+  {
+    title: "Virus Removal",
+    description:
+      "Computer infected with malware, pop-up ads appearing, slow or freezing system, corrupted files, unauthorized programs installed, antivirus not functioning, browser hijacking, phishing or ransomware signs, need for full system scan and cleaning.",
+  },
+];
 
 const Computer = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Computer Troubleshooting & Data Backup
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Startup failures, frequent crashes, slow or 
-                overheating systems, hardware or OS errors, 
-                unresponsive peripherals, risk of data loss, 
-                file recovery, backup setup, and data migration.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Network Setup (Wi-Fi & Printer Sharing)
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Slow or no internet connection, Wi-Fi not detected, router setup
-                issues, weak signal coverage, devices not connecting to network,
-                printer not shared across devices, IP conflicts, network security
-                setup, unstable or intermittent connectivity.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Virus Removal
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Computer infected with malware, pop-up ads appearing, slow or
-                freezing system, corrupted files, unauthorized programs installed,
-                antivirus not functioning, browser hijacking, phishing or
-                ransomware signs, need for full system scan and cleaning.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {ComputerServiceCardDetails.map((computer, idx) => (
+          <ServiceCard
+            key={idx}
+            title={computer.title}
+            description={computer.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

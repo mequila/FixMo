@@ -50,6 +50,15 @@ export default function RootLayout() {
           headerStyle: { backgroundColor: "transparent" },
         }}
       />
+      <Stack.Screen
+        name="book_schedule"
+        options={{
+          title: "Select Schedule",
+          headerTintColor: "#008080",
+          headerTitleStyle: { color: "black", fontSize: 20 },
+          headerStyle: { backgroundColor: "#e7ecec" },
+        }}
+      />
     </Stack>
   );
 }

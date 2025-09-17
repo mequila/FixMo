@@ -4,43 +4,29 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const MasonryServiceCardDetails = [
+  { title: "Masonry Works",
+    description:
+      "Cracked or damaged walls, uneven block or brick layering, loose or hollow blocks, need for plastering on rough surfaces, chipped or broken bricks, gaps or misaligned masonry joints, damaged partitions or foundations, request for new wall construction, surface finishing for painting, basic structural repairs or reinforcement."
+  },
+];
 
 const Masonry = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Masonry Works
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Cracked or damaged walls, uneven block or brick layering, loose or
-                hollow blocks, need for plastering on rough surfaces, chipped or
-                broken bricks, gaps or misaligned masonry joints, damaged
-                partitions or foundations, request for new wall construction,
-                surface finishing for painting, basic structural repairs or
-                reinforcement.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {MasonryServiceCardDetails.map((masonry, idx) => (
+          <ServiceCard
+            key={idx}
+            title={masonry.title}
+            description={masonry.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>

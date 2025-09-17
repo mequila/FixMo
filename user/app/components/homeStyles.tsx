@@ -155,7 +155,7 @@ export const homeStyles = StyleSheet.create({
     color: "white",
   },
   serviceproviderContainer: { // service provider container and background
-    marginHorizontal: 25,
+    marginHorizontal: 20,
     marginTop: 15,
     flexDirection: "row",
     alignItems: "center",

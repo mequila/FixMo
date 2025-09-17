@@ -4,70 +4,35 @@ import { homeStyles } from "../components/homeStyles";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import ServiceCard from "../components/services/ServiceCard";
+
+const WeldingServiceCardDetails = [
+  {
+    title: "Welding & Metal Works",
+    description:
+      "Rusty or corroded gates, broken or detached metal hinges, cracked or weak welds on railings, bent or misaligned frames, holes or gaps in metal surfaces, damaged window grills, unstable or wobbly metal furniture, need for reinforcement welding, fabrication of custom metal parts, replacement of worn-out metal joints.",
+  },
+  {
+    title: "Metal Furniture Repair",
+    description:
+      "Loose or broken metal joints, cracked or weak welds on chairs and tables, bent or misaligned metal frames, rusty or corroded surfaces, unstable or wobbly legs, damaged hinges or latches, dents or holes in panels, peeling paint or finish, need for reinforcement welding, replacement of broken metal parts.",
+  },
+];
 
 const Welding = () => {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-      >
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Welding & Metal Works
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Rusty or corroded gates, broken or detached metal hinges, cracked
-                or weak welds on railings, bent or misaligned frames, holes or
-                gaps in metal surfaces, damaged window grills, unstable or wobbly
-                metal furniture, need for reinforcement welding, fabrication of
-                custom metal parts, replacement of worn-out metal joints.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View>
-            <View style={homeStyles.border}>
-              <Text style={homeStyles.borderTitle}>
-                Metal Furniture Repair
-              </Text>
-
-              <Text style={homeStyles.borderDesc}>
-                Loose or broken metal joints, cracked or weak welds on chairs and
-                tables, bent or misaligned metal frames, rusty or corroded
-                surfaces, unstable or wobbly legs, damaged hinges or latches,
-                dents or holes in panels, peeling paint or finish, need for
-                reinforcement welding, replacement of broken metal parts.
-              </Text>
-
-              <View
-                style={{ flexDirection: "row", justifyContent: "flex-end" }}
-              >
-                <TouchableOpacity
-                  onPress={() => router.push("/serviceprovider")}
-                >
-                  <Text style={homeStyles.findProvidersbtn}>
-                    Find Providers
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {WeldingServiceCardDetails.map((welding, idx) => (
+          <ServiceCard
+            key={idx}
+            title={welding.title}
+            description={welding.description}
+            onPress={() => router.push("/book_schedule")}
+          />
+        ))}
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>
