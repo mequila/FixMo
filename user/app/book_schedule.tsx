@@ -9,7 +9,7 @@ const DateTimeSelector = () => {
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
   const [isPickerVisible, setPickerVisible] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"date" | "time">("date"); // "date" or "time"
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
 
   const showPicker = (mode: "date" | "time") => {
     setPickerMode(mode);
@@ -49,19 +49,16 @@ const DateTimeSelector = () => {
   return (
       <View>
         <View style={styles.container}>
-        {/* Date Selector */}
         <TouchableOpacity style={styles.box} onPress={() => showPicker("date")}>
           <Text style={styles.label}>Date</Text>
           <Text style={styles.value}>{formatDate(selectedDate)}</Text>
         </TouchableOpacity>
 
-        {/* Time Selector */}
         <TouchableOpacity style={styles.box} onPress={() => showPicker("time")}>
           <Text style={styles.label}>Time</Text>
           <Text style={styles.value}>{formatTime(selectedTime)}</Text>
         </TouchableOpacity>
 
-        {/* DateTime Picker Modal */}
         <DateTimePickerModal
           isVisible={isPickerVisible}
           mode={pickerMode}
@@ -70,6 +67,14 @@ const DateTimeSelector = () => {
           onCancel={hidePicker}
         />
       </View>
+
+      <ServiceProviderCard
+        name="Sabrina Carpenter"
+        rating={4.5}
+        profession="Carpenter"
+        price={500.0}
+        onPress={() => router.push("/profile_serviceprovider")}
+      />
 
       <ServiceProviderCard
         name="Sabrina Carpenter"
@@ -87,6 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 20,
+    marginHorizontal: 18,
   },
   box: {
     flex: 1,

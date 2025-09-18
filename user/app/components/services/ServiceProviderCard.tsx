@@ -29,7 +29,7 @@ export default function ServiceProviderCard({
       <View style={homeStyles.serviceproviderContainer}>
         <Image
           source={require("../../../assets/images/service-provider.jpg")}
-          style={{ width: 90, height: 90, borderRadius: 15 }}
+          style={{ width: 90, height: 90, borderRadius: 10}}
         />
         <View style={{ marginLeft: 15, flex: 1 }}>
           <View
@@ -40,7 +40,7 @@ export default function ServiceProviderCard({
               paddingBottom: 5,
             }}
           >
-            <Text style={{ color: "#008080", fontSize: 16, fontWeight: "500" }}>
+            <Text style={{ color: "#000", fontSize: 16, fontWeight: "500" }}>
               {name}
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -48,15 +48,20 @@ export default function ServiceProviderCard({
               <Text style={{ marginLeft: 4 }}>{rating}</Text>
             </View>
           </View>
-          <Text style={{ fontSize: 16, color: "gray", paddingBottom: 5 }}>
+          <Text style={{ fontWeight: "500", fontSize: 16, color: "#008080", paddingBottom: 5 }}>
             {profession}
           </Text>
-          <Text style={{ fontSize: 22, fontWeight: "bold" }}>
-            {"\u20B1"}
-            {Number(price).toFixed(2)}
-          </Text>
+          <View style={{ justifyContent: "flex-end", alignItems: "flex-end" 
+          }}>
+            <Text style={{ fontSize: 22, fontWeight: "bold", color: "#008080" }}>
+              {"\u20B1"}
+              {Number(price).toFixed(2)}
+            </Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
+
+    
   );
 }

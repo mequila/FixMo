@@ -46,7 +46,7 @@ export default function BookingMaps() {
             style={styles.avatar}
           />
           <View style={{ flex: 1 }}>
-            <Text style={styles.name}>Service Provider Name</Text>
+            <Text style={styles.name}>Sabrina Carpenter</Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="star" size={16} color={"#FFD700"} />
               <Text style={[styles.rating, { marginLeft: 4 }]}>4.9</Text>

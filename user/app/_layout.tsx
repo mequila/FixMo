@@ -26,7 +26,7 @@ export default function RootLayout() {
       <Stack.Screen
         name="bookingmaps"
         options={{
-          title: "Booking",
+          title: "",
           headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
@@ -54,6 +54,24 @@ export default function RootLayout() {
         name="book_schedule"
         options={{
           title: "Select Schedule",
+          headerTintColor: "#008080",
+          headerTitleStyle: { color: "black", fontSize: 20 },
+          headerStyle: { backgroundColor: "#e7ecec" },
+        }}
+      />
+      <Stack.Screen
+        name="rating"
+        options={{
+          title: "",
+          headerTintColor: "#008080",
+          headerTitleStyle: { color: "black", fontSize: 20 },
+          headerStyle: { backgroundColor: "#e7ecec" },
+        }}
+      />
+       <Stack.Screen
+        name="report"
+        options={{
+          title: "",
           headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
