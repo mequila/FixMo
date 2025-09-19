@@ -64,8 +64,8 @@ export default function BookingMaps() {
         </View>
 
         <View style={{ marginTop: 10 }}>
-          <Text style={styles.address}>📍 7958 Swift Village</Text>
-          <Text style={styles.address}>📍 105 William St, Chicago, US</Text>
+          <Text style={styles.address}> 7958 Swift Village</Text>
+          <Text style={styles.address}> 105 William St, Chicago, US</Text>
         </View>
 
         <TouchableOpacity style={styles.cancelBtn}>

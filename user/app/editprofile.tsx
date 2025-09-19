@@ -52,7 +52,6 @@ export default function Account() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 10 }}
       >
-        <SafeAreaView style={homeStyles.safeArea} />
 
         {/* Profile Avatar */}
         <View style={{ alignItems: "center", marginTop: 20 }}>

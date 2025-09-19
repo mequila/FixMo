@@ -32,6 +32,8 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: "#cceded",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -97,6 +99,8 @@ export const homeStyles = StyleSheet.create({
     padding: 10,
     alignContent: "center",
     flexDirection: "column",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
   },
   borderTitle: { //services title
     paddingTop: 10,
