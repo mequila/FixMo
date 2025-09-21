@@ -127,6 +127,21 @@ export const homeStyles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 25,
   },
+    emergencyFixText: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "white",
+    marginLeft: 8,
+  },
+   findProvidersbtn:{
+    fontSize: 16,
+    fontWeight: "600",
+    backgroundColor: "#008080",
+    borderRadius: 8,
+    color: "white",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
 });
 
 export default homeStyles;

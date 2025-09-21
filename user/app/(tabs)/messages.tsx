@@ -1,5 +1,6 @@
-import { View, Text, Image } from 'react-native'
+import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
+import { router } from 'expo-router'
 
 const messages = () => {
   return (
@@ -48,6 +49,22 @@ const messages = () => {
           Message Preview</Text>
       </View>
 
+    </View>
+
+    <View style={{backgroundColor: "#ff8c00", padding: 15, borderRadius: 10, marginVertical: 10}}>
+      <TouchableOpacity onPress={() => router.push("/rating")}>
+        <Text style={{color: "white", fontWeight: "bold"}}>
+          TEMPORARY RATING BUTTON
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    <View style={{backgroundColor: "#a20021", padding: 15, borderRadius: 10}}>
+      <TouchableOpacity onPress={() => router.push("/report")}>
+        <Text style={{color: "white", fontWeight: "bold"}}>
+          TEMPORARY REPORT BUTTON
+        </Text>
+      </TouchableOpacity>
     </View>
   </View>
   )

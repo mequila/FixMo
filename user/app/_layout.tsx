@@ -23,7 +23,7 @@ export default function RootLayout() {
         options={{ headerShown: false }} 
       />
       <Stack.Screen 
-        name="services" 
+        name="pages" 
         options={{ 
           headerShown: false
         }} 

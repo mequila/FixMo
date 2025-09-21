@@ -15,7 +15,6 @@ export default function BookingMaps() {
   return (
     <SafeAreaView style={[homeStyles.safeArea, styles.safeArea]}>
       <Stack.Screen
-        name="bookingmaps"
         options={{
           title: "Booking",
           headerTitle: "",

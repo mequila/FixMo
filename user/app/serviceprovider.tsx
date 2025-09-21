@@ -9,22 +9,22 @@ import {
   View, 
   ActivityIndicator,
   Alert,
-  RefreshControl 
+  RefreshControl,
+  StyleSheet 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { homeStyles } from "./components/homeStyles";
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
 interface ServiceProvider {
-  service_id: number;
-  service_title: string;
-  service_description: string;
-  service_startingprice: number;
-  provider_id: number;
-  servicelisting_isActive: boolean;
+  id: number;
+  title: string;
+  description: string;
+  startingPrice: number;
   service_picture?: string;
   provider: {
     provider_id: number;
@@ -44,16 +44,12 @@ interface ServiceProvider {
     category_id: number;
     category_name: string;
   }>;
-  certificates: Array<{
-    certificate_id: number;
-    certificate_name: string;
-    certificate_status: string;
-  }>;
-  specific_services: Array<{
+  specificServices: Array<{
     specific_service_id: number;
     specific_service_title: string;
     specific_service_description: string;
   }>;
+  availability: any;
 }
 
 const ServiceProvider = () => {
@@ -62,10 +58,38 @@ const ServiceProvider = () => {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  
+  // Date picker state
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+
+  // Initialize default date based on current time
+  const getDefaultDate = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // If it's past 3 PM (15:00), default to tomorrow
+    if (currentHour >= 15) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow;
+    }
+    
+    // Otherwise, default to today
+    return now;
+  };
 
   useEffect(() => {
-    fetchServiceProviders();
-  }, [serviceTitle]); // Remove category dependency
+    // Set default date on component mount
+    setSelectedDate(getDefaultDate());
+  }, []);
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchServiceProviders();
+    }
+  }, [serviceTitle, selectedDate]); // Add selectedDate dependency
 
   const fetchServiceProviders = async () => {
     try {
@@ -81,13 +105,26 @@ const ServiceProvider = () => {
         return;
       }
 
-      // Use the new by-title endpoint for exact title matching
-      const params = new URLSearchParams();
-      params.append('title', serviceTitle as string);
+      if (!selectedDate) {
+        console.log('❌ No date selected');
+        setProviders([]);
+        return;
+      }
 
-      const apiUrl = `${BACKEND_URL}/api/serviceProvider/services/by-title?${params.toString()}`;
+      // Format date for API call (YYYY-MM-DD)
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+
+      // Use the enhanced service listings endpoint with date filtering
+      const params = new URLSearchParams();
+      params.append('search', serviceTitle as string);
+      params.append('date', formattedDate);
+      params.append('page', '1');
+      params.append('limit', '50'); // Get more results to account for filtering
+
+      const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
       console.log('🔍 API Request URL:', apiUrl);
-      console.log('🔍 Searching for exact title:', serviceTitle);
+      console.log('🔍 Searching for service:', serviceTitle);
+      console.log('📅 For date:', formattedDate);
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -103,15 +140,38 @@ const ServiceProvider = () => {
         const result = await response.json();
         console.log('📦 API Response:', result);
         
-        // Use the new response structure from section 12
-        setProviders(result.data || []);
-        console.log(`✅ Found ${result.count || 0} providers for service: "${serviceTitle}"`);
+        // Use the correct response structure - listings instead of data
+        const serviceListings = result.listings || [];
+        console.log('🔍 Service listings array:', serviceListings);
+        console.log('🔍 Service listings length:', serviceListings.length);
         
-        if (result.data && result.data.length > 0) {
-          console.log('📋 Service providers found:');
-          result.data.forEach((service: ServiceProvider, index: number) => {
-            console.log(`  ${index + 1}. ${service.provider.provider_name} - "${service.service_title}" (₱${service.service_startingprice})`);
+        setProviders(serviceListings);
+        console.log(`✅ Found ${result.pagination?.totalCount || 0} providers for service: "${serviceTitle}" on ${formattedDate}`);
+        
+        if (serviceListings && serviceListings.length > 0) {
+          console.log('📋 Available service providers found:');
+          serviceListings.forEach((service: any, index: number) => {
+            console.log(`=== SERVICE ${index + 1} ===`);
+            console.log('Service ID:', service.id);
+            console.log('Service title:', service.title);
+            console.log('Service startingPrice:', service.startingPrice);
+            console.log('Provider exists?', !!service.provider);
+            
+            if (service.provider) {
+              console.log('Provider object keys:', Object.keys(service.provider));
+              console.log('Full provider object:', JSON.stringify(service.provider, null, 2));
+              console.log('Provider name field:', service.provider.provider_name);
+              console.log('Provider first name:', service.provider.provider_first_name);
+              console.log('Provider last name:', service.provider.provider_last_name);
+              console.log('Provider photo field:', service.provider.provider_profile_photo);
+              console.log('Provider rating:', service.provider.provider_rating);
+              console.log('Provider location:', service.provider.provider_location);
+            } else {
+              console.log('❌ No provider object found in service');
+            }
           });
+        } else {
+          console.log('❌ No service listings found or empty array');
         }
       } else {
         const errorText = await response.text();
@@ -130,6 +190,29 @@ const ServiceProvider = () => {
     setRefreshing(true);
     await fetchServiceProviders();
     setRefreshing(false);
+  };
+
+  // Date picker functions
+  const showDatePicker = () => {
+    setDatePickerVisible(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisible(false);
+  };
+
+  const handleDateConfirm = (date: Date) => {
+    setSelectedDate(date);
+    hideDatePicker();
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Select date";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const renderStars = (rating: number) => {
@@ -185,6 +268,26 @@ const ServiceProvider = () => {
               {serviceTitle ? `${serviceTitle} Providers` : "Service Providers"}
             </Text>
           </View>
+
+          {/* Date Picker Section */}
+          <View style={styles.datePickerContainer}>
+            <TouchableOpacity style={styles.datePickerBox} onPress={showDatePicker}>
+              <Text style={styles.datePickerLabel}>Schedule Date</Text>
+              <View style={styles.datePickerValue}>
+                <Text style={styles.datePickerText}>{formatDate(selectedDate)}</Text>
+                <Ionicons name="calendar-outline" size={20} color="#399d9d" style={{ marginLeft: 8 }} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Date Picker Modal */}
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode="date"
+            onConfirm={handleDateConfirm}
+            onCancel={hideDatePicker}
+            minimumDate={new Date()} // Prevent selecting past dates
+          />
         </SafeAreaView>
 
         {loading ? (
@@ -207,7 +310,7 @@ const ServiceProvider = () => {
         ) : (
           providers.map((provider) => (
             <TouchableOpacity 
-              key={provider.service_id} 
+              key={provider.id} 
               onPress={() => router.push('/bookingmaps')}
               style={{
                 marginHorizontal: 15, 
@@ -227,32 +330,83 @@ const ServiceProvider = () => {
                 elevation: 5,
               }}
             >
-              {provider.provider.provider_profile_photo ? (
-                <Image 
-                  source={{ 
-                    uri: provider.provider.provider_profile_photo.startsWith('http') 
-                      ? provider.provider.provider_profile_photo 
-                      : `${BACKEND_URL}/${provider.provider.provider_profile_photo}` 
-                  }} 
-                  style={{ 
-                    width: 80, 
-                    height: 80,
-                    borderRadius: 15
-                  }} 
-                  onError={() => console.log('Failed to load provider image:', provider.provider.provider_profile_photo)}
-                />
-              ) : (
-                <View style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 15,
-                  backgroundColor: '#f0f0f0',
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  <Ionicons name="person" size={40} color="#399d9d" />
-                </View>
-              )}
+              {(() => {
+                const providerData = provider.provider as any;
+                console.log(`🖼️ Image check for provider ${provider.id}:`);
+                console.log('  - Provider keys:', Object.keys(providerData || {}));
+                
+                // Check for photo in different possible fields
+                const photoFields = ['provider_profile_photo', 'profile_photo', 'photo', 'image', 'profilePhoto', 'avatar'];
+                let photoUrl = null;
+                
+                for (const field of photoFields) {
+                  if (providerData?.[field]) {
+                    photoUrl = providerData[field];
+                    console.log(`  - Found photo in field '${field}':`, photoUrl);
+                    break;
+                  }
+                }
+                
+                const hasPhoto = !!photoUrl;
+                const hasImageError = imageErrors.has(provider.id);
+                
+                console.log('  - Has photo?', hasPhoto);
+                console.log('  - Photo URL:', photoUrl);
+                console.log('  - Has image error?', hasImageError);
+                console.log('  - Backend URL:', BACKEND_URL);
+                
+                if (hasPhoto && !hasImageError) {
+                  let imageUri = '';
+                  
+                  if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+                    imageUri = photoUrl;
+                    console.log('  - Using full URL:', imageUri);
+                  } else if (photoUrl.startsWith('/')) {
+                    imageUri = `${BACKEND_URL}${photoUrl}`;
+                    console.log('  - Using backend URL (with slash):', imageUri);
+                  } else {
+                    imageUri = `${BACKEND_URL}/${photoUrl}`;
+                    console.log('  - Using backend URL (added slash):', imageUri);
+                  }
+                  
+                  return (
+                    <Image 
+                      source={{ uri: imageUri }} 
+                      style={{ 
+                        width: 80, 
+                        height: 80,
+                        borderRadius: 15
+                      }} 
+                      onError={(error) => {
+                        console.log('❌ Failed to load provider image:', photoUrl);
+                        console.log('❌ Final URI that failed:', imageUri);
+                        console.log('❌ Image error details:', error.nativeEvent?.error);
+                        setImageErrors(prev => new Set(prev.add(provider.id)));
+                      }}
+                      onLoad={() => {
+                        console.log('✅ Successfully loaded provider image:', imageUri);
+                      }}
+                      onLoadStart={() => {
+                        console.log('🔄 Started loading image:', imageUri);
+                      }}
+                    />
+                  );
+                } else {
+                  console.log('  - Showing fallback icon');
+                  return (
+                    <View style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 15,
+                      backgroundColor: '#f0f0f0',
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}>
+                      <Ionicons name="person" size={40} color="#399d9d" />
+                    </View>
+                  );
+                }
+              })()}
               
               <View style={{ marginLeft: 15, flex: 1 }}>
                 <Text style={{
@@ -261,7 +415,46 @@ const ServiceProvider = () => {
                   fontWeight: '600',
                   marginBottom: 5,
                 }}>
-                  {provider.provider.provider_name}
+                  {(() => {
+                    const prov = provider.provider as any;
+                    console.log(`👤 Provider name check for ID ${provider.id}:`);
+                    console.log('  - All provider keys:', Object.keys(prov || {}));
+                    console.log('  - provider_name:', prov?.provider_name);
+                    console.log('  - provider_first_name:', prov?.provider_first_name);
+                    console.log('  - provider_last_name:', prov?.provider_last_name);
+                    console.log('  - firstName:', prov?.firstName);
+                    console.log('  - lastName:', prov?.lastName);
+                    console.log('  - name:', prov?.name);
+                    console.log('  - fullName:', prov?.fullName);
+                    
+                    // Try different field combinations based on what we see in logs
+                    let name = '';
+                    
+                    if (prov?.provider_name) {
+                      name = prov.provider_name;
+                    } else if (prov?.name) {
+                      name = prov.name;
+                    } else if (prov?.fullName) {
+                      name = prov.fullName;
+                    } else if (prov?.provider_first_name || prov?.provider_last_name) {
+                      name = `${prov?.provider_first_name || ''} ${prov?.provider_last_name || ''}`.trim();
+                    } else if (prov?.firstName || prov?.lastName) {
+                      name = `${prov?.firstName || ''} ${prov?.lastName || ''}`.trim();
+                    } else {
+                      // If no standard name fields, look for any field that might contain the name
+                      const allValues = Object.values(prov || {});
+                      const possibleName = allValues.find(value => 
+                        typeof value === 'string' && 
+                        value.length > 2 && 
+                        value.length < 50 &&
+                        /^[a-zA-Z\s]+$/.test(value)
+                      );
+                      name = possibleName as string || 'Unknown Provider';
+                    }
+                    
+                    console.log('  - Final name used:', name);
+                    return name;
+                  })()}
                 </Text>
 
                 <Text style={{
@@ -270,32 +463,52 @@ const ServiceProvider = () => {
                   marginBottom: 5,
                   color: '#333'
                 }}>
-                  {provider.service_title}
+                  {provider.title}
                 </Text>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                  {renderStars(provider.provider.provider_rating)}
+                  {(() => {
+                    const prov = provider.provider as any;
+                    // Try different rating field names
+                    const rating = prov?.provider_rating || prov?.rating || prov?.averageRating || prov?.rate || 0;
+                    console.log(`⭐ Rating for provider ${provider.id}:`, rating);
+                    return renderStars(Number(rating));
+                  })()}
                   <Text style={{ marginLeft: 5, fontSize: 14, color: '#666' }}>
-                    ({provider.provider.provider_rating.toFixed(1)})
+                    ({(() => {
+                      const prov = provider.provider as any;
+                      const rating = prov?.provider_rating || prov?.rating || prov?.averageRating || prov?.rate || 0;
+                      return Number(rating).toFixed(1);
+                    })()})
                   </Text>
                 </View>
 
-                {provider.provider.provider_location && (
-                  <Text style={{
-                    fontSize: 14,
-                    color: '#666',
-                    marginBottom: 5,
-                  }}>
-                    📍 {provider.provider.provider_location}
-                  </Text>
-                )}
+                {(() => {
+                  const prov = provider.provider as any;
+                  // Try different location field names
+                  const location = prov?.provider_location || prov?.location || prov?.address || prov?.city;
+                  console.log(`📍 Location for provider ${provider.id}:`, location);
+                  
+                  if (location) {
+                    return (
+                      <Text style={{
+                        fontSize: 14,
+                        color: '#666',
+                        marginBottom: 5,
+                      }}>
+                        📍 {location}
+                      </Text>
+                    );
+                  }
+                  return null;
+                })()}
 
                 <Text style={{
                   fontSize: 18,
                   fontWeight: '600',
                   color: '#399d9d'
                 }}>
-                  Starting at ₱{provider.service_startingprice.toFixed(2)}
+                  Starting at ₱{Number(provider.startingPrice || 0).toFixed(2)}
                 </Text>
               </View>
 
@@ -307,5 +520,43 @@ const ServiceProvider = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  datePickerContainer: {
+    marginHorizontal: 15,
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  datePickerBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 15,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  datePickerLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 8,
+  },
+  datePickerValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  datePickerText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+});
 
 export default ServiceProvider;
