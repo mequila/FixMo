@@ -26,6 +26,8 @@ interface ServiceListing {
   title: string;
   description: string;
   startingPrice: number;
+  category_id?: number;
+  category_name?: string;
   service_photos?: Array<{
     id: number;
     imageUrl: string;
@@ -39,7 +41,7 @@ interface ServiceListing {
     location: string;
     profilePhoto?: string;
   };
-  categories: Array<{
+  categories?: Array<{
     category_id: number;
     category_name: string;
   }>;
@@ -80,11 +82,59 @@ interface Rating {
   };
 }
 
+interface CustomerProfile {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  profile_photo?: string;
+  user_location?: string;
+  exact_location?: string;
+}
+
+interface ProviderProfession {
+  id: number;
+  profession: string;
+  experience: string;
+}
+
+interface ProviderProfessionsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    provider_id: number;
+    provider_first_name: string;
+    provider_last_name: string;
+    professions: string[] | ProviderProfession[];
+    experiences?: string[];
+  };
+}
+
+interface ProviderRatingsResponse {
+  success: boolean;
+  data: {
+    ratings: Rating[];
+    totalRatings: number;
+    averageRating: number;
+    ratingDistribution: {
+      5: number;
+      4: number;
+      3: number;
+      2: number;
+      1: number;
+    };
+  };
+}
+
 export default function profile_serviceprovider() {
   const { serviceId, providerId, selectedDate } = useLocalSearchParams();
   const [serviceData, setServiceData] = useState<ServiceListing | null>(null);
   const [providerData, setProviderData] = useState<ProviderDetails | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [providerProfessions, setProviderProfessions] = useState<ProviderProfession[]>([]);
+  const [providerRating, setProviderRating] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
@@ -108,16 +158,18 @@ export default function profile_serviceprovider() {
   };
 
   useEffect(() => {
+    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate });
+    console.log('🔍 Provider ID type:', typeof providerId, 'Value:', providerId);
     fetchAllData();
-    fetchUserLocation();
+    fetchCustomerProfile();
   }, [serviceId, providerId]);
 
-  const fetchUserLocation = async () => {
+  const fetchCustomerProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${BACKEND_URL}/auth/profile`, {
+      const response = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,22 +178,34 @@ export default function profile_serviceprovider() {
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setUserLocation(userData.user_location || 'Location not set');
+        const result = await response.json();
+        if (result.success && result.data) {
+          setCustomerProfile(result.data);
+          setUserLocation(result.data.user_location || result.data.exact_location || 'Location not set');
+        }
       }
     } catch (error) {
-      console.error('Error fetching user location:', error);
+      console.error('Error fetching customer profile:', error);
     }
   };
 
   const fetchAllData = async () => {
     try {
-      // First fetch service details
-      await fetchServiceDetails();
-      // Then fetch provider details (which may depend on service data)
-      await fetchProviderDetails();
-      // Finally fetch ratings
-      await fetchProviderRatings();
+      // First fetch service details from specific service endpoint
+      const fetchedProviderId = await fetchServiceFromSpecificEndpoint();
+      
+      // Use the provider ID from URL params or from the fetched service data
+      const currentProviderId = providerId || fetchedProviderId;
+      
+      if (currentProviderId) {
+        console.log('🔍 Using provider ID:', currentProviderId);
+        // Then fetch provider professions
+        await fetchProviderProfessions(currentProviderId);
+        // Finally fetch ratings with statistics
+        await fetchProviderRatingsWithStats(currentProviderId);
+      } else {
+        console.log('⚠️ No provider ID available after service fetch');
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       Alert.alert('Error', 'Failed to load service provider details');
@@ -150,19 +214,15 @@ export default function profile_serviceprovider() {
     }
   };
 
-  const fetchServiceDetails = async () => {
+  const fetchServiceFromSpecificEndpoint = async (): Promise<number | null> => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token || !serviceId) return;
+      if (!token || !serviceId) return null;
 
       console.log('🔍 Fetching service details for ID:', serviceId);
 
-      // First try to get the specific service from the enhanced endpoint with search
-      const searchParams = new URLSearchParams();
-      searchParams.append('limit', '100'); // Get a large set to find our service
-      searchParams.append('page', '1');
-      
-      const response = await fetch(`${BACKEND_URL}/auth/service-listings?${searchParams.toString()}`, {
+      // First try to get from service listings endpoint (enhanced data)
+      const listingsResponse = await fetch(`${BACKEND_URL}/auth/service-listings`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -170,183 +230,229 @@ export default function profile_serviceprovider() {
         },
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('📦 Service listings response:', result);
-        
-        const service = result.listings?.find((s: any) => s.id === parseInt(serviceId as string));
+      if (listingsResponse.ok) {
+        const listingsResult = await listingsResponse.json();
+        const service = listingsResult.listings?.find((s: any) => s.id === parseInt(serviceId as string));
         
         if (service) {
-          setServiceData(service);
-          console.log('✅ Service data loaded:', service);
-          console.log('📸 Service photos:', service.service_photos?.length || 0);
-        } else {
-          console.log('❌ Service not found in listings');
-          // Try alternative endpoint if the service isn't found
-          await fetchServiceFromProvider();
-        }
-      } else {
-        console.error('❌ Failed to fetch service listings:', response.status);
-        await fetchServiceFromProvider();
-      }
-    } catch (error) {
-      console.error('❌ Error fetching service details:', error);
-      await fetchServiceFromProvider();
-    }
-  };
-
-  const fetchServiceFromProvider = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
-      // Fallback: Try to get service from provider services endpoint
-      console.log('🔄 Trying provider services endpoint as fallback');
-      
-      const response = await fetch(`${BACKEND_URL}/api/services/services`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        const service = result.data?.find((s: any) => s.service_id === parseInt(serviceId as string));
-        
-        if (service) {
-          // Transform provider service data to match ServiceListing interface
-          const transformedService = {
-            id: service.service_id,
-            title: service.service_title || service.service_name,
-            description: service.service_description || service.description,
-            startingPrice: service.service_startingprice || service.price,
-            service_photos: service.service_photos || [], // Will be empty for provider endpoint
+          // Transform and set service data with category information
+          const transformedService: ServiceListing = {
+            id: service.id,
+            title: service.title,
+            description: service.description,
+            startingPrice: service.startingPrice,
+            category_id: service.category_id,
+            category_name: service.category_name,
+            service_photos: service.service_photos || [],
             provider: {
-              id: service.provider_id,
-              name: 'Provider', // This endpoint may not have full provider details
-              userName: 'provider',
-              rating: 4.0, // Default rating
-              location: 'Location not specified',
-              profilePhoto: undefined
+              id: service.provider.id,
+              name: service.provider.name,
+              userName: service.provider.userName,
+              rating: service.provider.rating,
+              location: service.provider.location,
+              profilePhoto: service.provider.profilePhoto
             },
-            categories: service.category ? [{
+            categories: service.categories || (service.category_name ? [{
               category_id: service.category_id,
               category_name: service.category_name
-            }] : []
+            }] : [])
           };
           
           setServiceData(transformedService);
-          console.log('✅ Service data loaded from provider endpoint');
+          console.log('✅ Service data loaded from listings:', transformedService);
+          return service.provider.id;
+        }
+      }
+
+      // If not found in listings, try the specific service by title endpoint
+      // We'll need the service title first, so let's get it from provider services
+      const providerServicesResponse = await fetch(`${BACKEND_URL}/api/services/services`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (providerServicesResponse.ok) {
+        const providerResult = await providerServicesResponse.json();
+        const providerService = providerResult.data?.find((s: any) => s.service_id === parseInt(serviceId as string));
+        
+        if (providerService && providerService.service_title) {
+          // Now use the title to get enhanced data
+          const titleResponse = await fetch(`${BACKEND_URL}/api/serviceProvider/services/by-title?title=${encodeURIComponent(providerService.service_title)}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (titleResponse.ok) {
+            const titleResult = await titleResponse.json();
+            const enhancedService = titleResult.data?.find((s: any) => s.id === parseInt(serviceId as string));
+            
+            if (enhancedService) {
+              const transformedService: ServiceListing = {
+                id: enhancedService.id,
+                title: enhancedService.title,
+                description: enhancedService.description,
+                startingPrice: enhancedService.startingPrice,
+                category_id: enhancedService.category_id,
+                category_name: enhancedService.category_name,
+                service_photos: enhancedService.service_photos || [],
+                provider: {
+                  id: enhancedService.provider.id,
+                  name: enhancedService.provider.name,
+                  userName: enhancedService.provider.userName,
+                  rating: enhancedService.provider.rating,
+                  location: enhancedService.provider.location,
+                  profilePhoto: enhancedService.provider.profilePhoto
+                },
+                categories: enhancedService.categories || (enhancedService.category_name ? [{
+                  category_id: enhancedService.category_id,
+                  category_name: enhancedService.category_name
+                }] : [])
+              };
+              
+              setServiceData(transformedService);
+              console.log('✅ Service data loaded from by-title endpoint:', transformedService);
+              return enhancedService.provider.id;
+            }
+          }
+
+          // Fallback: use basic provider service data
+          const transformedService: ServiceListing = {
+            id: providerService.service_id,
+            title: providerService.service_title,
+            description: providerService.service_description,
+            startingPrice: providerService.service_startingprice,
+            category_id: providerService.category_id,
+            service_photos: providerService.service_photos || [],
+            provider: {
+              id: providerId ? parseInt(providerId as string) : 0,
+              name: 'Service Provider',
+              userName: 'provider',
+              rating: 0,
+              location: 'Location not specified',
+              profilePhoto: undefined
+            }
+          };
+          
+          setServiceData(transformedService);
+          console.log('✅ Service data loaded from provider services (fallback):', transformedService);
+          return transformedService.provider.id;
         }
       }
     } catch (error) {
-      console.error('❌ Error fetching from provider endpoint:', error);
+      console.error('❌ Error fetching service details:', error);
     }
+    
+    return null;
   };
 
-  const fetchProviderDetails = async () => {
+  const fetchProviderProfessions = async (currentProviderId?: string | number | string[]) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token || !providerId) return;
-
-      console.log('🔍 Fetching provider details for ID:', providerId);
-
-      // Try to get detailed provider information
-      // First check if we can get provider info from service listings (which includes profession data)
-      if (serviceData?.provider) {
-        // Extract provider data from service data
-        const provider = serviceData.provider;
-        const detailedProvider: ProviderDetails = {
-          provider_id: provider.id,
-          provider_first_name: provider.name?.split(' ')[0] || '',
-          provider_last_name: provider.name?.split(' ').slice(1).join(' ') || '',
-          provider_name: provider.name,
-          provider_email: '', // Not available in listings
-          provider_phone_number: '', // Not available in listings
-          provider_profile_photo: provider.profilePhoto,
-          provider_rating: provider.rating,
-          provider_location: provider.location,
-          provider_exact_location: provider.location,
-          provider_isVerified: true, // Assume verified if in listings
-          provider_member_since: new Date().toISOString(), // Default to current date
-          professions: serviceData.categories?.map((cat, index) => ({
-            id: cat.category_id,
-            profession: cat.category_name,
-            experience: 'Experience not specified' // Default as API might not have this
-          }))
-        };
-        
-        setProviderData(detailedProvider);
-        console.log('✅ Provider data extracted from service listing:', detailedProvider);
+      const providerIdToUse = currentProviderId || providerId;
+      
+      if (!providerIdToUse) {
+        console.log('ℹ️ No provider ID available for fetching professions');
         return;
       }
 
-      // Fallback: try appointments endpoint to get provider details
-      try {
-        const appointmentsResponse = await fetch(`${BACKEND_URL}/api/appointments/provider/${providerId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      console.log('🔍 Fetching provider professions for ID:', providerIdToUse);
 
-        if (appointmentsResponse.ok) {
-          const appointmentsResult = await appointmentsResponse.json();
-          if (appointmentsResult.appointments && appointmentsResult.appointments.length > 0) {
-            const appointment = appointmentsResult.appointments[0];
-            if (appointment.serviceProvider) {
-              const sp = appointment.serviceProvider;
-              const detailedProvider: ProviderDetails = {
-                provider_id: sp.provider_id,
-                provider_first_name: sp.provider_first_name,
-                provider_last_name: sp.provider_last_name,
-                provider_name: `${sp.provider_first_name} ${sp.provider_last_name}`,
-                provider_email: sp.provider_email,
-                provider_phone_number: sp.provider_phone_number,
-                provider_profile_photo: sp.provider_profile_photo,
-                provider_rating: sp.provider_rating,
-                provider_location: sp.provider_location,
-                provider_exact_location: sp.provider_exact_location,
-                provider_isVerified: sp.provider_isVerified,
-                provider_member_since: sp.created_at,
-                professions: [] // Will be empty from this endpoint
-              };
-              
-              setProviderData(detailedProvider);
-              console.log('✅ Provider data loaded from appointments:', detailedProvider);
-              return;
+      // This is a public endpoint according to the documentation
+      const response = await fetch(`${BACKEND_URL}/api/serviceProvider/professions/${providerIdToUse}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📦 Provider professions response:', result);
+        
+        if (result.success && result.data) {
+          let professionsData: ProviderProfession[] = [];
+          
+          // Handle different response structures
+          if (result.data.professions) {
+            if (Array.isArray(result.data.professions)) {
+              // Check if it's an array of objects or strings
+              if (typeof result.data.professions[0] === 'object') {
+                // Array of objects with id, profession, experience
+                professionsData = result.data.professions;
+              } else {
+                // Array of strings, need to combine with experiences
+                const professions = result.data.professions;
+                const experiences = result.data.experiences || [];
+                
+                professionsData = professions.map((profession: string, index: number) => ({
+                  id: index + 1,
+                  profession: profession,
+                  experience: experiences[index] || 'Experience not specified'
+                }));
+              }
             }
           }
+          
+          setProviderProfessions(professionsData);
+          console.log('✅ Provider professions loaded:', professionsData);
+        } else {
+          console.log('ℹ️ No professions found for provider');
+          setProviderProfessions([]);
         }
-      } catch (error) {
-        console.log('ℹ️ No appointment data available for provider details');
+      } else if (response.status === 404) {
+        console.log('ℹ️ Provider professions endpoint not found (404) - provider may not have professions data');
+        setProviderProfessions([]);
+        
+        // Try to fallback to service category as profession
+        if (serviceData?.category_name) {
+          const fallbackProfession: ProviderProfession = {
+            id: 1,
+            profession: serviceData.category_name,
+            experience: 'Experience information not available'
+          };
+          setProviderProfessions([fallbackProfession]);
+          console.log('✅ Using service category as fallback profession:', fallbackProfession);
+        }
+      } else {
+        console.log('ℹ️ Provider professions endpoint returned:', response.status);
+        setProviderProfessions([]);
       }
-
-      console.log('ℹ️ Using basic provider info from service data');
-      
     } catch (error) {
-      console.error('❌ Error fetching provider details:', error);
+      console.error('❌ Error fetching provider professions:', error);
+      setProviderProfessions([]);
+      
+      // Fallback to service category if available
+      if (serviceData?.category_name) {
+        const fallbackProfession: ProviderProfession = {
+          id: 1,
+          profession: serviceData.category_name,
+          experience: 'Experience information not available'
+        };
+        setProviderProfessions([fallbackProfession]);
+        console.log('✅ Using service category as fallback profession after error:', fallbackProfession);
+      }
     }
   };
 
-  const fetchProviderRatings = async () => {
+  const fetchProviderRatingsWithStats = async (currentProviderId?: string | number | string[]) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!providerId) {
+      const providerIdToUse = currentProviderId || providerId;
+      
+      if (!providerIdToUse) {
         console.log('ℹ️ No provider ID available for fetching ratings');
         return;
       }
 
-      console.log('🔍 Fetching ratings for provider ID:', providerId);
+      console.log('🔍 Fetching ratings for provider ID:', providerIdToUse);
 
-      // This is a public endpoint, but we'll include token for consistency
-      const response = await fetch(`${BACKEND_URL}/api/ratings/provider/${providerId}`, {
+      // This is a public endpoint according to the documentation
+      const response = await fetch(`${BACKEND_URL}/api/ratings/provider/${providerIdToUse}`, {
         method: 'GET',
         headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` }),
           'Content-Type': 'application/json',
         },
       });
@@ -355,17 +461,24 @@ export default function profile_serviceprovider() {
         const result = await response.json();
         console.log('📦 Ratings response:', result);
         
-        // Handle different possible response structures
+        // Handle the response structure from the ratings endpoint
         let ratingsData = [];
+        let averageRating = 0;
         
-        if (result.ratings) {
+        if (result.success && result.data) {
+          ratingsData = result.data.ratings || [];
+          averageRating = result.data.averageRating || 0;
+        } else if (result.ratings) {
           ratingsData = result.ratings;
-        } else if (result.data) {
-          ratingsData = result.data;
+          // Calculate average if not provided
+          averageRating = ratingsData.length > 0 
+            ? ratingsData.reduce((sum: number, r: any) => sum + (r.rating_value || 5), 0) / ratingsData.length 
+            : 0;
         } else if (Array.isArray(result)) {
           ratingsData = result;
-        } else {
-          console.log('ℹ️ No ratings found in response');
+          averageRating = ratingsData.length > 0 
+            ? ratingsData.reduce((sum: number, r: any) => sum + (r.rating_value || 5), 0) / ratingsData.length 
+            : 0;
         }
 
         // Transform ratings data to match our interface
@@ -385,22 +498,36 @@ export default function profile_serviceprovider() {
         }));
 
         setRatings(transformedRatings);
-        console.log('✅ Ratings loaded:', transformedRatings.length, 'reviews');
+        setProviderRating(averageRating);
+        
+        // Update service data with correct rating
+        if (serviceData) {
+          setServiceData({
+            ...serviceData,
+            provider: {
+              ...serviceData.provider,
+              rating: averageRating
+            }
+          });
+        }
+        
+        console.log('✅ Ratings loaded:', transformedRatings.length, 'reviews, average:', averageRating);
       } else {
         console.log('ℹ️ No ratings available or endpoint returned:', response.status);
-        // Set empty ratings array instead of erroring
         setRatings([]);
+        setProviderRating(0);
       }
     } catch (error) {
       console.error('❌ Error fetching ratings:', error);
-      // Set empty ratings array on error
       setRatings([]);
+      setProviderRating(0);
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchAllData();
+    await fetchCustomerProfile();
     setRefreshing(false);
   };
 
@@ -443,10 +570,38 @@ export default function profile_serviceprovider() {
   };
 
   const getProviderProfession = () => {
-    if (!serviceData?.categories || serviceData.categories.length === 0) {
-      return 'Service Provider';
+    // First try to get from fetched provider professions
+    if (providerProfessions && providerProfessions.length > 0) {
+      return providerProfessions.map(prof => prof.profession).join(', ');
     }
-    return serviceData.categories.map(cat => cat.category_name).join(', ');
+    
+    // Fallback to service category if available
+    if (serviceData?.category_name) {
+      return serviceData.category_name;
+    }
+    
+    if (serviceData?.categories && serviceData.categories.length > 0) {
+      return serviceData.categories.map(cat => cat.category_name).join(', ');
+    }
+    
+    return 'Service Provider';
+  };
+
+  const getProviderExperience = () => {
+    if (providerProfessions && providerProfessions.length > 0) {
+      return providerProfessions.map(prof => `${prof.profession}: ${prof.experience}`).join(' | ');
+    }
+    return 'Experience information not available';
+  };
+
+  const getCategoryDisplay = () => {
+    if (serviceData?.category_name) {
+      return serviceData.category_name;
+    }
+    if (serviceData?.categories && serviceData.categories.length > 0) {
+      return serviceData.categories.map(cat => cat.category_name).join(', ');
+    }
+    return 'General Service';
   };
 
   if (loading) {
@@ -601,14 +756,14 @@ export default function profile_serviceprovider() {
                 </Text>
 
                 <Text style={homeStyles.providerText}>
-                  {getProviderProfession()}
+                  {getCategoryDisplay()}
                 </Text>
               </View>
 
               <View style={{ flexDirection: "row" }}>
                 <Ionicons name="star" size={16} color={"#FFD700"} />
                 <Text style={{ marginLeft: 4 }}>
-                  {serviceData.provider.rating.toFixed(1)} ({ratings.length} reviews)
+                  {(providerRating || serviceData?.provider.rating || 0).toFixed(1)} ({ratings.length} reviews)
                 </Text>
               </View>
             </View>
@@ -644,7 +799,7 @@ export default function profile_serviceprovider() {
                     Address:
                   </Text>
                   <Text style={{color: "gray", fontWeight: 500}}>
-                    {userLocation}
+                    {customerProfile?.user_location || customerProfile?.exact_location || userLocation || 'Address not set'}
                   </Text>
                 </View>
 
@@ -723,16 +878,31 @@ export default function profile_serviceprovider() {
               }}
             />
 
-            {/* Provider Location */}
+            {/* Provider Profession and Experience */}
             <View style={{ marginBottom: 15 }}>
-              <View style={{ flexDirection: "row" }}>
-                <Text style={{ fontSize: 16, fontWeight: 500 }}>
-                  Location:
+              <View style={{ marginBottom: 10 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                  Profession:
                 </Text>
-                <Text style={{ marginLeft: 8, fontSize: 14, color: "#666" }}>
-                  {serviceData.provider.location || 'Location not specified'}
+                <Text style={{ fontSize: 14, color: "#666", lineHeight: 20 }}>
+                  {getProviderProfession()}
                 </Text>
               </View>
+              
+              {providerProfessions && providerProfessions.length > 0 && (
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                    Experience:
+                  </Text>
+                  {providerProfessions.map((prof, index) => (
+                    <View key={prof.id} style={{ marginBottom: 5 }}>
+                      <Text style={{ fontSize: 14, color: "#666", lineHeight: 20 }}>
+                        <Text style={{ fontWeight: '500' }}>{prof.profession}:</Text> {prof.experience}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View
