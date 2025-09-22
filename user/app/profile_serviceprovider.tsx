@@ -128,7 +128,7 @@ interface ProviderRatingsResponse {
 }
 
 export default function profile_serviceprovider() {
-  const { serviceId, providerId, selectedDate } = useLocalSearchParams();
+  const { serviceId, providerId, selectedDate, category } = useLocalSearchParams();
   const [serviceData, setServiceData] = useState<ServiceListing | null>(null);
   const [providerData, setProviderData] = useState<ProviderDetails | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -158,11 +158,12 @@ export default function profile_serviceprovider() {
   };
 
   useEffect(() => {
-    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate });
+    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate, category });
     console.log('🔍 Provider ID type:', typeof providerId, 'Value:', providerId);
+    console.log('🏷️ Category from navigation:', category);
     fetchAllData();
     fetchCustomerProfile();
-  }, [serviceId, providerId]);
+  }, [serviceId, providerId, category]);
 
   const fetchCustomerProfile = async () => {
     try {
@@ -575,13 +576,19 @@ export default function profile_serviceprovider() {
       return providerProfessions.map(prof => prof.profession).join(', ');
     }
     
-    // Fallback to service category if available
+    // Second priority: use category parameter from navigation
+    if (category && typeof category === 'string') {
+      console.log('✅ Using navigation category as profession fallback:', category);
+      return capitalizeCategory(category);
+    }
+    
+    // Third priority: fallback to service category if available
     if (serviceData?.category_name) {
-      return serviceData.category_name;
+      return capitalizeCategory(serviceData.category_name);
     }
     
     if (serviceData?.categories && serviceData.categories.length > 0) {
-      return serviceData.categories.map(cat => cat.category_name).join(', ');
+      return serviceData.categories.map(cat => capitalizeCategory(cat.category_name)).join(', ');
     }
     
     return 'Service Provider';
@@ -594,13 +601,35 @@ export default function profile_serviceprovider() {
     return 'Experience information not available';
   };
 
+  // Helper function to capitalize category names properly
+  const capitalizeCategory = (categoryName: string): string => {
+    return categoryName
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() + ' Service')
+      .join(' ');
+  };
+
   const getCategoryDisplay = () => {
+    // First priority: use category parameter passed from navigation
+    if (category && typeof category === 'string') {
+      console.log('✅ Using category from navigation:', category);
+      return capitalizeCategory(category);
+    }
+    
+    // Second priority: use serviceData category_name
     if (serviceData?.category_name) {
-      return serviceData.category_name;
+      console.log('✅ Using category from service data:', serviceData.category_name);
+      return capitalizeCategory(serviceData.category_name);
     }
+    
+    // Third priority: use serviceData categories array
     if (serviceData?.categories && serviceData.categories.length > 0) {
-      return serviceData.categories.map(cat => cat.category_name).join(', ');
+      const categoryNames = serviceData.categories.map(cat => capitalizeCategory(cat.category_name)).join(', ');
+      console.log('✅ Using categories from service data array:', categoryNames);
+      return categoryNames;
     }
+    
+    console.log('ℹ️ Using fallback: General Service');
     return 'General Service';
   };
 

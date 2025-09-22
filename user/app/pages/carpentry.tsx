@@ -1,7 +1,7 @@
 import { View, ScrollView, TouchableOpacity, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { homeStyles } from "../components/homeStyles";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
@@ -19,6 +19,10 @@ const CarpentryServiceCardDetails = [
 
 const Carpentry = () => {
   const router = useRouter();
+  const { category } = useLocalSearchParams();
+  
+  // Use the category parameter from navigation, fallback to 'Carpentry'
+  const serviceCategory = category || 'Carpentry';
 
   return (
     <View style={{ flex: 1 }}>
@@ -29,7 +33,7 @@ const Carpentry = () => {
             title={carpentry.title}
             description={carpentry.description}
             onPress={() => router.push({pathname: '/serviceprovider',
-              params: { serviceTitle: carpentry.title, category: 'carpentry'}})
+              params: { serviceTitle: carpentry.title, category: serviceCategory}})
               
             }
           />

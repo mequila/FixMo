@@ -54,7 +54,7 @@ interface ServiceProvider {
 
 const ServiceProvider = () => {
   const router = useRouter();
-  const { serviceTitle } = useLocalSearchParams(); // Remove category since we're only using serviceTitle
+  const { serviceTitle, category } = useLocalSearchParams(); // Add category parameter
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,10 +86,11 @@ const ServiceProvider = () => {
   }, []);
 
   useEffect(() => {
+    console.log('📋 Service search params:', { serviceTitle, category });
     if (selectedDate) {
       fetchServiceProviders();
     }
-  }, [serviceTitle, selectedDate]); // Add selectedDate dependency
+  }, [serviceTitle, category, selectedDate]); // Add category dependency
 
   // Format date for API call (YYYY-MM-DD) using local time
   const formatDateForAPI = (date: Date) => {
@@ -125,7 +126,7 @@ const ServiceProvider = () => {
       console.log('📅 Selected date local string:', selectedDate.toDateString());
       console.log('📅 Formatted date for API:', formattedDate);
 
-      // Use the enhanced service listings endpoint with date filtering
+      // Use the enhanced service listings endpoint with date filtering only
       const params = new URLSearchParams();
       params.append('search', serviceTitle as string);
       params.append('date', formattedDate);
@@ -135,6 +136,7 @@ const ServiceProvider = () => {
       const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
       console.log('🔍 API Request URL:', apiUrl);
       console.log('🔍 Searching for service:', serviceTitle);
+      console.log('🏷️ Category (for display only):', category || 'None');
       console.log('📅 For date:', formattedDate);
 
       const response = await fetch(apiUrl, {
@@ -327,7 +329,8 @@ const ServiceProvider = () => {
                 params: {
                   serviceId: provider.id,
                   providerId: provider.provider?.provider_id,
-                  selectedDate: selectedDate ? formatDateForAPI(selectedDate) : ''
+                  selectedDate: selectedDate ? formatDateForAPI(selectedDate) : '',
+                  category: category // Pass the category parameter
                 }
               })}
               style={styles.providerCard}

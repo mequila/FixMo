@@ -14,10 +14,20 @@ interface ServiceIconProps {
 const ServiceIcon: React.FC<ServiceIconProps> = ({ label, source, route, containerStyle, textStyle }) => {
   const router = useRouter();
 
+  const handlePress = () => {
+    if (route) {
+      // Pass the label as category parameter when navigating
+      router.push({
+        pathname: route,
+        params: { category: label }
+      });
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[ homeStyles.iconGrid, containerStyle]}
-      onPress={() => route && router.push(route)}
+      onPress={handlePress}
     >
       <View style={homeStyles.iconBackground}>
         <Image source={source} style={homeStyles.icons} resizeMode="contain" />
