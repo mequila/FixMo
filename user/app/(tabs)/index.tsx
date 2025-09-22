@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";  
 import { homeStyles } from "../components/homeStyles";
-import SearchBar from "../components/searchbar";
 import ServiceIcon from "../components/index/ServiceIcon";
 
   
@@ -31,7 +30,7 @@ export default function Index() {
   const router = useRouter();
 
   return (
-    <View>
+    <View style={{ flex: 1, backgroundColor: "#fff" }} >
       <ScrollView 
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
@@ -58,12 +57,29 @@ export default function Index() {
         </View>
       </SafeAreaView>
 
-
-
       <View>
         <TouchableOpacity onPress={() => router.push("/search")}>
-          <SearchBar/>
+           <View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#e7ecec",
+                  borderWidth: 1,
+                  borderColor: "#b2d7d7",
+                  borderRadius: 199,
+                  paddingHorizontal: 20,
+                  marginHorizontal: 20,
+                  paddingVertical: 15,
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ color: "gray", fontSize: 16 }}>Search</Text>
+                <Ionicons name="search" size={25} color={"#008080"} />
+              </View>
+           </View>
         </TouchableOpacity>
+    
       </View>
 
       <View style={{ marginTop: 25, marginHorizontal: 20, marginBottom: 10 }}>
@@ -165,7 +181,7 @@ export default function Index() {
             </Text>
           </TouchableOpacity>
 
-                    <TouchableOpacity>
+          <TouchableOpacity>
             <Text style={homeStyles.serviceBorder}>
               Repairing
             </Text>

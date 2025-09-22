@@ -1,4 +1,30 @@
 import { Stack } from "expo-router";
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+const Header = () => {
+  return (
+    <View
+      style={{
+        backgroundColor: "#e7ecec",
+        borderBottomWidth: 1,
+        borderBottomColor: "#ccc",
+        padding: 10,
+        alignItems: "center",
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <TouchableOpacity style={{ marginRight: 10 }}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
+          Header Title
+        </Text>
+      </View>
+    </View>
+  );
+};
 
 export default function RootLayout() {
   return (
@@ -17,7 +43,7 @@ export default function RootLayout() {
       <Stack.Screen
         name="serviceprovider"
         options={{
-          title: "Service Provider",
+          title: "",
           headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },
@@ -50,13 +76,13 @@ export default function RootLayout() {
           headerStyle: { backgroundColor: "transparent" },
         }}
       />
-      <Stack.Screen
+     <Stack.Screen
         name="book_schedule"
         options={{
-          title: "Select Schedule",
-          headerTintColor: "#008080",
-          headerTitleStyle: { color: "black", fontSize: 20 },
-          headerStyle: { backgroundColor: "#e7ecec" },
+          title: "",
+          headerTransparent: true,
+          headerTintColor: "transparent",
+          headerStyle: { backgroundColor: "transparent" },
         }}
       />
       <Stack.Screen
@@ -68,10 +94,27 @@ export default function RootLayout() {
           headerStyle: { backgroundColor: "#e7ecec" },
         }}
       />
-       <Stack.Screen
+      <Stack.Screen
         name="report"
         options={{
           title: "",
+          headerTintColor: "#008080",
+          headerTitleStyle: { color: "black", fontSize: 20 },
+          headerStyle: { backgroundColor: "#e7ecec" },
+        }}
+      />
+      <Stack.Screen
+        name="search"
+        options={{
+          title: "",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="directMessage"
+        options={{
+          title: "",
+          headerShown: false,
           headerTintColor: "#008080",
           headerTitleStyle: { color: "black", fontSize: 20 },
           headerStyle: { backgroundColor: "#e7ecec" },

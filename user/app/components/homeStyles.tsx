@@ -4,7 +4,38 @@ export const homeStyles = StyleSheet.create({
   safeArea: {
     marginBottom: 20,
     backgroundColor: "#e7ecec",
-    borderBottomColor: "#008080",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  safeAreaTabs: { //tabs header safe area 
+    backgroundColor: "#e7ecec",
+    paddingTop: 28,
+    paddingBottom: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  headerTabsText: { //tabs header text
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#008080",
+  },
+  safeAreaHeader: { // ibang routing header safe area 
+    backgroundColor: "#e7ecec",
+    paddingTop: 28,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  headerText: { // ibang routing header text
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
   },
   header: {
     paddingTop: 5,
@@ -73,14 +104,14 @@ export const homeStyles = StyleSheet.create({
     borderRadius: 15,
     elevation: 5,
   },
-  bookings: {
+  bookingsTabDetails: { //bookings tab design
     backgroundColor: "#cceded",
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#b2d7d7",
-    padding: 18,
-    marginVertical: 10,
-    marginHorizontal: 20,
+    padding: 16,
+    marginBottom: 10,
+    marginHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -179,6 +210,11 @@ export const homeStyles = StyleSheet.create({
   providerTextContainer: {
     padding: 16,
     backgroundColor: "#fff",
+  },
+  messagesContainer: { // message container and background
+    flexDirection: "row", 
+    alignItems: "center",
+    marginVertical: 8,
   },
 });
 

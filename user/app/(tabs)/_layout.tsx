@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { useNavigation } from 'expo-router'
 import React from 'react'
-import { TouchableOpacity } from 'react-native'
+import { TouchableOpacity, Text, View } from 'react-native'
 
 const _layout = () => {
   const navigation = useNavigation();
@@ -33,58 +33,40 @@ const _layout = () => {
             }}
 
         />
-    
-     <Tabs.Screen name="bookings"
+        <Tabs.Screen name="bookings"
             options={{ 
                 title: 'Bookings',
                 tabBarLabel: '',
-                headerShown: true,
+                headerShown: false,
                 headerStyle: { backgroundColor: "#e7ecec" },
                 headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='bookmark' size={25} color={color}/>
-                )   
+                )    
             }}
         />
-
-         <Tabs.Screen name="schedule"
-            options={{ 
-                title: 'Schedule',
-                tabBarLabel: '',
-                headerShown: true, 
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
-                tabBarIcon: ({color, size}) => (
-                    <Ionicons name='calendar' size={25} color={color}/>
-                )   
-            }}
-        />
-
-         <Tabs.Screen name="messages"
+        <Tabs.Screen name="messages"
             options={{ 
                 title: 'Messages',
                 tabBarLabel: '',
-                headerShown: true,
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
+                headerShown: false,
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='mail' size={25} color={color}/>
                 )   
             }}
         />
 
-         <Tabs.Screen name="profile"
+        <Tabs.Screen name="profile"
             options={{ 
                 title: 'Profile',
                 tabBarLabel: '',
-                headerShown: true,
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
+                headerShown: false,
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='person' size={25} color={color}/>
                 )    
             }}
         />
+
     </Tabs>
   )
 }
