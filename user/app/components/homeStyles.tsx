@@ -142,6 +142,15 @@ export const homeStyles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
+    providerText: { // type of service provider text
+    color: "#008080",
+    fontWeight: "bold",
+    fontSize: 20,
+  },
+  providerTextContainer: {
+    padding: 16,
+    backgroundColor: "#fff",
+  },
 });
 
 export default homeStyles;

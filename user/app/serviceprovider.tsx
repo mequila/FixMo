@@ -91,6 +91,14 @@ const ServiceProvider = () => {
     }
   }, [serviceTitle, selectedDate]); // Add selectedDate dependency
 
+  // Format date for API call (YYYY-MM-DD) using local time
+  const formatDateForAPI = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const fetchServiceProviders = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -111,8 +119,11 @@ const ServiceProvider = () => {
         return;
       }
 
-      // Format date for API call (YYYY-MM-DD)
-      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const formattedDate = formatDateForAPI(selectedDate);
+      
+      console.log('📅 Selected date object:', selectedDate);
+      console.log('📅 Selected date local string:', selectedDate.toDateString());
+      console.log('📅 Formatted date for API:', formattedDate);
 
       // Use the enhanced service listings endpoint with date filtering
       const params = new URLSearchParams();
@@ -311,24 +322,15 @@ const ServiceProvider = () => {
           providers.map((provider) => (
             <TouchableOpacity 
               key={provider.id} 
-              onPress={() => router.push('/bookingmaps')}
-              style={{
-                marginHorizontal: 15, 
-                marginTop: 15,
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#ffffff",
-                borderRadius: 15, 
-                padding: 15,
-                shadowColor: "#000",
-                shadowOffset: {
-                  width: 0,
-                  height: 2,
-                },
-                shadowOpacity: 0.1,
-                shadowRadius: 3.84,
-                elevation: 5,
-              }}
+              onPress={() => router.push({
+                pathname: '/profile_serviceprovider',
+                params: {
+                  serviceId: provider.id,
+                  providerId: provider.provider?.provider_id,
+                  selectedDate: selectedDate ? formatDateForAPI(selectedDate) : ''
+                }
+              })}
+              style={styles.providerCard}
             >
               {(() => {
                 const providerData = provider.provider as any;
@@ -372,11 +374,7 @@ const ServiceProvider = () => {
                   return (
                     <Image 
                       source={{ uri: imageUri }} 
-                      style={{ 
-                        width: 80, 
-                        height: 80,
-                        borderRadius: 15
-                      }} 
+                      style={styles.providerImage}
                       onError={(error) => {
                         console.log('❌ Failed to load provider image:', photoUrl);
                         console.log('❌ Final URI that failed:', imageUri);
@@ -392,127 +390,74 @@ const ServiceProvider = () => {
                     />
                   );
                 } else {
-                  console.log('  - Showing fallback icon');
+                  console.log('  - Showing fallback icon or default image');
                   return (
-                    <View style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 15,
-                      backgroundColor: '#f0f0f0',
-                      justifyContent: 'center',
-                      alignItems: 'center'
-                    }}>
-                      <Ionicons name="person" size={40} color="#399d9d" />
-                    </View>
+                    <Image
+                      source={require("../assets/images/service-provider.jpg")}
+                      style={styles.providerImage}
+                    />
                   );
                 }
               })()}
               
-              <View style={{ marginLeft: 15, flex: 1 }}>
-                <Text style={{
-                  color: "#399d9d",
-                  fontSize: 16,
-                  fontWeight: '600',
-                  marginBottom: 5,
-                }}>
-                  {(() => {
-                    const prov = provider.provider as any;
-                    console.log(`👤 Provider name check for ID ${provider.id}:`);
-                    console.log('  - All provider keys:', Object.keys(prov || {}));
-                    console.log('  - provider_name:', prov?.provider_name);
-                    console.log('  - provider_first_name:', prov?.provider_first_name);
-                    console.log('  - provider_last_name:', prov?.provider_last_name);
-                    console.log('  - firstName:', prov?.firstName);
-                    console.log('  - lastName:', prov?.lastName);
-                    console.log('  - name:', prov?.name);
-                    console.log('  - fullName:', prov?.fullName);
-                    
-                    // Try different field combinations based on what we see in logs
-                    let name = '';
-                    
-                    if (prov?.provider_name) {
-                      name = prov.provider_name;
-                    } else if (prov?.name) {
-                      name = prov.name;
-                    } else if (prov?.fullName) {
-                      name = prov.fullName;
-                    } else if (prov?.provider_first_name || prov?.provider_last_name) {
-                      name = `${prov?.provider_first_name || ''} ${prov?.provider_last_name || ''}`.trim();
-                    } else if (prov?.firstName || prov?.lastName) {
-                      name = `${prov?.firstName || ''} ${prov?.lastName || ''}`.trim();
-                    } else {
-                      // If no standard name fields, look for any field that might contain the name
-                      const allValues = Object.values(prov || {});
-                      const possibleName = allValues.find(value => 
-                        typeof value === 'string' && 
-                        value.length > 2 && 
-                        value.length < 50 &&
-                        /^[a-zA-Z\s]+$/.test(value)
-                      );
-                      name = possibleName as string || 'Unknown Provider';
-                    }
-                    
-                    console.log('  - Final name used:', name);
-                    return name;
-                  })()}
-                </Text>
-
-                <Text style={{
-                  fontSize: 18,
-                  fontWeight: '600',
-                  marginBottom: 5,
-                  color: '#333'
-                }}>
+              <View style={styles.providerInfo}>
+                <View style={styles.providerHeader}>
+                  <Text style={styles.providerName}>
+                    {(() => {
+                      const prov = provider.provider as any;
+                      
+                      // Try different field combinations based on what we see in logs
+                      let name = '';
+                      
+                      if (prov?.provider_name) {
+                        name = prov.provider_name;
+                      } else if (prov?.name) {
+                        name = prov.name;
+                      } else if (prov?.fullName) {
+                        name = prov.fullName;
+                      } else if (prov?.provider_first_name || prov?.provider_last_name) {
+                        name = `${prov?.provider_first_name || ''} ${prov?.provider_last_name || ''}`.trim();
+                      } else if (prov?.firstName || prov?.lastName) {
+                        name = `${prov?.firstName || ''} ${prov?.lastName || ''}`.trim();
+                      } else {
+                        // If no standard name fields, look for any field that might contain the name
+                        const allValues = Object.values(prov || {});
+                        const possibleName = allValues.find(value => 
+                          typeof value === 'string' && 
+                          value.length > 2 && 
+                          value.length < 50 &&
+                          /^[a-zA-Z\s]+$/.test(value)
+                        );
+                        name = possibleName as string || 'Unknown Provider';
+                      }
+                      
+                      console.log('  - Final name used:', name);
+                      return name;
+                    })()}
+                  </Text>
+                  <View style={styles.ratingContainer}>
+                    <Ionicons name="star" size={16} color="#FFD700" />
+                    <Text style={styles.ratingText}>
+                      {(() => {
+                        const prov = provider.provider as any;
+                        const rating = prov?.provider_rating || prov?.rating || prov?.averageRating || prov?.rate || 0;
+                        console.log(`⭐ Rating for provider ${provider.id}:`, rating);
+                        return Number(rating).toFixed(1);
+                      })()}
+                    </Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.serviceTitle}>
                   {provider.title}
                 </Text>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                  {(() => {
-                    const prov = provider.provider as any;
-                    // Try different rating field names
-                    const rating = prov?.provider_rating || prov?.rating || prov?.averageRating || prov?.rate || 0;
-                    console.log(`⭐ Rating for provider ${provider.id}:`, rating);
-                    return renderStars(Number(rating));
-                  })()}
-                  <Text style={{ marginLeft: 5, fontSize: 14, color: '#666' }}>
-                    ({(() => {
-                      const prov = provider.provider as any;
-                      const rating = prov?.provider_rating || prov?.rating || prov?.averageRating || prov?.rate || 0;
-                      return Number(rating).toFixed(1);
-                    })()})
+                
+                <View style={styles.priceContainer}>
+                  <Text style={styles.priceText}>
+                    ₱{Number(provider.startingPrice || 0).toFixed(2)}
                   </Text>
                 </View>
-
-                {(() => {
-                  const prov = provider.provider as any;
-                  // Try different location field names
-                  const location = prov?.provider_location || prov?.location || prov?.address || prov?.city;
-                  console.log(`📍 Location for provider ${provider.id}:`, location);
-                  
-                  if (location) {
-                    return (
-                      <Text style={{
-                        fontSize: 14,
-                        color: '#666',
-                        marginBottom: 5,
-                      }}>
-                        📍 {location}
-                      </Text>
-                    );
-                  }
-                  return null;
-                })()}
-
-                <Text style={{
-                  fontSize: 18,
-                  fontWeight: '600',
-                  color: '#399d9d'
-                }}>
-                  Starting at ₱{Number(provider.startingPrice || 0).toFixed(2)}
-                </Text>
               </View>
-
-              <Ionicons name="chevron-forward" size={24} color="#399d9d" />
             </TouchableOpacity>
           ))
         )}
@@ -556,6 +501,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+  },
+  providerCard: {
+    marginHorizontal: 20,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#b2d7d7",
+    borderWidth: 0.5,
+    backgroundColor: "#cceded", 
+    borderRadius: 15,
+    padding: 16,
+  },
+  providerImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 10,
+  },
+  providerInfo: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  providerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  providerName: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "500",
+    flex: 1,
+    marginRight: 10,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  ratingText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: "#666",
+  },
+  serviceTitle: {
+    fontWeight: "500",
+    fontSize: 16,
+    color: "#008080",
+    marginBottom: 8,
+  },
+  priceContainer: {
+    alignItems: "flex-end",
+  },
+  priceText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#008080",
   },
 });
 
