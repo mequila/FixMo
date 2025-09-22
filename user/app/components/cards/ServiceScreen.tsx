@@ -8,7 +8,7 @@ interface ButtonProps {
   title: string;
   route: string;
   containerStyle?: ViewStyle;
-  icon?: string; // optional Ionicon name
+  icon?: string; 
 }
 
 const ServiceScreen: React.FC<ButtonProps> = ({ title, route, containerStyle, icon }) => {

@@ -51,7 +51,7 @@ const _layout = () => {
                 tabBarLabel: '',
                 headerShown: false,
                 tabBarIcon: ({color, size}) => (
-                    <Ionicons name='mail' size={25} color={color}/>
+                    <Ionicons name='chatbox' size={25} color={color}/>
                 )   
             }}
         />

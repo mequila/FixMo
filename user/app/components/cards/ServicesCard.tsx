@@ -10,7 +10,7 @@ interface ServiceCardProps {
   onPress?: () => void;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({
+const ServicesCard: React.FC<ServiceCardProps> = ({
   title,
   description,
   buttonText = "Select Schedule",
@@ -29,4 +29,4 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   </View>
 );
 
-export default ServiceCard;
+export default ServicesCard;

@@ -200,7 +200,7 @@ export const homeStyles = StyleSheet.create({
     borderWidth: 0.5,
     backgroundColor: "#cceded", 
     borderRadius: 15,
-    padding: 16,
+    padding: 15,
    },
   providerText: { // type of service provider text
     color: "#008080",
@@ -215,6 +215,13 @@ export const homeStyles = StyleSheet.create({
     flexDirection: "row", 
     alignItems: "center",
     marginVertical: 8,
+  },
+  profilePartition: { // profile tab partition
+    height: 1,
+    backgroundColor: "lightgray",
+    marginVertical: 16,
+    alignSelf: "center",
+    width: "90%",
   },
 });
 

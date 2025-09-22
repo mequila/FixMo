@@ -123,7 +123,7 @@ const DirectMessage = () => {
               justifyContent: "center",
             }}
           >
-            <Ionicons name="send" size={25} color="#008080" />
+            <Ionicons name="send" size={30} color="#008080" />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

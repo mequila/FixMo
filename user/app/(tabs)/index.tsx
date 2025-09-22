@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";  
 import { homeStyles } from "../components/homeStyles";
-import ServiceIcon from "../components/index/ServiceIcon";
+import ServiceIcon from "../components/cards/ServiceIcon";
 
   
   const constructionServices = [

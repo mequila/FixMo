@@ -1,10 +1,6 @@
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import homeStyles from "./components/homeStyles";
-import React from "react";
-import ServiceProviderCard from "./components/services/ServiceProviderCard";
+import { ScrollView, View } from "react-native";
+import ServiceProviderCard from "./components/cards/ServiceProviderCard";
 
 const Service = () => {
   const router = useRouter();
@@ -16,6 +12,7 @@ const Service = () => {
       >
         <ServiceProviderCard
           name="Sabrina Carpenter"
+          address="123 Main St, Cityville"
           rating={4.5}
           profession="Carpenter"
           price={500.00}
@@ -23,6 +20,7 @@ const Service = () => {
         />
         <ServiceProviderCard
           name="Chappell Roan"
+          address="456 Oak Ave, Townsville"
           rating={4.5}
           profession="Carpenter"
           price={500.0}
@@ -30,6 +28,7 @@ const Service = () => {
         />
         <ServiceProviderCard
           name="Olivia Rodrigo"
+          address="789 Pine Rd, Villageton"
           rating={4.5}
           profession="Carpenter"
           price={500.0}

@@ -1,9 +1,11 @@
-import { Stack } from "expo-router";
+
+import { Stack, useRouter } from "expo-router";
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const Header = () => {
+  const router = useRouter();
   return (
     <View
       style={{
@@ -15,7 +17,7 @@ const Header = () => {
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <TouchableOpacity style={{ marginRight: 10 }}>
+        <TouchableOpacity style={{ marginRight: 10 }} onPress={() => router.push("/") }>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
@@ -80,9 +82,7 @@ export default function RootLayout() {
         name="book_schedule"
         options={{
           title: "",
-          headerTransparent: true,
-          headerTintColor: "transparent",
-          headerStyle: { backgroundColor: "transparent" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

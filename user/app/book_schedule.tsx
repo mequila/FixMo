@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   box: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#b2d7d7",
     borderRadius: 10,
     padding: 12,
     marginHorizontal: 5,

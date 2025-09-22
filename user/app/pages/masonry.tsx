@@ -1,10 +1,8 @@
-import { View, ScrollView, Text, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { homeStyles } from "../components/homeStyles";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import ServiceCard from "../components/services/ServiceCard";
+import { useRouter } from "expo-router";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import ServicesCard from "../components/cards/ServicesCard";
+import { homeStyles } from "../components/homeStyles";
 
 const MasonryServiceCardDetails = [
   { title: "Masonry Works",
@@ -20,7 +18,7 @@ const Masonry = () => {
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {MasonryServiceCardDetails.map((masonry, idx) => (
-          <ServiceCard
+          <ServicesCard
             key={idx}
             title={masonry.title}
             description={masonry.description}

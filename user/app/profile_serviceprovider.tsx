@@ -125,7 +125,7 @@ export default function profile_serviceprovider() {
 
 
 
-              <TouchableOpacity onPress={() => router.push("/bookingmaps")}>
+              <TouchableOpacity onPress={() => router.push("../../bookings")}>
                   <View style={{ marginTop: 16,
                         backgroundColor: "#008080",
                         paddingVertical: 12,

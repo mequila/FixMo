@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import homeStyles from '../components/homeStyles'
-import React from 'react'
-import { Ionicons } from '@expo/vector-icons'
+
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import ProfileCard from '../components/cards/ProfileCard';
+import homeStyles from '../components/homeStyles';
 
 const Profile = () => {
   const router = useRouter();
@@ -22,31 +23,50 @@ const Profile = () => {
             <Ionicons name="person-circle" size={100} color={"#008080"} 
                 style={{ alignSelf: "center", marginTop: 10 }} />
                 <View style={{ flexDirection: "column", marginLeft: 18, alignItems: "flex-start" }}>
-                    <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>Anthony Bolbasaur</Text>
+                    <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>Anthony Bolbolsaur</Text>
                     <Text style={{ textAlign: "center", fontSize: 16, color: "gray", marginTop: 5 }}>09123456789</Text>
                 </View>
         </View>
+ 
 
-        <View style={{
-          height: 1,
-          backgroundColor: "lightgray",
-          marginVertical: 16,
-          alignSelf: "center",
-          width: "90%",
-          }}
-        />
+      <ProfileCard
+        label="Edit Profile"
+        iconName="create-outline"
+        onPress={() => router.push("/editprofile")}
+      />
 
-        <View>
-          <TouchableOpacity onPress={() => router.push("/editprofile")}
-              style={homeStyles.profile}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={{ fontSize: 18, marginLeft: 10 }}>
-                      Edit Profile
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={25} color={"#008080"} />
-          </TouchableOpacity>
-        </View>     
+
+      <View style={homeStyles.profilePartition} />
+
+
+      <ProfileCard
+        label="FAQ"
+        iconName="help-circle-outline"
+        onPress={() => router.push("/faq")}
+      />
+
+
+      <ProfileCard
+        label="Contact Us"
+        iconName="mail-outline"
+        onPress={() => router.push("/contactUs")}
+      />
+
+
+      <ProfileCard
+        label="Terms and Conditions"
+        iconName="book-outline"
+        onPress={() => router.push("/termsConditions")}
+      />
+
+
+      <View style={[ homeStyles.profilePartition ]} />
+
+
+      <ProfileCard
+        label="Logout"
+        iconName="log-out-outline"
+      />
 
     </View>
   )
