@@ -9,6 +9,7 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect } from "react";
@@ -128,7 +129,7 @@ interface ProviderRatingsResponse {
 }
 
 export default function profile_serviceprovider() {
-  const { serviceId, providerId, selectedDate, category } = useLocalSearchParams();
+  const { serviceId, providerId, selectedDate, category, availabilityId } = useLocalSearchParams();
   const [serviceData, setServiceData] = useState<ServiceListing | null>(null);
   const [providerData, setProviderData] = useState<ProviderDetails | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -140,6 +141,8 @@ export default function profile_serviceprovider() {
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<string>('');
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   // Calculate total images for pagination
   const getTotalImages = () => {
@@ -158,12 +161,13 @@ export default function profile_serviceprovider() {
   };
 
   useEffect(() => {
-    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate, category });
+    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate, category, availabilityId });
     console.log('🔍 Provider ID type:', typeof providerId, 'Value:', providerId);
+    console.log('🆔 Availability ID type:', typeof availabilityId, 'Value:', availabilityId);
     console.log('🏷️ Category from navigation:', category);
     fetchAllData();
     fetchCustomerProfile();
-  }, [serviceId, providerId, category]);
+  }, [serviceId, providerId, category, availabilityId]);
 
   const fetchCustomerProfile = async () => {
     try {
@@ -532,6 +536,145 @@ export default function profile_serviceprovider() {
     setRefreshing(false);
   };
 
+  const handleBookingConfirmation = async () => {
+    try {
+      setBookingLoading(true);
+      
+      console.log('=== BOOKING CONFIRMATION DEBUG ===');
+      console.log('URL Params:', { serviceId, providerId, selectedDate, category });
+      console.log('Service Data:', serviceData);
+      console.log('Provider Data:', providerData);
+      console.log('==============================');
+      
+      // Generate random 6-digit appointment ID
+      const appointmentId = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Get user ID from AsyncStorage (this is the customer_id for appointments)
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('token');
+      if (!userId) {
+        Alert.alert('Error', 'User ID not found. Please log in again.');
+        return;
+      }
+      if (!token) {
+        Alert.alert('Error', 'Authentication token not found. Please log in again.');
+        return;
+      }
+
+      // Ensure providerId is a number - try multiple sources
+      let providerIdNumber = null;
+      
+      if (providerId) {
+        providerIdNumber = parseInt(providerId as string);
+      } else if (serviceData?.provider?.id) {
+        providerIdNumber = serviceData.provider.id;
+      } else if (providerData?.provider_id) {
+        providerIdNumber = providerData.provider_id;
+      }
+      
+      console.log('Provider ID sources check:');
+      console.log('- URL providerId:', providerId);
+      console.log('- serviceData.provider.id:', serviceData?.provider?.id);
+      console.log('- providerData.provider_id:', providerData?.provider_id);
+      console.log('- Final providerIdNumber:', providerIdNumber);
+      
+      if (!providerIdNumber) {
+        Alert.alert(
+          'Error', 
+          `Provider ID not found. Please try again.\n\nDebug info:\n- URL providerId: ${providerId}\n- Service provider ID: ${serviceData?.provider?.id}\n- Provider data ID: ${providerData?.provider_id}`
+        );
+        return;
+      }
+
+      // Format date as ISO datetime string if it's just a date
+      let formattedDate = selectedDate || new Date().toISOString().split('T')[0];
+      if (!formattedDate.includes('T')) {
+        formattedDate = `${formattedDate}T10:00:00.000Z`; // Default to 10 AM
+      }
+
+      // Use availability_id from navigation params if available, otherwise use default
+      const finalAvailabilityId = availabilityId ? parseInt(availabilityId as string) : 1;
+      const finalServiceId = serviceId ? parseInt(serviceId as string) : null;
+      
+      if (!finalServiceId) {
+        Alert.alert('Error', 'Service ID not found. Please try again.');
+        return;
+      }
+      
+      const appointmentData = {
+        customer_id: parseInt(userId), // Convert to number
+        provider_id: providerIdNumber, // Convert to number
+        scheduled_date: formattedDate,
+        appointment_status: 'scheduled',
+        availability_id: finalAvailabilityId,
+        service_id: finalServiceId,
+        final_price: null,
+        repairDescription: null
+      };
+
+      console.log('Creating appointment with data:', appointmentData);
+      console.log('Using availability_id:', finalAvailabilityId, '(from navigation:', availabilityId, ')');
+      console.log('Using service_id:', finalServiceId, '(from navigation:', serviceId, ')');
+      console.log('Backend URL:', BACKEND_URL);
+      console.log('User ID:', userId, 'Provider ID:', providerId, 'Provider ID Number:', providerIdNumber);
+
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(`${BACKEND_URL}/api/appointments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(appointmentData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId); // Clear timeout if request completes
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Appointment created successfully:', result);
+        setShowBookingModal(false);
+        
+        // Get appointment ID from server response
+        const serverAppointmentId = result.data?.appointment_id || result.appointment_id || appointmentId;
+        
+        Alert.alert(
+          'Booking Confirmed!', 
+          `Your appointment has been booked successfully.\nAppointment ID: ${serverAppointmentId}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/bookingmaps')
+            }
+          ]
+        );
+      } else {
+        console.error('Appointment creation failed:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        Alert.alert('Booking Failed', errorData.message || `Failed to create appointment. Server responded with ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorName = error instanceof Error ? error.name : '';
+      
+      if (errorName === 'AbortError') {
+        Alert.alert('Error', 'Request timed out. Please check your internet connection and try again.');
+      } else if (errorMessage?.includes('Network request failed')) {
+        Alert.alert('Error', 'Cannot connect to the server. Please check your internet connection and try again.');
+      } else {
+        Alert.alert('Error', `Network error: ${errorMessage || 'Please check your connection and try again.'}`);
+      }
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
   const renderStars = (rating: number) => {
     const stars: React.ReactElement[] = [];
     const fullStars = Math.floor(rating);
@@ -861,7 +1004,7 @@ export default function profile_serviceprovider() {
                 </View>
               </View>
 
-              <TouchableOpacity onPress={() => router.push("/bookingmaps")}>
+              <TouchableOpacity onPress={() => setShowBookingModal(true)}>
                   <View style={{ marginTop: 16,
                         backgroundColor: "#008080",
                         paddingVertical: 12,
@@ -1038,6 +1181,143 @@ export default function profile_serviceprovider() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Booking Confirmation Modal */}
+      <Modal
+        visible={showBookingModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowBookingModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 15,
+            padding: 20,
+            width: '100%',
+            maxWidth: 350,
+          }}>
+            <Text style={{
+              fontSize: 20,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: 15,
+              color: '#333',
+            }}>
+              Confirm Booking
+            </Text>
+            
+            <Text style={{
+              fontSize: 16,
+              textAlign: 'center',
+              marginBottom: 10,
+              color: '#666',
+            }}>
+              Do you want to book this service?
+            </Text>
+            
+            {providerData && (
+              <View style={{
+                backgroundColor: '#f5f5f5',
+                padding: 15,
+                borderRadius: 10,
+                marginBottom: 20,
+              }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  marginBottom: 5,
+                  color: '#333',
+                }}>
+                  Service Provider: {providerData.provider_first_name} {providerData.provider_last_name}
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#666',
+                  marginBottom: 3,
+                }}>
+                  Category: {getCategoryDisplay()}
+                </Text>
+                {selectedDate && (
+                  <Text style={{
+                    fontSize: 14,
+                    color: '#666',
+                  }}>
+                    Date: {selectedDate}
+                  </Text>
+                )}
+                {serviceData?.startingPrice && (
+                  <Text style={{
+                    fontSize: 14,
+                    color: '#008080',
+                    fontWeight: '600',
+                    marginTop: 5,
+                  }}>
+                    Starting Price: ₱{Number(serviceData.startingPrice).toFixed(2)}
+                  </Text>
+                )}
+              </View>
+            )}
+            
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              gap: 15,
+            }}>
+              <TouchableOpacity 
+                onPress={() => setShowBookingModal(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#ddd',
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                disabled={bookingLoading}
+              >
+                <Text style={{
+                  fontSize: 16,
+                  color: '#666',
+                  fontWeight: '600',
+                }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={() => handleBookingConfirmation()}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#008080',
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  opacity: bookingLoading ? 0.7 : 1,
+                }}
+                disabled={bookingLoading}
+              >
+                {bookingLoading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={{
+                    fontSize: 16,
+                    color: 'white',
+                    fontWeight: '600',
+                  }}>
+                    Yes, Book Now
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
