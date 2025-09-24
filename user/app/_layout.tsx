@@ -1,38 +1,14 @@
 
-import { Stack, useRouter } from "expo-router";
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Stack } from "expo-router";
 
-const Header = () => {
-  const router = useRouter();
-  return (
-    <View
-      style={{
-        backgroundColor: "#e7ecec",
-        borderBottomWidth: 1,
-        borderBottomColor: "#ccc",
-        padding: 10,
-        alignItems: "center",
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <TouchableOpacity style={{ marginRight: 10 }} onPress={() => router.push("/") }>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
-          Header Title
-        </Text>
-      </View>
-    </View>
-  );
-};
 
 export default function RootLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="pages" options={{ headerShown: false }} />
+      <Stack.Screen name="_modal" options={{ headerShown: false }} />
+
       <Stack.Screen
         name="components/notification"
         options={{
@@ -64,9 +40,7 @@ export default function RootLayout() {
         name="editprofile"
         options={{
           title: "Edit profile",
-          headerTintColor: "#008080",
-          headerTitleStyle: { color: "black", fontSize: 20 },
-          headerStyle: { backgroundColor: "#e7ecec" },
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -115,9 +89,32 @@ export default function RootLayout() {
         options={{
           title: "",
           headerShown: false,
-          headerTintColor: "#008080",
-          headerTitleStyle: { color: "black", fontSize: 20 },
-          headerStyle: { backgroundColor: "#e7ecec" },
+          
+        }}
+      />
+      <Stack.Screen
+        name="reviews"
+        options={{
+          title: "Reviews",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="faq"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="termsConditions"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="contactUs"
+        options={{
+          headerShown: false,
         }}
       />
     </Stack>

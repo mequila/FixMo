@@ -22,7 +22,7 @@ const Aircon = () => {
             key={idx}
             title={aircon.title}
             description={aircon.description}
-            onPress={() => router.push("/book_schedule")}
+            onPress={() => router.push("/_modal/book_schedule")}
           />
         ))}
       </ScrollView>

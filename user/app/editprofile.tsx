@@ -9,8 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import homeStyles from "./components/homeStyles";
+import PageHeader from "./components/PageHeader";
 
 export default function Account() {
   const [homeAddress, setHomeAddress] = useState("");
@@ -47,11 +46,12 @@ export default function Account() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 10 }}
       >
+  <PageHeader title="Edit Profile" backRoute="/(tabs)/profile" showSave onSave={handleSave} />
 
         {/* Profile Avatar */}
         <View style={{ alignItems: "center", marginTop: 20 }}>
@@ -70,7 +70,7 @@ export default function Account() {
                 position: "absolute",
                 right: 5,
                 bottom: 5,
-                backgroundColor: "#ecececff",
+                backgroundColor: "#fff",
                 borderRadius: 20,
                 padding: 3,
               }}
@@ -86,7 +86,7 @@ export default function Account() {
           style={{ alignItems: "center", padding: 20, gap: 25, width: "100%" }}
         >
           {/* Phone Number */}
-          <View style={{ width: "85%" }}>
+          <View style={{ width: "100%" }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
               Phone Number
             </Text>
@@ -114,7 +114,7 @@ export default function Account() {
           </View>
 
           {/* Home Address */}
-          <View style={{ width: "85%" }}>
+          <View style={{ width: "100%" }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
               Home Address
             </Text>
@@ -166,7 +166,7 @@ export default function Account() {
           </View>
 
           {/* Email Address */}
-          <View style={{ width: "85%" }}>
+          <View style={{ width: "100%" }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
               Email Address
             </Text>

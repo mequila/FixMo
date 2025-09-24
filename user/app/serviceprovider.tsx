@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 import ServiceProviderCard from "./components/cards/ServiceProviderCard";
 
+
 const Service = () => {
   const router = useRouter();
   return (

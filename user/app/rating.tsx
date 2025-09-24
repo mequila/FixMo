@@ -1,21 +1,22 @@
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
   Image,
   Modal,
-  StyleSheet,
-  TextInput,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import React, { useState } from "react";
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
 
 const MAX_PHOTOS = 5;
 
 const Rating = () => {
+  const router = useRouter();
   const [rating, setRating] = useState(0);
   const [photos, setPhotos] = useState<string[]>([]);
   const [review, setReview] = useState("");
@@ -82,7 +83,15 @@ const Rating = () => {
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="fade">
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setVisible(false);
+          router.back();
+        }}
+      >
         <View style={styles.overlay}>
           <View style={styles.card}>
             <Text style={styles.title}>How was your experience?</Text>
@@ -163,7 +172,12 @@ const Rating = () => {
       </Modal>
 
       {/* Photo Selection Modal */}
-      <Modal visible={photoModalVisible} transparent animationType="fade">
+      <Modal
+        visible={photoModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoModalVisible(false)}
+      >
         <View style={styles.overlay}>
           <View style={styles.card}>
             <Text style={styles.title}>Choose an Option</Text>

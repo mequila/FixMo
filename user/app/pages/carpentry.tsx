@@ -26,7 +26,7 @@ const Carpentry = () => {
             key={idx}
             title={carpentry.title}
             description={carpentry.description}
-            onPress={() => router.push("/book_schedule")}
+            onPress={() => router.push("/_modal/book_schedule")}
           />
         ))}
 

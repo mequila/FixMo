@@ -58,25 +58,15 @@ export default function Bookings() {
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
-        {/* Header */}
         <SafeAreaView
-          style={[homeStyles.safeAreaTabs]}
-        >
-          <Text
-            style={[homeStyles.headerTabsText]}
-          >
+          style={[homeStyles.safeAreaTabs]}>
+          <Text style={[homeStyles.headerTabsText]}>
             Bookings
           </Text>
         </SafeAreaView>
 
-        {/* Fixed Tab Bar */}
         <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-around",
-            paddingVertical: 12,
-            paddingHorizontal: 10,
-          }}
+          style={[homeStyles.bookingsTab]}
         >
           {["Scheduled", "Completed", "Ongoing", "In Warranty", "Cancelled"].map(
             (tab) => (
@@ -122,23 +112,32 @@ export default function Bookings() {
               )}
 
               {/* Booking Card */}
-              <View style={{ ...homeStyles.bookingsTabDetails }}>
+              
+              <View style={{ ...homeStyles.bookingsCard }}>
                 <Image
                   source={require("../../assets/images/service-provider.jpg")}
                   style={{ width: 80, height: 80, borderRadius: 10 }}
                 />
 
                 <View style={{ flex: 1, marginLeft: 15 }}>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "600",
-                      marginBottom: 5,
-                      color: "#008080",
-                    }}
-                  >
-                    {b.type}
-                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "600",
+                        marginBottom: 5,
+                        color: "#008080",
+                      }}
+                    >
+                      {b.type}
+                    </Text>
+
+                    <TouchableOpacity onPress={() => router.push("/_modal/successBooking")}>
+                      <Text style={{ color: "#008080" }}>
+                        Booking details
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
                   <Text
                     style={{

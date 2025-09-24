@@ -23,7 +23,7 @@ const Tile = () => {
             key={idx}
             title={tile.title}
             description={tile.description}
-            onPress={() => router.push("/book_schedule")}
+            onPress={() => router.push("/_modal/book_schedule")}
           />
         ))}
       </ScrollView>

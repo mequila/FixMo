@@ -23,7 +23,7 @@ const Painting = () => {
             key={idx}
             title={painting.title}
             description={painting.description}
-            onPress={() => router.push("/book_schedule")}
+            onPress={() => router.push("/_modal/book_schedule")}
           />
         ))}
       </ScrollView>

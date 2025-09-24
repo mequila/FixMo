@@ -1,10 +1,11 @@
 import { View, Text } from 'react-native'
 import React from 'react'
+import PageHeader from './components/PageHeader'
 
 const contactUs = () => {
   return (
     <View>
-      <Text>contactUs</Text>
+      <PageHeader title="Contact Us" backRoute="/profile" />
     </View>
   )
 }

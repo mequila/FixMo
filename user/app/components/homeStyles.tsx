@@ -104,7 +104,7 @@ export const homeStyles = StyleSheet.create({
     borderRadius: 15,
     elevation: 5,
   },
-  bookingsTabDetails: { //bookings tab design
+  bookingsCard: { //bookings service provider card 
     backgroundColor: "#cceded",
     borderRadius: 15,
     borderWidth: 1,
@@ -114,6 +114,12 @@ export const homeStyles = StyleSheet.create({
     marginHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
+  },
+  bookingsTab: { //tab 
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    paddingHorizontal: 10,          
   },
   profile: {
     marginTop: 10,
@@ -222,6 +228,20 @@ export const homeStyles = StyleSheet.create({
     marginVertical: 16,
     alignSelf: "center",
     width: "90%",
+  },
+  partition: { // service provider profile partition
+    height: 1,
+    backgroundColor: "lightgray",
+    marginVertical: 16,
+    alignSelf: "center",
+    width: "100%",
+  },
+  reviewContainer: {
+    marginTop: 20,
+    marginHorizontal: 15,
+    backgroundColor: "#e7ecec",
+    padding: 15,
+    borderRadius: 5
   },
 });
 

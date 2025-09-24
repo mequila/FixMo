@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import homeStyles from "./components/homeStyles";
 import { useRouter } from "expo-router";
+import PageHeader from "./components/PageHeader";
 
 interface Message {
   id: string;
@@ -35,17 +36,8 @@ const DirectMessage = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* HEADER (always fixed at the top) */}
-      <SafeAreaView style={[homeStyles.safeAreaHeader]}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity onPress={() => router.push("./messages")} style={{ marginRight: 10 }}>
-            <Ionicons name="arrow-back" size={24} color="#008080" />
-          </TouchableOpacity>
-          <Text style={[homeStyles.headerText]}>Provider Name</Text>
-        </View>
-      </SafeAreaView>
+      <PageHeader title="Service Provider" backRoute="/(tabs)/messages" />
 
-      {/* CHAT + INPUT (moves with keyboard) */}
       <KeyboardAvoidingView
         style={{ flex: 1 }} // Add paddingTop here
         behavior={Platform.OS === "ios" ? "padding" : undefined}

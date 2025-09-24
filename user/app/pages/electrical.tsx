@@ -35,7 +35,7 @@ const Electrical = () => {
             key={idx}
             title={electrical.title}
             description={electrical.description}
-            onPress={() => router.push("/book_schedule")}
+            onPress={() => router.push("/_modal/book_schedule")}
           />
         ))}
       </ScrollView>

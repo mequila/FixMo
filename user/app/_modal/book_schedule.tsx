@@ -1,14 +1,14 @@
-import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
-const DateTimeSelector = ({ visible, onClose, onConfirm }: any) => {
+export default function BookScheduleModal() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
-
   const [isPickerVisible, setPickerVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
+  const router = useRouter();
 
   const showPicker = (mode: "date" | "time") => {
     setPickerMode(mode);
@@ -45,57 +45,39 @@ const DateTimeSelector = ({ visible, onClose, onConfirm }: any) => {
     });
   };
 
-  const handleSave = () => {
-    onConfirm?.({ date: selectedDate, time: selectedTime });
-    onClose?.();
-  };
-
-  const router = useRouter();
-
   return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.popup}>
-          <Text style={styles.title}>Select Date & Time</Text>
-
-          <View style={styles.container}>
-            <TouchableOpacity style={styles.box} onPress={() => showPicker("date")}>
-              <Text style={styles.label}>Date</Text>
-              <Text style={styles.value}>{formatDate(selectedDate)}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.box} onPress={() => showPicker("time")}>
-              <Text style={styles.label}>Time</Text>
-              <Text style={styles.value}>{formatTime(selectedTime)}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <DateTimePickerModal
-            isVisible={isPickerVisible}
-            mode={pickerMode}
-            is24Hour={false}
-            onConfirm={handleConfirmPicker}
-            onCancel={hidePicker}
-          />
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={() => router.push("/serviceprovider")}
-            >
-              <Text style={styles.buttonText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
+    <View style={styles.overlay}>
+      <View style={styles.popup}>
+        <Text style={styles.title}>Select Date & Time</Text>
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.box} onPress={() => showPicker("date")}> 
+            <Text style={styles.label}>Date</Text>
+            <Text style={styles.value}>{formatDate(selectedDate)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.box} onPress={() => showPicker("time")}> 
+            <Text style={styles.label}>Time</Text>
+            <Text style={styles.value}>{formatTime(selectedTime)}</Text>
+          </TouchableOpacity>
+        </View>
+        <DateTimePickerModal
+          isVisible={isPickerVisible}
+          mode={pickerMode}
+          is24Hour={false}
+          onConfirm={handleConfirmPicker}
+          onCancel={hidePicker}
+        />
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={() => router.push("/serviceprovider")}
+          >
+            <Text style={styles.buttonText}>Confirm</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   overlay: {
@@ -155,5 +137,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-export default DateTimeSelector;

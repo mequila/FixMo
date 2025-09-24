@@ -14,7 +14,7 @@ import { router } from "expo-router";
 
 export default function profile_serviceprovider() {
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 , backgroundColor: "#fff" }}>
       <SafeAreaView style={{}} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -36,7 +36,7 @@ export default function profile_serviceprovider() {
             >
               <View>
                 <Text
-                  style={{ color: "#333", fontSize: 18, fontWeight: 500 }}
+                  style={{ color: "#333", fontSize: 18, fontWeight: 500, marginBottom: 4 }}
                 >
                   Sabrina Carpenter
                 </Text>
@@ -54,106 +54,7 @@ export default function profile_serviceprovider() {
               </View>
             </View>
 
-            <View style={{ 
-              borderWidth: 2,
-              borderColor: "#b2d7d7",
-              backgroundColor: "#fff",
-              padding: 15,
-              borderRadius: 12,
-              shadowColor: "#000",
-              shadowOpacity: 0.05,
-              shadowRadius: 5,
-              elevation: 2,
-              marginTop: 10,
-            }}>
-
-
-              <View style={{flexDirection: "column"}}>
-                <Text style={{marginBottom: 10, fontWeight: "bold", fontSize: 18}}>
-                  Booking Summary
-                </Text>
-                <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}> 
-                  <Text style={{fontWeight: "bold", color: "#333"}}>
-                    Service: 
-                  </Text>
-                  <Text style={{color: "gray", fontWeight: 500}}>
-                    Carpentry & Woodworks
-                  </Text>
-                </View>
-                  
-                <View  style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}>
-                  <Text style={{fontWeight: "bold", color: "#333"}}>
-                    Address:
-                  </Text>
-
-                  <Text style={{color: "gray", fontWeight: 500}}>
-                    Sta. Mesa, Manila
-                  </Text>
-                </View>
-
-                <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}>
-                  <Text style={{fontWeight: "bold", color: "#333"}}>
-                    Date:
-                  </Text>
-
-                  <Text style={{color: "gray", fontWeight: 500}}>
-                    September 20, 2025
-                  </Text>
-                </View>
-
-                <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between"}}>
-                  <Text style={{fontWeight: "bold", color: "#333"}}>
-                    Price:
-                  </Text>
-
-                  <View style={{ flexDirection: "column" }}>
-                    <Text
-                      style={{ color: "#008080", fontWeight: "bold"}}
-                    >
-                      {"\u20B1"}450
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={{flexDirection: "row-reverse", marginTop: 8}}>
-                  <Text style={{ fontSize: 10, color: "gray" }}>
-                    *Additional Charges may apply.
-                  </Text>
-                </View>
-              </View>
-
-
-
-
-              <TouchableOpacity onPress={() => router.push("../../bookings")}>
-                  <View style={{ marginTop: 16,
-                        backgroundColor: "#008080",
-                        paddingVertical: 12,
-                        borderRadius: 25,
-                        alignItems: "center",
-                      }}>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 18,
-                        fontWeight: "700",
-                      }}
-                      >
-                      Confirm Booking
-                    </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-
-
-            <View
-              style={{
-                height: 1,
-                backgroundColor: "lightgray",
-                marginVertical: 18,
-              }}
-            />
+            <View style={[homeStyles.partition]} />
 
             <View>
               <View style={{ flexDirection: "row" }}>
@@ -173,13 +74,13 @@ export default function profile_serviceprovider() {
               </View>
             </View>
 
-            <View
-              style={{
-                height: 1,
-                backgroundColor: "lightgray",
-                marginVertical: 18,
-              }}
-            />
+            <TouchableOpacity onPress={() => router.push("/_modal/successBooking")} style={{ marginTop: 12, backgroundColor: "#008080", padding: 12, borderRadius: 5, alignItems: "center" }}>
+              <Text style={{ fontSize: 18, color: "white", fontWeight: "bold" }}>
+                Book
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[homeStyles.partition]} />
             
 
             <View
@@ -192,7 +93,7 @@ export default function profile_serviceprovider() {
               <Text style={{ fontSize: 20, fontWeight: "bold" }}>Reviews</Text>
 
               <View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/reviews")}>
                   <Text
                     style={{
                       color: "#008080",
@@ -209,8 +110,6 @@ export default function profile_serviceprovider() {
             <View>
               <View
                 style={{
-                  borderWidth: 1,
-                  borderColor: "#f7f9f9",
                   borderRadius: 5,
                   backgroundColor: "#f7f9f9",
                   marginBottom: 16,
@@ -223,6 +122,39 @@ export default function profile_serviceprovider() {
                       <Text style={{ fontSize: 14, color: "#333" }}>
                         Great service! The provider was punctual, professional,
                         and did a fantastic job. Highly recommend!
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <Text>Username</Text>
+                      <Ionicons name="star" color="#FFD700" />
+                      <Ionicons name="star" color="#FFD700" />
+                      <Ionicons name="star" color="#FFD700" />
+                      <Ionicons name="star" color="#FFD700" />
+                      <Ionicons name="star" color="lightgray" />
+                    </View>
+                  </View>
+                  <Image
+                    source={require("../assets/images/service-provider.jpg")}
+                    style={{ width: 75, height: 75, borderRadius: 5 }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View>
+              <View
+                style={{
+                  borderRadius: 5,
+                  backgroundColor: "#f7f9f9",
+                  marginBottom: 16,
+                  padding: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flex: 1, marginRight: 10 }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={{ fontSize: 14, color: "#333" }}>
+                        Great service!
                       </Text>
                     </View>
                     <View style={{ flexDirection: "row", gap: 10 }}>
