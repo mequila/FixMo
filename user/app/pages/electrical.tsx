@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ServicesCard from "../components/cards/ServicesCard";
 import { homeStyles } from "../components/homeStyles";
+import PageHeader from "../components/PageHeader";
 
 const ElectricalServiceCardDetails = [
   {
@@ -28,7 +29,8 @@ const Electrical = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <PageHeader title="" backRoute="/" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {ElectricalServiceCardDetails.map((electrical, idx) => (
           <ServicesCard

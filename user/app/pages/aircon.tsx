@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ServicesCard from "../components/cards/ServicesCard";
 import { homeStyles } from "../components/homeStyles";
+import PageHeader from "../components/PageHeader";
 
 const AirconServiceCardDetails = [
   {
@@ -15,7 +16,8 @@ const Aircon = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <PageHeader title="" backRoute="/" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {AirconServiceCardDetails.map((aircon, idx) => (
           <ServicesCard
@@ -28,7 +30,7 @@ const Aircon = () => {
       </ScrollView>
 
       <View style={homeStyles.marginEmergencyFix}>
-        <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
+        <TouchableOpacity onPress={() => router.push("/emergencyfix")}> 
           <View style={homeStyles.emergencyFix}>
             <Ionicons name="alert-circle-outline" size={24} color="white" />
             <Text style={homeStyles.emergencyFixText}>Emergency Fix</Text>
@@ -40,3 +42,4 @@ const Aircon = () => {
 };
 
 export default Aircon;
+

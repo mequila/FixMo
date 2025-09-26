@@ -72,9 +72,7 @@ export default function RootLayout() {
         name="report"
         options={{
           title: "",
-          headerTintColor: "#008080",
-          headerTitleStyle: { color: "black", fontSize: 20 },
-          headerStyle: { backgroundColor: "#e7ecec" },
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -113,6 +111,12 @@ export default function RootLayout() {
       />
       <Stack.Screen
         name="contactUs"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="bookingDetails"
         options={{
           headerShown: false,
         }}
