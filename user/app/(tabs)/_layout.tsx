@@ -34,29 +34,16 @@ const _layout = () => {
 
         />
     
-     <Tabs.Screen name="bookings"
+        <Tabs.Screen name="bookings"
             options={{ 
                 title: 'Bookings',
                 tabBarLabel: '',
-                headerShown: true,
+                headerShown: false,
                 headerStyle: { backgroundColor: "#e7ecec" },
                 headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='bookmark' size={25} color={color}/>
-                )   
-            }}
-        />
-
-         <Tabs.Screen name="schedule"
-            options={{ 
-                title: 'Schedule',
-                tabBarLabel: '',
-                headerShown: true, 
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
-                tabBarIcon: ({color, size}) => (
-                    <Ionicons name='calendar' size={25} color={color}/>
-                )   
+                )    
             }}
         />
 

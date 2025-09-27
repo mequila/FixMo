@@ -601,17 +601,38 @@ export default function profile_serviceprovider() {
         return;
       }
       
+      // Prepare complete appointment data with all details needed for email
       const appointmentData = {
-        customer_id: parseInt(userId), // Convert to number
-        provider_id: providerIdNumber, // Convert to number
+        customer_id: parseInt(userId),
+        provider_id: providerIdNumber,
         scheduled_date: formattedDate,
         appointment_status: 'scheduled',
         availability_id: finalAvailabilityId,
         service_id: finalServiceId,
+        service_title: serviceData?.title || 'Service',
+        starting_price: serviceData?.startingPrice || null,
         final_price: null,
-        repairDescription: null
+        repairDescription: null,
+        // Email-specific fields - these will help the backend construct the email
+        bookingDetails: {
+          customerName: customerProfile ? `${customerProfile.first_name} ${customerProfile.last_name}` : 'Customer',
+          customerEmail: customerProfile?.email || null,
+          serviceTitle: serviceData?.title || 'Service',
+          providerName: providerData ? `${providerData.provider_first_name} ${providerData.provider_last_name}` : 'Provider',
+          providerPhone: providerData?.provider_phone_number || 'N/A',
+          providerEmail: providerData?.provider_email || null,
+          scheduledDate: formattedDate,
+          startingPrice: serviceData?.startingPrice || 0,
+          repairDescription: null
+        }
       };
 
+      console.log('=== EMAIL DEBUG INFO ===');
+      console.log('Customer Profile:', customerProfile);
+      console.log('Service Data:', serviceData);  
+      console.log('Provider Data:', providerData);
+      console.log('========================');
+      
       console.log('Creating appointment with data:', appointmentData);
       console.log('Using availability_id:', finalAvailabilityId, '(from navigation:', availabilityId, ')');
       console.log('Using service_id:', finalServiceId, '(from navigation:', serviceId, ')');

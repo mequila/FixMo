@@ -4,7 +4,38 @@ export const homeStyles = StyleSheet.create({
   safeArea: {
     marginBottom: 20,
     backgroundColor: "#e7ecec",
-    borderBottomColor: "#4c8080",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  safeAreaTabs: { //tabs header safe area 
+    backgroundColor: "#e7ecec",
+    paddingTop: 28,
+    paddingBottom: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  headerTabsText: { //tabs header text
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#008080",
+  },
+  safeAreaHeader: { // ibang routing header safe area 
+    backgroundColor: "#e7ecec",
+    paddingTop: 28,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    elevation: 5,
+  },
+  headerText: { // ibang routing header text
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
   },
   header: {
     paddingTop: 5,
@@ -32,6 +63,8 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: "#cceded",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
     width: 70,
     height: 70,
     borderRadius: 35,
@@ -40,7 +73,7 @@ export const homeStyles = StyleSheet.create({
     // service icon
     width: 70,
     height: 70,
-    tintColor: "#399d9d",
+    tintColor: "#008080",
   },
   iconText: {
     // service icon text
@@ -51,9 +84,9 @@ export const homeStyles = StyleSheet.create({
     marginHorizontal: 16,
     flexDirection: "row",
   },
-  serviceBorder: {
+  serviceBorder: { // most popular services border
     borderWidth: 1,
-    borderColor: "#399d9d",
+    borderColor: "#008080",
     borderRadius: 20,
     paddingLeft: 20,
     paddingRight: 20,
@@ -71,12 +104,14 @@ export const homeStyles = StyleSheet.create({
     borderRadius: 15,
     elevation: 5,
   },
-  bookings: {
-    backgroundColor: "#e7ecec",
+  bookingsTabDetails: { //bookings tab design
+    backgroundColor: "#cceded",
     borderRadius: 15,
-    padding: 25,
-    marginVertical: 10,
-    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#b2d7d7",
+    padding: 16,
+    marginBottom: 10,
+    marginHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -87,23 +122,25 @@ export const homeStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  border: {
+  border: { //services background
     backgroundColor: "#cceded",
-    marginVertical: 5,
     marginHorizontal: 20,
+    marginTop: 12,
     borderRadius: 15,
     padding: 10,
     alignContent: "center",
     flexDirection: "column",
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
   },
-  borderTitle: {
+  borderTitle: { //services title
     paddingTop: 10,
     paddingBottom: 5,
     fontSize: 20,
     fontWeight: "500",
     marginHorizontal: 18,
   },
-  borderDesc: {
+  borderDesc: { //services description
     fontSize: 13,
     color: "gray",
     lineHeight: 16,
@@ -115,25 +152,25 @@ export const homeStyles = StyleSheet.create({
     justifyContent: "space-around",
     flexDirection: "row",
     marginHorizontal: 50,
-    marginBottom: 8,
-    marginTop: 8,
+    marginBottom: 15,
+    marginTop: 10,
 },
   emergencyFix: { // Emergency Fix button
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#399d9d",
+    backgroundColor: "#008080",
     borderRadius: 15,
     paddingVertical: 20,
     paddingHorizontal: 25,
   },
-    emergencyFixText: {
+  emergencyFixText: {
     fontSize: 20,
     fontWeight: "600",
     color: "white",
     marginLeft: 8,
   },
-   findProvidersbtn:{
+  findProvidersbtn:{
     fontSize: 16,
     fontWeight: "600",
     backgroundColor: "#008080",
@@ -142,7 +179,30 @@ export const homeStyles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-    providerText: { // type of service provider text
+   service_container: { 
+    backgroundColor: "#008080",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: "flex-end",
+  },
+  service_text: { 
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+  },
+  serviceproviderContainer: { // service provider container and background
+    marginHorizontal: 20,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#b2d7d7",
+    borderWidth: 0.5,
+    backgroundColor: "#cceded", 
+    borderRadius: 15,
+    padding: 15,
+   },
+  providerText: { // type of service provider text
     color: "#008080",
     fontWeight: "bold",
     fontSize: 20,
@@ -150,6 +210,18 @@ export const homeStyles = StyleSheet.create({
   providerTextContainer: {
     padding: 16,
     backgroundColor: "#fff",
+  },
+  messagesContainer: { // message container and background
+    flexDirection: "row", 
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  profilePartition: { // profile tab partition
+    height: 1,
+    backgroundColor: "lightgray",
+    marginVertical: 16,
+    alignSelf: "center",
+    width: "90%",
   },
 });
 

@@ -1,55 +1,68 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
+import homeStyles from '../components/homeStyles'
 import React from 'react'
-import { router } from 'expo-router'
 
 const messages = () => {
+  const router = useRouter()
+  
   return (
+
+  <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView
+      style={[homeStyles.safeAreaTabs]}
+    >
+      <Text
+        style={[homeStyles.headerTabsText]}
+      >
+        Messages
+      </Text>
+    </SafeAreaView>
+
     <View
       style={{
         marginHorizontal: 20,
         marginTop: 20,
+      }}>
 
-      }}
-    >
       <Text style={{
         fontWeight: 600, 
         fontSize: 20,
-        marginBottom: 20}}>
+        marginBottom: 20
+        }}>
         Today
       </Text>
 
-
-    <View
-      style={{
-        flexDirection: "row", 
-        marginHorizontal: 25,
-        alignItems: "center",
-        marginVertical: 8,
-      }}>
-      <Image
-        source={require("../../assets/images/service-provider.jpg")}
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: 30
-        }}
-      />
-
+    <TouchableOpacity onPress={() => router.push("/directMessage")}>
       <View
-        style={{
-          marginLeft: 15
-        }}
-      >
-      <Text>Name Provider</Text>
+        style={[homeStyles.messagesContainer]}>
+        <Image
+          source={require("../../assets/images/service-provider.jpg")}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30
+          }}
+          />
 
-      <Text
-        style={{
-          color: "gray",
-        }}>
-          Message Preview</Text>
+        <View
+          style={{
+            marginLeft: 15
+          }}
+          >
+        <Text>Name Provider</Text>
+
+        <Text
+          style={{
+            color: "gray",
+            fontSize: 12,
+          }}>
+            Message Preview</Text>
+        </View>
+
       </View>
-
-    </View>
+    </TouchableOpacity>
 
     <View style={{backgroundColor: "#ff8c00", padding: 15, borderRadius: 10, marginVertical: 10}}>
       <TouchableOpacity onPress={() => router.push("/rating")}>
@@ -67,6 +80,7 @@ const messages = () => {
       </TouchableOpacity>
     </View>
   </View>
+</View>
   )
 }
 
