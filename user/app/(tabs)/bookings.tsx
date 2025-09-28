@@ -1,16 +1,16 @@
 
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BookingDetailsModal from "../_modal/bookingDetails";
 import homeStyles from "../components/homeStyles";
 import OngoingMaps from "../ongoingMaps";
-
 export default function Bookings() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Scheduled"); // Default tab
+  const { tab } = useLocalSearchParams();
+  const [activeTab, setActiveTab] = useState(typeof tab === "string" ? tab : "Scheduled");
   const [openOngoing, setOpenOngoing] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
@@ -55,6 +55,13 @@ export default function Bookings() {
     },
   ];
 
+  // Update activeTab if tab param changes
+  React.useEffect(() => {
+    if (typeof tab === "string" && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
+
   // Filter bookings based on active tab
   const filteredBookings =
     activeTab === "All"
@@ -70,24 +77,28 @@ export default function Bookings() {
 
         {/* Tabs */}
         <View style={[homeStyles.bookingsTab]}>
-          {["Scheduled", "Completed", "Ongoing", "In Warranty", "Cancelled"].map(
-            (tab) => (
-              <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: activeTab === tab ? "700" : "500",
-                    color: activeTab === tab ? "#008080" : "#666",
-                    borderBottomWidth: activeTab === tab ? 2 : 0,
-                    borderBottomColor: "#008080",
-                    paddingVertical: 6,
-                  }}
-                >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            )
-          )}
+          {[
+            "Scheduled",
+            "Completed",
+            "Ongoing",
+            "In Warranty",
+            "Cancelled",
+          ].map((tab) => (
+            <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: activeTab === tab ? "700" : "500",
+                  color: activeTab === tab ? "#008080" : "#666",
+                  borderBottomWidth: activeTab === tab ? 2 : 0,
+                  borderBottomColor: "#008080",
+                  paddingVertical: 6,
+                }}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Booking list */}
@@ -152,7 +163,7 @@ export default function Bookings() {
                     </View>
 
                     {/* Chat button */}
-                    <TouchableOpacity onPress={() => router.push("/messages")}>
+                    <TouchableOpacity onPress={() => router.push("/messages")}> 
                       <Ionicons
                         name="chatbox-ellipses"
                         size={24}
@@ -313,3 +324,4 @@ export default function Bookings() {
     </View>
   );
 }
+                

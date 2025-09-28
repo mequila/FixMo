@@ -94,7 +94,7 @@ export default function Account() {
               <Text style={{ fontSize: 16 }}>🇵🇭 +63</Text>
               <TextInput
                 style={{
-                  backgroundColor: "#ecececff",
+                  backgroundColor: "#e7ecec",
                   marginLeft: 10,
                   borderRadius: 10,
                   paddingLeft: 15,
@@ -121,7 +121,7 @@ export default function Account() {
             <View>
               <TextInput
                 style={{
-                  backgroundColor: "#ecececff",
+                  backgroundColor: "#e7ecec",
                   borderRadius: 10,
                   paddingLeft: 15,
                   paddingRight: 15,
@@ -144,7 +144,7 @@ export default function Account() {
                     backgroundColor: "#fff",
                     borderRadius: 8,
                     borderWidth: 1,
-                    borderColor: "#ecececff",
+                    borderColor: "#e7ecec",
                     maxHeight: 120,
                   }}
                 >
@@ -173,7 +173,7 @@ export default function Account() {
             <View style={{ flexDirection: "column", alignItems: "flex-start" }}>
               <TextInput
                 style={{
-                  backgroundColor: "#ecececff",
+                  backgroundColor: "#e7ecec",
                   borderRadius: 10,
                   paddingLeft: 15,
                   paddingRight: 15,

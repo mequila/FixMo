@@ -14,7 +14,7 @@ const reviewsArray = [
 const Reviews = () => {
   return (
     <View>
-      <PageHeader title="Reviews" backRoute="/profile_serviceprovider" />
+      <PageHeader title="Reviews" backRoute="/" />
       {reviewsArray.map((item, idx) => (
         <ReviewCard
           key={idx}

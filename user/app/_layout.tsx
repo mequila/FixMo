@@ -22,9 +22,7 @@ export default function RootLayout() {
         name="serviceprovider"
         options={{
           title: "",
-          headerTintColor: "#008080",
-          headerTitleStyle: { color: "black", fontSize: 20 },
-          headerStyle: { backgroundColor: "#e7ecec" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

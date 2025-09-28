@@ -1,12 +1,14 @@
 import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 import ServiceProviderCard from "./components/cards/ServiceProviderCard";
+import PageHeader from "./components/PageHeader";
 
 
 const Service = () => {
   const router = useRouter();
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <PageHeader title="Service Providers" backRoute="/" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 10 }}
