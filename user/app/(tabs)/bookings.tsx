@@ -8,6 +8,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { MessageService } from '../../utils/messageAPI';
+import AuthService from '../../utils/authService';
+import { syncAuthWithExistingStorage } from '../../utils/appInitializer';
 
 
 // Get backend URL from environment variables
@@ -146,6 +149,221 @@ export default function Bookings() {
   const [isRatingPopupShown, setIsRatingPopupShown] = useState(false);
 
   const { width } = useWindowDimensions();
+
+  // Initialize AuthService when component mounts
+  useEffect(() => {
+    const initAuth = async () => {
+      await AuthService.initialize();
+      await syncAuthWithExistingStorage();
+    };
+    initAuth();
+  }, []);
+
+  // Helper function to create conversation with dynamic warranty calculation
+  const createConversationWithWarranty = async (customerId: number, providerId: number, appointment: any, messageAPI: any) => {
+    try {
+      // Get appointment status (might be in different fields depending on API structure)
+      const appointmentStatus = appointment.appointment_status || appointment.status || 'scheduled';
+      
+      // Check if appointment is cancelled
+      if (appointmentStatus === 'cancelled') {
+        return {
+          success: false,
+          message: 'Cannot message for cancelled appointments.'
+        };
+      }
+
+      const now = new Date();
+      const scheduledDate = new Date(appointment.scheduled_date);
+      
+      // Calculate warranty end date using the appointment's warranty_days attribute
+      const warrantyDays = appointment.warranty_days || 7; // Default to 7 days if not specified
+      const warrantyEndDate = new Date(scheduledDate);
+      warrantyEndDate.setDate(warrantyEndDate.getDate() + warrantyDays);
+      
+      console.log('=== Appointment Messaging Check ===');
+      console.log('Full Appointment Object:', appointment);
+      console.log('Appointment Status:', appointmentStatus);
+      console.log('Appointment ID:', appointment.appointment_id);
+      console.log('Customer ID from params:', customerId);
+      console.log('Customer ID from appointment:', appointment.customer_id);
+      console.log('Provider ID from params:', providerId);
+      console.log('Provider ID from appointment:', appointment.provider_id);
+      console.log('Scheduled Date:', scheduledDate.toISOString());
+      console.log('Warranty Days:', warrantyDays);
+      console.log('Warranty End Date:', warrantyEndDate.toISOString());
+      console.log('Current Date:', now.toISOString());
+      console.log('Finished At:', appointment.finished_at);
+      console.log('Completed At:', appointment.completed_at);
+      
+      // Allow messaging if:
+      // 1. Before appointment date (unlimited messaging for scheduled appointments)
+      // 2. After appointment date but within warranty period
+      const isBeforeAppointment = now < scheduledDate;
+      const isWithinWarranty = now <= warrantyEndDate;
+      
+      if (!isBeforeAppointment && !isWithinWarranty) {
+        return {
+          success: false,
+          message: `Warranty period has expired. It ended on ${warrantyEndDate.toLocaleDateString()}.`
+        };
+      }
+      
+      // Create conversation with appointment warranty period
+      // Use the passed customerId and providerId parameters since they're verified in handleChatPress
+      const conversationData = {
+        customerId: customerId,
+        providerId: providerId,
+        userType: 'customer' as const,
+        appointmentId: appointment.appointment_id,
+        scheduledDate: appointment.scheduled_date,
+        warrantyDays: warrantyDays,
+        warrantyEndDate: warrantyEndDate.toISOString(),
+        appointmentStatus: appointmentStatus
+      };
+      
+      console.log('Creating conversation with data:', conversationData);
+      
+      // Try to create with extended data first, fallback to simple creation
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/messages/conversations/with-warranty`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AuthService.getToken()}`,
+          },
+          body: JSON.stringify(conversationData),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result;
+        } else {
+          // Check if it's a warranty-related error from the backend
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          console.log('API Error Response:', errorData);
+          
+          if (errorData.message?.includes('no active warranty period found')) {
+            console.log('Backend warranty validation failed - using standard conversation creation as fallback');
+          } else {
+            console.log('Custom warranty endpoint error, using standard creation');
+          }
+          
+          // Fallback to standard conversation creation
+          const fallbackResult = await messageAPI.createConversation(customerId, providerId, 'customer');
+          console.log('Fallback conversation creation result:', fallbackResult);
+          return fallbackResult;
+        }
+      } catch (apiError) {
+        console.log('Custom API request failed, using standard creation:', apiError);
+        // Fallback to standard conversation creation
+        const fallbackResult = await messageAPI.createConversation(customerId, providerId, 'customer');
+        console.log('Fallback conversation creation result:', fallbackResult);
+        return fallbackResult;
+      }
+      
+    } catch (error) {
+      console.error('Error in warranty calculation:', error);
+      return {
+        success: false,
+        message: 'Failed to calculate messaging availability. Please try again.'
+      };
+    }
+  };
+
+  // Chat functionality
+  const handleChatPress = async (appointment: Appointment) => {
+    try {
+      // Ensure we have authentication
+      if (!AuthService.isAuthenticated()) {
+        Alert.alert('Authentication Required', 'Please log in to access messaging');
+        return;
+      }
+
+      const token = AuthService.getToken();
+      const userId = AuthService.getUserId();
+      
+      console.log('=== Chat Authentication Debug ===');
+      console.log('Token available:', token ? 'YES' : 'NO');
+      console.log('Token length:', token ? token.length : 0);
+      console.log('Token preview:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+      console.log('User ID:', userId);
+      console.log('===================================');
+      
+      if (!token || !userId) {
+        Alert.alert('Error', 'Authentication information not found');
+        return;
+      }
+
+      // Initialize MessageService if needed
+      if (!MessageService.getInstance()) {
+        MessageService.initialize(token);
+      }
+
+      const messageAPI = MessageService.getInstance();
+      if (!messageAPI) {
+        Alert.alert('Error', 'Message service not available');
+        return;
+      }
+
+      // Set user type as customer (since this is the customer app)
+      await AuthService.setUserType('customer');
+
+      const customerId = userId;
+      const providerId = appointment.provider_id;
+
+      if (!providerId) {
+        Alert.alert('Error', 'Service provider information not found');
+        return;
+      }
+
+      // Check if conversation already exists
+      const conversationsResult = await messageAPI.getConversations('customer', 1, 50);
+      
+      if (conversationsResult.success) {
+        const conversations = conversationsResult.conversations;
+        const existingConversation = conversations.find(conv => 
+          conv.provider_id === providerId
+        );
+
+        if (existingConversation) {
+          // Navigate to existing conversation
+          router.push({
+            pathname: '/directMessage',
+            params: {
+              conversationId: existingConversation.conversation_id,
+              participantName: `${appointment.provider_first_name || ''} ${appointment.provider_last_name || ''}`.trim() || 'Service Provider',
+              participantPhoto: appointment.provider_profile_photo || ''
+            }
+          });
+        } else {
+          // Create new conversation with dynamic warranty calculation
+          const createResult = await createConversationWithWarranty(Number(customerId), providerId, appointment, messageAPI);
+          
+          if (createResult.success) {
+            const newConversation = createResult.data;
+            router.push({
+              pathname: '/directMessage',
+              params: {
+                conversationId: newConversation.conversation_id,
+                participantName: `${appointment.provider_first_name || ''} ${appointment.provider_last_name || ''}`.trim() || 'Service Provider',
+                participantPhoto: appointment.provider_profile_photo || ''
+              }
+            });
+          } else {
+            Alert.alert('Error', createResult.message || 'Failed to create conversation');
+          }
+        }
+      } else {
+        console.error('Failed to check conversations:', conversationsResult);
+        const errorMessage = 'message' in conversationsResult ? conversationsResult.message : 'Unable to connect to messaging service. Please check your internet connection.';
+        Alert.alert('Network Error', errorMessage);
+      }
+    } catch (error) {
+      console.error('Error handling chat press:', error);
+      Alert.alert('Network Error', 'Unable to connect to messaging service. Please check your internet connection and try again.');
+    }
+  };
   const { durations, spring, multiplier } = useAdaptiveAnimationConfig(width);
 
   // Debug modal state changes
@@ -1547,7 +1765,7 @@ export default function Bookings() {
 
                           {/* Hide chat icon if status is Completed */}
                           {b.status !== "Completed" && (
-                            <TouchableOpacity onPress={() => router.push("/messages")}>
+                            <TouchableOpacity onPress={() => handleChatPress(b)}>
                               <Ionicons
                                 name="chatbox-ellipses"
                                 size={25}
