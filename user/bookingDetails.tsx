@@ -64,9 +64,17 @@ const BookingDetailsModal = ({ visible, onClose, booking, followupReasons }: Boo
 
           {/* Follow-up Repair Button for In Warranty */}
           {booking?.followup && !showFollowup && (
-            <TouchableOpacity onPress={() => setShowFollowup(true)} style={[styles.button, { backgroundColor: '#008080', marginTop: 10 }]}> 
-              <Text style={[styles.buttonText, { color: 'white' }]}>Submit Follow-up Repair</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity onPress={() => setShowFollowup(true)} style={[styles.button, { backgroundColor: '#008080', marginTop: 10 }]}> 
+                <Text style={[styles.buttonText, { color: 'white' }]}>Follow-up Repair</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                onClose();
+                router.replace({ pathname: '/bookings', params: { tab: 'Completed' } });
+              }} style={[styles.button, { backgroundColor: '#008080', marginTop: 10 }]}> 
+                <Text style={[styles.buttonText, { color: 'white' }]}>Repair Complete</Text>
+              </TouchableOpacity>
+            </>
           )}
 
           {/* Combo box for follow-up reasons */}

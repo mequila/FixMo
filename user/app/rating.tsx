@@ -7,31 +7,72 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MAX_PHOTOS = 5;
 
+// Get backend URL from environment variables
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
+
 const Rating = () => {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  
+  // Rating state
   const [rating, setRating] = useState(0);
   const [photos, setPhotos] = useState<string[]>([]);
   const [review, setReview] = useState("");
   const [visible, setVisible] = useState(true);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
+  
+  // Appointment data from params
+  const [appointmentData, setAppointmentData] = useState({
+    appointment_id: params.appointment_id ? parseInt(params.appointment_id as string) : 0,
+    provider_id: params.provider_id ? parseInt(params.provider_id as string) : 0,
+    provider_name: params.provider_name as string || '',
+    service_title: params.service_title as string || ''
+  });
+
+  useEffect(() => {
+    console.log('Rating page params:', params);
+    console.log('Appointment data:', appointmentData);
+    
+    // Ensure we have required data
+    if (!appointmentData.appointment_id || !appointmentData.provider_id) {
+      Alert.alert('Error', 'Missing appointment information. Returning to bookings.', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') }
+      ]);
+    }
+  }, []);
 
   const openCamera = async () => {
     if (photos.length >= MAX_PHOTOS) {
-      alert(`You can only upload up to ${MAX_PHOTOS} photos.`);
+      Alert.alert('Photo Limit', `You can only upload up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
     });
+    
     if (!result.canceled) {
       setPhotos((prevPhotos) => [...prevPhotos, result.assets[0].uri]);
     }
@@ -40,15 +81,21 @@ const Rating = () => {
 
   const openGallery = async () => {
     if (photos.length >= MAX_PHOTOS) {
-      alert(`You can only upload up to ${MAX_PHOTOS} photos.`);
+      Alert.alert('Photo Limit', `You can only upload up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant photo library permissions to select images.');
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
+      mediaTypes: ['images'],
+      quality: 0.8,
       allowsMultipleSelection: true,
-      selectionLimit: MAX_PHOTOS - photos.length, // only remaining slots
+      selectionLimit: MAX_PHOTOS - photos.length,
     });
 
     if (!result.canceled) {
@@ -65,27 +112,132 @@ const Rating = () => {
     setPhotos((prevPhotos) => prevPhotos.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    if (photos.length === 0) {
-      alert("Please add at least one photo before submitting.");
+  const handleSubmit = async () => {
+    // Validate rating
+    if (rating === 0) {
+      Alert.alert('Rating Required', 'Please select a star rating before submitting.');
       return;
     }
 
-    if (!review.trim()) {
-      alert("Please write a review before submitting.");
-      return;
-    }
+    setLoading(true);
+    
+    try {
+      console.log('=== RATING SUBMISSION DEBUG ===');
+      console.log('Appointment ID:', appointmentData.appointment_id);
+      console.log('Provider ID:', appointmentData.provider_id);
+      console.log('Rating Value:', rating);
+      console.log('Review:', review);
+      console.log('Photos count:', photos.length);
 
-    alert("Thank you for your feedback!");
-    setVisible(false);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please log in again.');
+        return;
+      }
+
+      // Create FormData for the API request
+      const formData = new FormData();
+      formData.append('appointment_id', appointmentData.appointment_id.toString());
+      formData.append('provider_id', appointmentData.provider_id.toString());
+      formData.append('rating_value', rating.toString());
+      
+      if (review.trim()) {
+        formData.append('rating_comment', review.trim());
+      }
+
+      // Add photo if selected (only first photo as per API documentation)
+      if (photos.length > 0) {
+        const photoUri = photos[0];
+        const fileExtension = photoUri.split('.').pop() || 'jpg';
+        const fileName = `rating_photo_${Date.now()}.${fileExtension}`;
+        
+        formData.append('rating_photo', {
+          uri: photoUri,
+          type: `image/${fileExtension}`,
+          name: fileName,
+        } as any);
+      }
+
+      console.log('Making API request to create rating...');
+
+      const response = await fetch(`${BACKEND_URL}/api/ratings/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      console.log('Rating API response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Rating submission success:', result);
+
+        setSubmittedSuccessfully(true);
+        
+        // Show thank you message
+        Alert.alert(
+          'Thanks for your feedback! 🌟',
+          'Your rating has been submitted successfully.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setVisible(false);
+                router.replace('/(tabs)'); // Return to bookings tab
+              }
+            }
+          ]
+        );
+      } else {
+        let errorMessage = 'Unable to submit rating. Please try again.';
+        try {
+          const errorData = await response.json();
+          console.error('Rating API error:', errorData);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          const errorText = await response.text();
+          console.error('Rating API error text:', errorText);
+        }
+        Alert.alert('Submission Failed', errorMessage);
+      }
+    } catch (error) {
+      console.error('Rating submission error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Error', `Network error: ${errorMessage}. Please check your connection and try again.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="fade">
+      <Modal 
+        visible={visible} 
+        transparent 
+        animationType="fade"
+        onRequestClose={() => {
+          // Prevent closing the modal until rating is submitted
+          if (!submittedSuccessfully) {
+            Alert.alert(
+              'Rating Required',
+              'Please rate your experience before continuing. This helps us maintain quality service.'
+            );
+          }
+        }}
+      >
         <View style={styles.overlay}>
           <View style={styles.card}>
-            <Text style={styles.title}>How was your experience?</Text>
+            <Text style={styles.title}>Rate Your Experience</Text>
+            
+            {/* Provider Information */}
+            <View style={styles.providerInfo}>
+              <Text style={styles.providerName}>{appointmentData.provider_name}</Text>
+              <Text style={styles.serviceName}>{appointmentData.service_title}</Text>
+            </View>
+
+            <Text style={styles.subtitle}>How would you rate this service?</Text>
 
             {/* Stars */}
             <View style={styles.starRow}>
@@ -101,9 +253,20 @@ const Rating = () => {
               ))}
             </View>
 
+            {/* Rating Labels */}
+            {rating > 0 && (
+              <Text style={styles.ratingLabel}>
+                {rating === 1 && "Poor"}
+                {rating === 2 && "Fair"} 
+                {rating === 3 && "Good"}
+                {rating === 4 && "Very Good"}
+                {rating === 5 && "Excellent"}
+              </Text>
+            )}
+
             {/* Upload Photos */}
             <Text style={styles.subtitle}>
-              Add photos <Text style={{ color: "red" }}>*</Text>
+              Add a photo (optional)
             </Text>
 
             <View style={styles.uploadBox}>
@@ -144,20 +307,37 @@ const Rating = () => {
 
             {/* Review Input */}
             <Text style={styles.subtitle}>
-              Write your review <Text style={{ color: "red" }}>*</Text>
+              Share your experience (optional)
             </Text>
             <TextInput
               style={styles.reviewInput}
-              placeholder="Share your experience..."
+              placeholder="Tell us about your experience..."
               multiline
               value={review}
               onChangeText={(text) => setReview(text)}
+              editable={!loading}
             />
 
             {/* Submit Button */}
-            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Submit</Text>
+            <TouchableOpacity 
+              style={[styles.button, { opacity: rating === 0 || loading ? 0.6 : 1 }]} 
+              onPress={handleSubmit}
+              disabled={rating === 0 || loading}
+            >
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={[styles.buttonText, { marginLeft: 8 }]}>Submitting...</Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Submit Rating</Text>
+              )}
             </TouchableOpacity>
+
+            {/* Required Notice */}
+            <Text style={styles.requiredNotice}>
+              ⭐ Rating is required to continue
+            </Text>
           </View>
         </View>
       </Modal>
@@ -195,12 +375,12 @@ const Rating = () => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.8)", // Darker overlay for mandatory modal
     justifyContent: "center",
     alignItems: "center",
   },
   card: {
-    width: "85%",
+    width: "90%",
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 20,
@@ -208,21 +388,49 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 5,
+    maxHeight: "85%",
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+    color: "#333",
+  },
+  providerInfo: {
+    alignItems: "center",
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+  },
+  providerName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#008080",
+    marginBottom: 5,
+  },
+  serviceName: {
+    fontSize: 14,
+    color: "#666",
   },
   starRow: {
     flexDirection: "row",
     justifyContent: "center",
+    marginBottom: 10,
+  },
+  ratingLabel: {
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
     marginBottom: 20,
   },
   subtitle: {
     fontSize: 14,
+    fontWeight: "500",
     marginBottom: 10,
+    color: "#333",
   },
   uploadBox: {
     borderWidth: 1,
@@ -269,22 +477,23 @@ const styles = StyleSheet.create({
   },
   maxNotice: {
     fontSize: 12,
-    color: "red",
+    color: "#666",
     marginBottom: 15,
   },
   reviewInput: {
     borderWidth: 1,
     borderColor: "#b2d7d7",
-    borderRadius: 5,
-    padding: 10,
+    borderRadius: 8,
+    padding: 12,
     height: 100,
     textAlignVertical: "top",
     marginBottom: 20,
     width: "100%",
+    fontSize: 14,
   },
   button: {
     backgroundColor: "#008080",
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
     marginBottom: 10,
@@ -292,6 +501,18 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontWeight: "bold",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  requiredNotice: {
+    fontSize: 12,
+    color: "#ff6b35",
+    textAlign: "center",
+    fontStyle: "italic",
   },
   iconRow: {
     flexDirection: "row",
