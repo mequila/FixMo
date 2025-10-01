@@ -9,11 +9,15 @@ import {
   Alert,
   Image,
   RefreshControl,
+  Linking,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView, Platform } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 import homeStyles from "./components/homeStyles";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MessageService, MessageAPI } from '../utils/messageAPI';
@@ -35,6 +39,12 @@ const DirectMessage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   
+  // New states for enhanced features
+  const [providerPhone, setProviderPhone] = useState<string>("");
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
   
@@ -42,6 +52,8 @@ const DirectMessage = () => {
   const conversationId = parseInt(params.conversationId as string) || 0;
   const participantName = params.participantName as string || "Service Provider";
   const participantPhoto = params.participantPhoto as string;
+  const participantPhone = params.participantPhone as string;
+  const isReadOnly = params.isReadOnly === 'true';
 
   useEffect(() => {
     if (!conversationId) {
@@ -63,22 +75,13 @@ const DirectMessage = () => {
       MessageService.initialize(token);
     }
 
-    // Debug WebSocket URL before setup
-    const messageAPI = MessageService.getInstance();
-    if (messageAPI) {
-      console.log('=== Pre-WebSocket Debug ===');
-      MessageAPI.getDebugInfo();
-      console.log('==========================');
-    }
-
     loadMessages();
+    loadConversationDetails();
     setupSocketIO();
 
     // Set up periodic message refresh as fallback for Socket.IO
     const messageRefreshInterval = setInterval(() => {
-      // Only refresh if Socket.IO is not connected
       if (!socketRef.current || !socketRef.current.connected) {
-        console.log('Socket.IO not available, refreshing messages manually');
         loadMessages(1);
       }
     }, 10000); // Refresh every 10 seconds if Socket.IO isn't working
@@ -91,6 +94,36 @@ const DirectMessage = () => {
     };
   }, [conversationId, isAuthenticated, token, userType, userId, isLoading]);
 
+  const loadConversationDetails = async () => {
+    try {
+      const messageAPI = MessageService.getInstance();
+      if (!messageAPI) return;
+
+      const result = await messageAPI.getConversationDetails(conversationId, userType as 'customer' | 'provider');
+      
+      if (result.success) {
+        const conversation = result.data;
+        
+        // Extract provider phone from conversation details or navigation params
+        let phoneNumber = participantPhone;
+        
+        if (!phoneNumber) {
+          if (userType === 'customer' && conversation.provider?.provider_phone_number) {
+            phoneNumber = conversation.provider.provider_phone_number;
+          } else if (userType === 'provider' && conversation.customer?.phone_number) {
+            phoneNumber = conversation.customer.phone_number;
+          }
+        }
+        
+        if (phoneNumber) {
+          setProviderPhone(phoneNumber);
+        }
+      }
+    } catch (error) {
+      // Error loading conversation details
+    }
+  };
+
   const loadMessages = async (pageNum: number = 1) => {
     try {
       const messageAPI = MessageService.getInstance();
@@ -101,43 +134,17 @@ const DirectMessage = () => {
 
       const result = await messageAPI.getMessages(conversationId, pageNum, 50);
       
-      console.log('📥 Load messages result:', result);
-      
       if (result.success) {
         const response = result as MessagesResponse;
-        console.log(`📦 Loaded ${response.messages.length} messages for page ${pageNum}`);
-        
-        // Debug: Check message dates
-        if (response.messages.length > 0) {
-          console.log('📅 Sample message dates:');
-          response.messages.slice(0, 3).forEach(msg => {
-            console.log(`  - Message ${msg.message_id}: ${msg.created_at}`);
-          });
-        }
         
         if (pageNum === 1) {
-          console.log('🔄 Refreshing messages (page 1)');
-          // Sort messages by created_at to ensure proper chronological order (oldest first, newest last)
           const sortedMessages = response.messages.sort((a, b) => 
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
           
-          console.log('📊 Message order after sorting:');
-          sortedMessages.slice(0, 3).forEach((msg, idx) => {
-            console.log(`  ${idx + 1}. Message ${msg.message_id}: ${msg.created_at}`);
-          });
-          if (sortedMessages.length > 3) {
-            console.log('  ... and', sortedMessages.length - 3, 'more messages');
-            const lastMsg = sortedMessages[sortedMessages.length - 1];
-            console.log(`  Last: Message ${lastMsg.message_id}: ${lastMsg.created_at}`);
-          }
-          
           setMessages(sortedMessages);
-          // Use setTimeout to ensure scroll happens after render
           setTimeout(() => scrollToBottom(), 100);
         } else {
-          console.log('📜 Loading more messages (pagination)');
-          // For pagination, add older messages to the beginning
           const sortedOlderMessages = response.messages.sort((a, b) => 
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
@@ -150,16 +157,13 @@ const DirectMessage = () => {
           !msg.is_read && userType && msg.sender_type !== userType
         );
         if (unreadMessages.length > 0) {
-          console.log(`👁️ Marking ${unreadMessages.length} messages as read`);
           markAsRead(unreadMessages.map(msg => msg.message_id));
         }
       } else {
         const error = result as ApiErrorResponse;
-        console.error('❌ Failed to load messages:', error);
         Alert.alert('Error', error.message);
       }
     } catch (error) {
-      console.error('Error loading messages:', error);
       Alert.alert('Error', 'Failed to load messages');
     } finally {
       setLoading(false);
@@ -168,14 +172,14 @@ const DirectMessage = () => {
   };
 
   const setupSocketIO = () => {
+    // Don't set up Socket.IO for read-only conversations
+    if (isReadOnly) {
+      return;
+    }
+
     try {
       const messageAPI = MessageService.getInstance();
       if (!messageAPI || !userId || !userType) {
-        console.log('Cannot setup Socket.IO - missing dependencies:', { 
-          messageAPI: !!messageAPI, 
-          userId: !!userId, 
-          userType: !!userType 
-        });
         return;
       }
 
@@ -185,66 +189,67 @@ const DirectMessage = () => {
       }
 
       try {
-        console.log('=== About to create Socket.IO connection ===');
-        console.log('MessageAPI instance exists:', !!messageAPI);
-        socketRef.current = messageAPI.createWebSocket(); // This now returns Socket
-        console.log('Socket.IO created successfully');
-        console.log('Socket ID:', socketRef.current?.id);
-        console.log('===========================================');
+        socketRef.current = messageAPI.createWebSocket();
       } catch (socketError) {
-        console.error('Failed to create Socket.IO connection, app will work without real-time updates:', socketError);
         return;
       }
       
       // Socket.IO event handlers
       socketRef.current.on('connect', () => {
-        console.log('🔗 Socket.IO connected successfully');
         // Don't join conversation immediately - wait for authentication first
       });
 
       socketRef.current.on('authenticated', (data) => {
-        console.log('✅ Socket.IO authentication successful:', data);
         // Now that we're authenticated, join the conversation
         if (socketRef.current && userId && userType) {
-          console.log('🚪 Authentication complete, now joining conversation...');
           messageAPI.joinConversation(socketRef.current, conversationId, userId, userType);
         }
       });
 
       socketRef.current.on('authentication_failed', (error) => {
-        console.warn('🔐 Socket.IO authentication failed - continuing without real-time updates');
-        console.error('Authentication error details:', error);
         // Continue with manual refresh fallback
       });
 
       socketRef.current.on('joined_conversation', (data) => {
-        console.log('✅ Successfully joined conversation room:', data.roomName);
-        console.log('Conversation ID:', data.conversationId);
-        console.log('🎉 Real-time messaging is now active!');
+        setIsSocketConnected(true);
       });
 
       socketRef.current.on('join_conversation_failed', (error) => {
-        console.warn('🚪 Failed to join conversation - continuing without real-time updates');
-        console.error('Join error details:', error);
-        console.log('📱 App will use manual refresh for message updates');
+        // Continue with manual refresh fallback
       });
 
       socketRef.current.on('new_message', (data) => {
-        console.log('📨 Received new message via Socket.IO:', data);
-        if (data.message) {
+        // Handle different possible data structures
+        let messageToAdd = null;
+        
+        if (data && data.message) {
+          messageToAdd = data.message;
+        } else if (data && data.message_id) {
+          messageToAdd = data;
+        } else if (data && typeof data === 'object') {
+          const hasMessageProps = data.content || data.conversation_id || data.sender_type;
+          if (hasMessageProps) {
+            messageToAdd = data;
+          }
+        }
+        
+        if (messageToAdd) {
           // Add new message in chronological order
-          addMessageInOrder(data.message);
-          scrollToBottom();
+          addMessageInOrder(messageToAdd);
+          
+          // Auto-scroll to bottom for new messages
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
           
           // Mark message as read if not from current user
-          if (userType && data.message.sender_type !== userType) {
-            markAsRead([data.message.message_id]);
+          if (userType && messageToAdd.sender_type !== userType) {
+            markAsRead([messageToAdd.message_id]);
           }
         }
       });
 
       socketRef.current.on('message_read', (data) => {
-        console.log('Message read update:', data);
         if (data.messageId) {
           setMessages(prev => 
             prev.map(msg => 
@@ -257,30 +262,18 @@ const DirectMessage = () => {
       });
 
       socketRef.current.on('disconnect', (reason) => {
-        console.log('Socket.IO disconnected:', reason);
-        // Don't automatically reconnect - let the app work with manual refresh
+        setIsSocketConnected(false);
       });
 
       socketRef.current.on('error', (error) => {
-        console.warn('Socket.IO error - continuing without real-time updates');
-        console.log('Error details:', error);
+        // Socket.IO error - continue with manual refresh
       });
 
       socketRef.current.on('connect_error', (error) => {
-        console.warn('Socket.IO connection failed - continuing without real-time updates');
-        console.log('Socket.IO error details (for debugging):', {
-          connected: socketRef.current?.connected,
-          id: socketRef.current?.id,
-          error: error
-        });
-      });
-
-      socketRef.current.on('error', (error) => {
-        console.warn('Socket.IO error - continuing without real-time updates');
-        console.log('Error details:', error);
+        // Socket.IO connection failed - continue with manual refresh
       });
     } catch (error) {
-      console.error('Error setting up WebSocket:', error);
+      // Error setting up WebSocket - continue with manual refresh
     }
   };
 
@@ -288,14 +281,8 @@ const DirectMessage = () => {
     if (message.trim() === "" || sending) return;
 
     const messageContent = message.trim();
-    setMessage(""); // Clear input immediately for better UX
+    setMessage("");
     setSending(true);
-
-    console.log('📤 Sending message...');
-    console.log('Message content:', messageContent);
-    console.log('Conversation ID:', conversationId);
-    console.log('User Type:', userType);
-    console.log('Socket.IO connected:', socketRef.current?.connected);
 
     try {
       const messageAPI = MessageService.getInstance();
@@ -313,27 +300,19 @@ const DirectMessage = () => {
         userType || undefined
       );
 
-      console.log('📤 Send message API result:', result);
-
       if (!result.success) {
         const error = result as ApiErrorResponse;
         Alert.alert('Error', error.message);
-        setMessage(messageContent); // Restore message if failed
+        setMessage(messageContent);
       } else {
-        // Success! Add the message immediately to UI for instant feedback
         const successResult = result as SendMessageResponse;
-        console.log('✅ Message sent successfully:', successResult.data);
-        console.log('📝 Message ID:', successResult.data.message_id);
-        console.log('📅 Message created at:', successResult.data.created_at);
         
         // Add the sent message to the messages list immediately for instant UI update
         addMessageInOrder(successResult.data);
         scrollToBottom();
         
-        // Always do a backup refresh after a short delay to ensure consistency
-        // This helps if Socket.IO real-time updates aren't working properly
+        // Backup refresh after a short delay to ensure consistency
         setTimeout(() => {
-          console.log('🔄 Doing backup message refresh for consistency');
           loadMessages(1);
         }, 1500);
       }
@@ -353,7 +332,7 @@ const DirectMessage = () => {
 
       await messageAPI.markAsRead(conversationId, messageIds);
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      // Error marking messages as read
     }
   };
 
@@ -364,7 +343,6 @@ const DirectMessage = () => {
   }, []);
 
   const onRefreshMessages = useCallback(() => {
-    console.log('Manual refresh triggered');
     loadMessages(1);
   }, []);
 
@@ -384,11 +362,18 @@ const DirectMessage = () => {
 
   // Helper function to add a message while maintaining chronological order
   const addMessageInOrder = (newMessage: ApiMessage) => {
+    console.log('🔄 [ADD_MESSAGE] Attempting to add message:', newMessage.message_id);
+    console.log('📝 [ADD_MESSAGE] Message content preview:', newMessage.content?.substring(0, 30) + '...');
+    console.log('👤 [ADD_MESSAGE] Sender type:', newMessage.sender_type);
+    console.log('📅 [ADD_MESSAGE] Created at:', newMessage.created_at);
+    
     setMessages(prev => {
+      console.log('📊 [ADD_MESSAGE] Current messages count before add:', prev.length);
+      
       // Check if message already exists
       const messageExists = prev.some(msg => msg.message_id === newMessage.message_id);
       if (messageExists) {
-        console.log('💡 Message already exists, not adding duplicate');
+        console.log('💡 [ADD_MESSAGE] Message already exists, not adding duplicate');
         return prev;
       }
 
@@ -397,9 +382,203 @@ const DirectMessage = () => {
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
-      console.log('✅ Added message in chronological order');
+      console.log('✅ [ADD_MESSAGE] Successfully added message in chronological order');
+      console.log('📊 [ADD_MESSAGE] New messages count after add:', updatedMessages.length);
+      console.log('🕐 [ADD_MESSAGE] UI should update now at:', new Date().toISOString());
+      
       return updatedMessages;
     });
+  };
+
+  // Phone call functionality
+  const handlePhoneCall = async () => {
+    if (!providerPhone) {
+      Alert.alert('No Phone Number', 'Phone number not available for this provider.');
+      return;
+    }
+
+    console.log('📞 Original phone number:', providerPhone);
+    
+    // Clean and format phone number - keep only digits and + sign
+    let cleanNumber = providerPhone.replace(/[^\d+]/g, '');
+    
+    // Ensure the number starts with + for international format
+    if (!cleanNumber.startsWith('+')) {
+      // If it starts with 0, replace with +63 (Philippines)
+      if (cleanNumber.startsWith('0')) {
+        cleanNumber = '+63' + cleanNumber.substring(1);
+      } else if (cleanNumber.length === 10) {
+        // US format - add +1
+        cleanNumber = '+1' + cleanNumber;
+      } else if (cleanNumber.length === 11 && cleanNumber.startsWith('1')) {
+        // US format with leading 1 - add +
+        cleanNumber = '+' + cleanNumber;
+      } else {
+        // Default to Philippines format if no country code
+        cleanNumber = '+63' + cleanNumber;
+      }
+    }
+    
+    const phoneUrl = `tel:${cleanNumber}`;
+    console.log('📞 Formatted phone URL:', phoneUrl);
+
+    try {
+      // Android specific fix: Use platform detection and direct call
+      const { Platform } = require('react-native');
+      
+      console.log('📞 Platform:', Platform.OS);
+      console.log('📞 Phone URL:', phoneUrl);
+      
+      if (Platform.OS === 'android') {
+        // On Android, directly show the confirmation and call
+        Alert.alert(
+          'Make Phone Call',
+          `Call ${participantName}?\n${cleanNumber}`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Call', 
+              onPress: async () => {
+                try {
+                  console.log('📞 Android: Opening phone dialer with:', phoneUrl);
+                  await Linking.openURL(phoneUrl);
+                } catch (error) {
+                  console.error('Android phone call failed:', error);
+                  Alert.alert('Error', 'Failed to open phone dialer. Please check if the phone number is correct.');
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        // iOS - use canOpenURL check
+        const canOpen = await Linking.canOpenURL(phoneUrl);
+        console.log('📞 iOS - Can open phone URL:', canOpen);
+        
+        if (canOpen) {
+          Alert.alert(
+            'Make Phone Call',
+            `Call ${participantName}?\n${cleanNumber}`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Call', 
+                onPress: async () => {
+                  try {
+                    await Linking.openURL(phoneUrl);
+                  } catch (error) {
+                    console.error('iOS phone call failed:', error);
+                    Alert.alert('Error', 'Failed to open phone dialer. Please check if the phone number is correct.');
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Phone Call Not Available',
+            `Cannot make phone calls on this device.\n\nProvider Number: ${cleanNumber}`,
+            [
+              { text: 'Copy Number', onPress: () => {
+                console.log('Number to copy:', cleanNumber);
+              }},
+              { text: 'OK', style: 'default' }
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      Alert.alert(
+        'Phone Call Error', 
+        `Error initiating phone call.\n\nProvider Number: ${cleanNumber}`,
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Image picker functionality
+  const handleImagePicker = async () => {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to send images.');
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        await sendImageMessage(imageUri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to select image.');
+    }
+  };
+
+  // Send image message
+  const sendImageMessage = async (imageUri: string) => {
+    if (sending) return;
+
+    setSending(true);
+
+    try {
+      const messageAPI = MessageService.getInstance();
+      if (!messageAPI) {
+        Alert.alert('Error', 'Message service not initialized');
+        return;
+      }
+
+      // Use the uploadFile method from the API
+      const fileExtension = imageUri.split('.').pop() || 'jpg';
+      
+      // Create a file-like object for React Native
+      const imageFile = {
+        uri: imageUri,
+        type: `image/${fileExtension}`,
+        name: `image_${Date.now()}.${fileExtension}`,
+      } as any;
+
+      const result = await messageAPI.uploadFile(
+        conversationId,
+        imageFile,
+        userType as 'customer' | 'provider'
+      );
+      
+      console.log('📸 Image upload result:', result);
+
+      if (result.success) {
+        // Add message immediately to UI
+        addMessageInOrder(result.data);
+        scrollToBottom();
+        
+        // Backup refresh
+        setTimeout(() => {
+          console.log('🔄 Backup refresh after image send');
+          loadMessages(1);
+        }, 1500);
+      } else {
+        Alert.alert('Error', result.message || 'Failed to send image');
+      }
+    } catch (error) {
+      console.error('Error sending image:', error);
+      Alert.alert('Error', 'Failed to send image');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Image viewer functionality
+  const handleImagePress = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setImageModalVisible(true);
   };
 
   const formatTime = (dateString: string) => {
@@ -530,10 +709,10 @@ const DirectMessage = () => {
               backgroundColor: isMyMessage ? "#008080" : "#e7ecec",
               padding: 12,
               borderRadius: 20,
-            maxWidth: "75%",
-            marginHorizontal: 10,
-          }}
-        >
+              maxWidth: "75%",
+              marginHorizontal: 10,
+            }}
+          >
           {item.replied_to && (
             <View style={{
               backgroundColor: isMyMessage ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)",
@@ -552,16 +731,25 @@ const DirectMessage = () => {
           )}
           
           {item.message_type === 'image' && item.attachment_url && (
-            <Image
-              source={{ uri: item.attachment_url }}
-              style={{
-                width: 200,
-                height: 150,
-                borderRadius: 10,
-                marginBottom: 8
+            <TouchableOpacity
+              onPress={() => {
+                if (item.attachment_url) {
+                  setSelectedImage(item.attachment_url);
+                  setImageModalVisible(true);
+                }
               }}
-              resizeMode="cover"
-            />
+            >
+              <Image
+                source={{ uri: item.attachment_url }}
+                style={{
+                  width: 200,
+                  height: 150,
+                  borderRadius: 10,
+                  marginBottom: 8
+                }}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
           )}
           
           <Text style={{ 
@@ -646,18 +834,54 @@ const DirectMessage = () => {
           
           <View style={{ flex: 1 }}>
             <Text style={[homeStyles.headerText]}>{participantName}</Text>
-            {socketRef.current?.connected && (
-              <Text style={{ fontSize: 12, color: "#4caf50" }}>Online</Text>
-            )}
           </View>
+          
+          {/* Call Button - Only show for active conversations */}
+          {!isReadOnly && (
+            <TouchableOpacity 
+              onPress={handlePhoneCall} 
+              style={{ 
+                marginLeft: 8,
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: 'rgba(0,128,128,0.1)'
+              }}
+            >
+              <Ionicons name="call-outline" size={20} color="#008080" />
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
+
+      {/* Read-Only Banner */}
+      {isReadOnly && (
+        <View style={{
+          backgroundColor: '#fff3cd',
+          borderBottomWidth: 1,
+          borderBottomColor: '#ffc107',
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="lock-closed" size={16} color="#856404" style={{ marginRight: 8 }} />
+            <Text style={{
+              color: '#856404',
+              fontSize: 14,
+              fontWeight: '600',
+              textAlign: 'center',
+            }}>
+              This conversation is read-only (Job completed)
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* CHAT */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={80}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 20}
+        enabled={true}
       >
         <FlatList
           ref={flatListRef}
@@ -693,19 +917,57 @@ const DirectMessage = () => {
           showsVerticalScrollIndicator={false}
         />
 
-        {/* Input Bar */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderTopWidth: 0.5,
-            borderTopColor: "#b2d7d7",
-            paddingBottom: 14,
-            paddingTop: 12,
-            paddingHorizontal: 10,
-            backgroundColor: "#fff"
-          }}
-        >
+        {/* Input Bar - Conditional based on read-only status */}
+        {isReadOnly ? (
+          /* Read-Only Message Bar */
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderTopWidth: 0.5,
+              borderTopColor: "#dee2e6",
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              backgroundColor: "#f8f9fa"
+            }}
+          >
+            <Ionicons name="lock-closed-outline" size={18} color="#6c757d" style={{ marginRight: 8 }} />
+            <Text style={{
+              color: "#6c757d",
+              fontSize: 14,
+              fontStyle: 'italic',
+            }}>
+              Messaging disabled for completed jobs
+            </Text>
+          </View>
+        ) : (
+          /* Active Input Bar */
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              borderTopWidth: 0.5,
+              borderTopColor: "#b2d7d7",
+              paddingBottom: Platform.OS === "ios" ? Math.max(insets.bottom, 12) : 14,
+              paddingTop: 12,
+              paddingHorizontal: 10,
+              backgroundColor: "#fff"
+            }}
+          >
+          {/* Image Button */}
+          <TouchableOpacity
+            onPress={handleImagePicker}
+            style={{
+              marginRight: 10,
+              padding: 8,
+              borderRadius: 20,
+              backgroundColor: "#f0f0f0"
+            }}
+          >
+            <Ionicons name="camera-outline" size={20} color="#008080" />
+          </TouchableOpacity>
+          
           <TextInput
             value={message}
             onChangeText={setMessage}
@@ -717,12 +979,14 @@ const DirectMessage = () => {
               backgroundColor: "#e7ecec",
               borderRadius: 20,
               paddingHorizontal: 15,
-              paddingVertical: 14,
+              paddingVertical: Platform.OS === "ios" ? 14 : 12,
               fontSize: 14,
               borderWidth: 1,
               borderColor: "#b2d7d7",
-              maxHeight: 100
+              maxHeight: 100,
+              minHeight: Platform.OS === "android" ? 40 : 36,
             }}
+            textAlignVertical="top"
           />
           
           <TouchableOpacity
@@ -742,7 +1006,49 @@ const DirectMessage = () => {
             )}
           </TouchableOpacity>
         </View>
+        )}
       </KeyboardAvoidingView>
+      
+      {/* Image Viewing Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.9)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 1,
+              backgroundColor: 'rgba(255,255,255,0.3)',
+              borderRadius: 20,
+              padding: 10
+            }}
+            onPress={() => setImageModalVisible(false)}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+          
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={{
+                width: Dimensions.get('window').width * 0.9,
+                height: Dimensions.get('window').height * 0.7
+              }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };

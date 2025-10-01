@@ -51,9 +51,7 @@ const _layout = () => {
             options={{ 
                 title: 'Messages',
                 tabBarLabel: '',
-                headerShown: true,
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
+                headerShown: false,
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='mail' size={25} color={color}/>
                 )   
@@ -64,9 +62,7 @@ const _layout = () => {
             options={{ 
                 title: 'Profile',
                 tabBarLabel: '',
-                headerShown: true,
-                headerStyle: { backgroundColor: "#e7ecec" },
-                headerTitleAlign: "center",
+                headerShown: false,
                 tabBarIcon: ({color, size}) => (
                     <Ionicons name='person' size={25} color={color}/>
                 )    

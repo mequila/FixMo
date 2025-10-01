@@ -101,10 +101,11 @@ export class MessageAPI {
   async getConversations(
     userType: 'customer' | 'provider', 
     page = 1, 
-    limit = 20
+    limit = 20,
+    includeCompleted = true
   ): Promise<ConversationResponse | ApiErrorResponse> {
     return this.makeRequest<ConversationResponse>(
-      `/messages/conversations?userType=${userType}&page=${page}&limit=${limit}`
+      `/messages/conversations?userType=${userType}&page=${page}&limit=${limit}&includeCompleted=${includeCompleted}`
     );
   }
 

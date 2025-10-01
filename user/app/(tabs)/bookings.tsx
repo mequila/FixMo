@@ -33,6 +33,7 @@ interface Appointment {
   starting_price?: number;
   repairDescription?: string;
   provider_profile_photo?: string;
+  provider_phone_number?: string;
   backjob_id?: number; // Keep for backward compatibility
   current_backjob?: {
     backjob_id: number;
@@ -327,13 +328,18 @@ export default function Bookings() {
         );
 
         if (existingConversation) {
+          // Determine if conversation is read-only based on appointment status
+          const isReadOnly = appointment.status === 'completed' || appointment.status === 'cancelled';
+          
           // Navigate to existing conversation
           router.push({
             pathname: '/directMessage',
             params: {
               conversationId: existingConversation.conversation_id,
               participantName: `${appointment.provider_first_name || ''} ${appointment.provider_last_name || ''}`.trim() || 'Service Provider',
-              participantPhoto: appointment.provider_profile_photo || ''
+              participantPhoto: appointment.provider_profile_photo || '',
+              participantPhone: appointment.provider_phone_number || '',
+              isReadOnly: isReadOnly ? 'true' : 'false'
             }
           });
         } else {
@@ -342,12 +348,16 @@ export default function Bookings() {
           
           if (createResult.success) {
             const newConversation = createResult.data;
+            const isReadOnly = appointment.status === 'completed' || appointment.status === 'cancelled';
+            
             router.push({
               pathname: '/directMessage',
               params: {
                 conversationId: newConversation.conversation_id,
                 participantName: `${appointment.provider_first_name || ''} ${appointment.provider_last_name || ''}`.trim() || 'Service Provider',
-                participantPhoto: appointment.provider_profile_photo || ''
+                participantPhoto: appointment.provider_profile_photo || '',
+                participantPhone: appointment.provider_phone_number || '',
+                isReadOnly: isReadOnly ? 'true' : 'false'
               }
             });
           } else {
@@ -369,6 +379,8 @@ export default function Bookings() {
   // Debug modal state changes
   useEffect(() => {
     console.log('=== MODAL STATE CHANGE ===', 'isBackjobModalVisible:', isBackjobModalVisible);
+    console.log('=== TIMESTAMP ===', new Date().toISOString());
+    console.log('=== CURRENT RENDER ===');
   }, [isBackjobModalVisible]);
 
   // Define tabs array for easier management
@@ -829,6 +841,7 @@ export default function Bookings() {
               starting_price: appointment.service.service_startingprice || appointment.starting_price,
               repairDescription: appointment.repairDescription,
               provider_profile_photo: appointment.serviceProvider?.provider_profile_photo || appointment.serviceProvider?.profilePhoto,
+              provider_phone_number: appointment.serviceProvider?.provider_phone_number || appointment.provider_phone_number,
               current_backjob: appointment.current_backjob, // Include backjob data from API
               backjob_id: appointment.current_backjob?.backjob_id, // Legacy compatibility
             };
@@ -2124,7 +2137,14 @@ export default function Bookings() {
             })()}
 
             {/* Actions section - only show for In Warranty bookings */}
-            {selectedBooking.status === "In Warranty" && (
+            {(() => {
+              console.log('=== ACTIONS SECTION DEBUG ===');
+              console.log('Selected booking status:', selectedBooking.status);
+              console.log('Status type:', typeof selectedBooking.status);
+              console.log('Is status "In Warranty"?', selectedBooking.status === "In Warranty");
+              console.log('All possible status values for debugging:', selectedBooking);
+              return selectedBooking.status === "In Warranty";
+            })() && (
               <View>
                 <View style={{ 
                   flexDirection: 'column', 
@@ -2139,12 +2159,32 @@ export default function Bookings() {
                       console.log('Current backjob data:', selectedBooking?.current_backjob);
                       console.log('Backjob ID:', selectedBooking?.backjob_id);
                       console.log('Current modal state before:', isBackjobModalVisible);
-                      setIsBackjobModalVisible(true); 
-                      console.log('Setting modal visibility to true');
-                      // Add a slight delay to check if state actually changed
-                      setTimeout(() => {
-                        console.log('Modal state after timeout:', isBackjobModalVisible);
-                      }, 100);
+                      console.log('All modal states:', {
+                        isBackjobModalVisible,
+                        isModalVisible: isModalVisible,
+                        isRatingPopupShown: isRatingPopupShown
+                      });
+                      
+                      // Force close other modals first
+                      setIsModalVisible(false);
+                      setIsRatingPopupShown(false);
+                      
+                      // Use requestAnimationFrame to ensure state updates are processed
+                      requestAnimationFrame(() => {
+                        console.log('Setting modal visibility to true via requestAnimationFrame');
+                        setIsBackjobModalVisible(true);
+                        
+                        // Double check after a longer delay
+                        setTimeout(() => {
+                          console.log('Final modal state check:', isBackjobModalVisible);
+                          console.log('All states:', {
+                            isBackjobModalVisible,
+                            isModalVisible,
+                            isRatingPopupShown,
+                            backjobLoading
+                          });
+                        }, 500);
+                      });
                     }} 
                     style={{ 
                       backgroundColor: "#008080",
@@ -2335,6 +2375,12 @@ export default function Bookings() {
       </Modal>
 
       {/* Backjob Application Modal */}
+      {(() => {
+        console.log('=== MODAL RENDER DEBUG ===');
+        console.log('Modal visible state:', isBackjobModalVisible);
+        console.log('backjobLoading state:', backjobLoading);
+        return null;
+      })()}
       <Modal
         visible={isBackjobModalVisible}
         transparent={true}
@@ -2351,13 +2397,16 @@ export default function Bookings() {
         <TouchableOpacity 
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
             justifyContent: 'center',
             alignItems: 'center',
             paddingHorizontal: 20,
+            zIndex: 9999,
+            elevation: 9999, // Android elevation
           }}
           activeOpacity={1}
           onPress={() => {
+            console.log('Modal backdrop pressed');
             if (!backjobLoading) {
               setIsBackjobModalVisible(false);
               setBackjobReason('');

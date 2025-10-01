@@ -12,7 +12,9 @@ import {
   RefreshControl,
   Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import homeStyles from '../components/homeStyles';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -125,14 +127,22 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {/* User Info Section */}
-      <View style={styles.userSection}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      {/* Header */}
+      <SafeAreaView style={[homeStyles.safeAreaTabs]}>
+        <Text style={[homeStyles.headerTabsText]}>
+          Profile
+        </Text>
+      </SafeAreaView>
+
+      <ScrollView 
+        style={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* User Info Section */}
+        <View style={styles.userSection}>
         {customerData?.profile_photo && !imageError ? (
           <Image 
             source={{ 
@@ -227,6 +237,7 @@ export default function Profile() {
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>
+  </View>
   );
 }
 

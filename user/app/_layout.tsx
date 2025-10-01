@@ -34,6 +34,18 @@ export default function RootLayout() {
           headerShown: false
         }} 
       />
+
+      <Stack.Screen
+        name="components/notification"
+        options={{
+          headerShown: true,
+          title: "Notifications",
+          headerTintColor: "#008080",
+          headerTitleStyle: { color: "black", fontSize: 20 },
+        }}
+      />
+
+      
     </Stack>
   );
 }

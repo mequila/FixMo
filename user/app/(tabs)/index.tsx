@@ -230,54 +230,9 @@ export default function Index() {
         ))}
       </ScrollView>
 
-      <View style={{ marginTop: 20, marginHorizontal: 20, marginBottom: 10 }}>
-          <Text style={{ fontSize: 18, fontFamily: "", color: "black", fontWeight: "bold" }}>
-            Most Popular Services
-          </Text>
-      </View>
+      
 
-      <View >
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: 20, marginBottom: 20 }}>
-          <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              All
-            </Text>
-          </TouchableOpacity>
-
-                    <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              Repairing
-            </Text>
-          </TouchableOpacity>
-        
-          <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              Cleaning
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              Plumbing
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              Electrical
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity>
-            <Text style={homeStyles.serviceBorder}>
-              Painting
-            </Text>
-          </TouchableOpacity>
-
-          </View>
-        </ScrollView>
-      </View>
+      
       
     </ScrollView>
     </View>

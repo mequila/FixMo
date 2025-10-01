@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { router } from "expo-router/build/exports";
 
@@ -40,6 +42,27 @@ const DateTimeSelector = () => {
 
 
   return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: '#e7ecec' }} />
+      
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#e7ecec',
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd',
+      }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 15 }}>
+          <Ionicons name="arrow-back" size={24} color="#399d9d" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black', flex: 1 }}>
+          Schedule Appointment
+        </Text>
+      </View>
+
       <View>
         <View style={styles.container}>
         <TouchableOpacity style={styles.box} onPress={() => showPicker("date")}>
@@ -56,10 +79,8 @@ const DateTimeSelector = () => {
           onCancel={hidePicker}
         />
       </View>
-
-
-      
     </View>
+  </View>
   );
 };
 

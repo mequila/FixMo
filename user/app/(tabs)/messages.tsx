@@ -3,11 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import homeStyles from '../components/homeStyles'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { MessageService } from '../../utils/messageAPI'
-import { Conversation, ConversationResponse, ApiErrorResponse } from '../../types/message.types'
+import { Conversation, ConversationResponse, ApiErrorResponse, Message } from '../../types/message.types'
 import { useAuth } from '../../utils/authService'
 import NetworkHelper from '../../utils/networkHelper'
+import { Socket } from 'socket.io-client'
 
 const messages = () => {
   const router = useRouter()
@@ -17,6 +18,9 @@ const messages = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [isSocketConnected, setIsSocketConnected] = useState(false)
+  
+  const socketRef = useRef<Socket | null>(null)
   
   useEffect(() => {
     if (isLoading) return; // Don't do anything while still loading auth state
@@ -35,6 +39,7 @@ const messages = () => {
       MessageService.initialize(token)
     }
     loadConversations()
+    setupSocketIO()
   }, [isAuthenticated, token, userType, isLoading])
 
   // Add focus listener for React Navigation
@@ -74,30 +79,122 @@ const messages = () => {
         return
       }
 
-      console.log('Loading conversations for user type:', userType, 'page:', pageNum)
-      const result = await messageAPI.getConversations(userType, pageNum, 20)
+      const result = await messageAPI.getConversations(userType, pageNum, 20, true)
       
       if (result.success) {
         const response = result as ConversationResponse
+        
         if (pageNum === 1) {
           setConversations(response.conversations)
         } else {
           setConversations(prev => [...prev, ...response.conversations])
         }
-        setHasMore(response.conversations.length === 20) // Assuming 20 is the limit
+        setHasMore(response.conversations.length === 20)
       } else {
         const error = result as ApiErrorResponse
-        console.error('API Error loading conversations:', error)
         Alert.alert('Network Error', error.message)
       }
     } catch (error) {
-      console.error('Error loading conversations:', error)
       Alert.alert('Network Error', 'Failed to load conversations. Please check your internet connection.')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
   }
+
+  const setupSocketIO = async () => {
+    if (!isAuthenticated || !token || !userType) {
+      return
+    }
+
+    try {
+      const messageAPI = MessageService.getInstance()
+      if (!messageAPI) {
+        return
+      }
+
+      // Clean up existing connection
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+
+      socketRef.current = await messageAPI.createSocketIOConnection()
+
+      if (!socketRef.current) {
+        return
+      }
+
+      // Socket event handlers
+      socketRef.current.on('connect', () => {
+        setIsSocketConnected(true)
+      })
+
+      socketRef.current.on('authenticated', (data) => {
+        // No need to join specific conversation - listen for all conversations
+      })
+
+      socketRef.current.on('new_message', (data) => {
+        
+        // Update the conversation list to show new message
+        let messageToProcess = null
+        
+        if (data && data.message) {
+          messageToProcess = data.message
+        } else if (data && data.message_id) {
+          messageToProcess = data
+        }
+        
+        if (messageToProcess) {
+          updateConversationWithNewMessage(messageToProcess)
+        }
+      })
+
+      socketRef.current.on('disconnect', () => {
+        setIsSocketConnected(false)
+      })
+
+    } catch (error) {
+      // Socket.IO setup failed silently
+    }
+  }
+
+  const updateConversationWithNewMessage = (message: Message) => {
+    setConversations(prev => {
+      return prev.map(conv => {
+        if (conv.conversation_id === message.conversation_id) {
+          return {
+            ...conv,
+            last_message: message,
+            last_message_at: message.created_at,
+            unread_count: message.sender_type !== userType ? conv.unread_count + 1 : conv.unread_count
+          }
+        }
+        return conv
+      })
+    })
+    
+    // Move updated conversation to top
+    setConversations(prev => {
+      const updated = [...prev]
+      const updatedIndex = updated.findIndex(conv => conv.conversation_id === message.conversation_id)
+      
+      if (updatedIndex > 0) {
+        const [conversation] = updated.splice(updatedIndex, 1)
+        updated.unshift(conversation)
+      }
+      
+      return updated
+    })
+  }
+
+  // Cleanup Socket.IO on unmount
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+    }
+  }, [])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
@@ -134,12 +231,19 @@ const messages = () => {
       }
     }
 
+    // Determine if conversation is read-only (job completed/cancelled)
+    const isReadOnly = conversation.status === 'closed' || 
+                      conversation.status === 'archived' ||
+                      conversation.appointment_status === 'completed' ||
+                      conversation.appointment_status === 'cancelled'
+
     router.push({
       pathname: '/directMessage',
       params: {
         conversationId: conversation.conversation_id,
         participantName: getParticipantName(),
-        participantPhoto: getParticipantPhoto()
+        participantPhoto: getParticipantPhoto(),
+        isReadOnly: isReadOnly ? 'true' : 'false'
       }
     })
   }
@@ -159,8 +263,29 @@ const messages = () => {
   }
 
   const renderConversation = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity onPress={() => openConversation(item)}>
-      <View style={[homeStyles.messagesContainer, { paddingVertical: 12 }]}>
+    <TouchableOpacity 
+      onPress={() => openConversation(item)}
+      style={{
+        backgroundColor: 'white',
+        marginHorizontal: 16,
+        marginVertical: 4,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+      }}
+    >
+      <View style={[homeStyles.messagesContainer, { 
+        paddingVertical: 16, 
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        backgroundColor: 'transparent'
+      }]}>
         <View style={{ position: 'relative' }}>
           <Image
             source={{
@@ -170,40 +295,76 @@ const messages = () => {
             }}
             defaultSource={require("../../assets/images/service-provider.jpg")}
             style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              borderWidth: 2,
+              borderColor: '#f0f0f0',
             }}
           />
           {item.unread_count > 0 && (
             <View style={{
               position: 'absolute',
-              top: -5,
-              right: -5,
-              backgroundColor: '#008080',
-              borderRadius: 10,
-              minWidth: 20,
-              height: 20,
+              top: -3,
+              right: -3,
+              backgroundColor: '#ff4757',
+              borderRadius: 12,
+              minWidth: 22,
+              height: 22,
               justifyContent: 'center',
-              alignItems: 'center'
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: 'white',
             }}>
-              <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
+              <Text style={{ 
+                color: 'white', 
+                fontSize: 11, 
+                fontWeight: '700'
+              }}>
                 {item.unread_count > 99 ? '99+' : item.unread_count}
               </Text>
             </View>
           )}
+          
+          {/* Online status indicator */}
+          <View style={{
+            position: 'absolute',
+            bottom: 0,
+            right: 2,
+            width: 14,
+            height: 14,
+            backgroundColor: '#4caf50',
+            borderRadius: 7,
+            borderWidth: 2,
+            borderColor: 'white',
+          }} />
         </View>
 
-        <View style={{ marginLeft: 15, flex: 1 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontWeight: '600', fontSize: 16 }}>
+        <View style={{ marginLeft: 14, flex: 1 }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start',
+            marginBottom: 4
+          }}>
+            <Text style={{ 
+              fontWeight: '700', 
+              fontSize: 16,
+              color: '#2c3e50',
+              flex: 1,
+              marginRight: 8
+            }} numberOfLines={1}>
               {userType === 'customer' 
                 ? `${(item.provider?.provider_first_name || (item.participant as any).provider_first_name || '')} ${(item.provider?.provider_last_name || (item.participant as any).provider_last_name || '')}`
                 : `${(item.customer?.first_name || (item.participant as any).first_name || '')} ${(item.customer?.last_name || (item.participant as any).last_name || '')}`
               }
             </Text>
             {item.last_message && (
-              <Text style={{ color: "gray", fontSize: 12 }}>
+              <Text style={{ 
+                color: "#7f8c8d", 
+                fontSize: 11,
+                fontWeight: '500'
+              }}>
                 {formatTime(item.last_message.created_at)}
               </Text>
             )}
@@ -211,33 +372,68 @@ const messages = () => {
 
           <Text
             style={{
-              color: "gray",
+              color: "#7f8c8d",
               fontSize: 14,
-              marginTop: 4,
+              marginBottom: 8,
+              lineHeight: 18,
             }}
             numberOfLines={2}>
             {item.last_message?.content || 'No messages yet'}
           </Text>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+          }}>
             <View style={{
-              backgroundColor: item.is_warranty_active ? '#e8f5e8' : '#fee8e8',
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: 10
+              backgroundColor: item.is_warranty_active ? '#e8f8f5' : '#ffeaa7',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: item.is_warranty_active ? '#00b894' : '#fdcb6e',
             }}>
               <Text style={{
                 fontSize: 10,
-                color: item.is_warranty_active ? '#2e7d32' : '#c62828'
+                fontWeight: '600',
+                color: item.is_warranty_active ? '#00b894' : '#e17055'
               }}>
-                {item.is_warranty_active ? '🛡️ Warranty Active' : '❌ Expired'}
+                {item.is_warranty_active ? '🛡️ Under Warranty' : '⚠️ Warranty Expired'}
               </Text>
             </View>
-            {item.last_message && item.last_message.sender_type === userType && (
-              <Text style={{ color: item.last_message.is_read ? '#008080' : 'gray', fontSize: 12 }}>
-                {item.last_message.is_read ? '✓✓' : '✓'}
-              </Text>
+            
+            {/* Show Completed/Archived status badge */}
+            {(item.status === 'closed' || item.status === 'archived' || 
+              item.appointment_status === 'completed' || item.appointment_status === 'cancelled') && (
+              <View style={{
+                backgroundColor: '#e9ecef',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 10,
+                marginLeft: 8,
+              }}>
+                <Text style={{
+                  fontSize: 9,
+                  fontWeight: '600',
+                  color: '#6c757d'
+                }}>
+                  READ ONLY
+                </Text>
+              </View>
             )}
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {item.last_message && item.last_message.sender_type === userType && (
+                <Text style={{ 
+                  color: item.last_message.is_read ? '#00b894' : '#7f8c8d', 
+                  fontSize: 14,
+                  marginRight: 4
+                }}>
+                  {item.last_message.is_read ? '✓✓' : '✓'}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -272,48 +468,53 @@ const messages = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <View style={{ marginHorizontal: 20, marginTop: 20, flex: 1 }}>
-        <Text style={{
-          fontWeight: '600', 
-          fontSize: 20,
-          marginBottom: 20
-        }}>
+    <View style={{ flex: 1, backgroundColor: "#f8f9fa" }}>
+      {/* Header */}
+      <SafeAreaView style={[homeStyles.safeAreaTabs]}>
+        <Text style={[homeStyles.headerTabsText]}>
           Messages
         </Text>
+      </SafeAreaView>
 
-        <FlatList
-          data={conversations}
-          renderItem={renderConversation}
-          keyExtractor={(item) => item.conversation_id.toString()}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#008080']}
-            />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={() => 
-            loading && conversations.length > 0 ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#008080" />
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={() => 
-            !loading ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 }}>
-                <Text style={{ fontSize: 16, color: 'gray', textAlign: 'center' }}>
-                  No conversations yet{'\n'}Start a conversation with a service provider
-                </Text>
-              </View>
-            ) : null
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+      <FlatList
+        data={conversations}
+        renderItem={renderConversation}
+        keyExtractor={(item) => item.conversation_id.toString()}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ 
+          paddingTop: 8,
+          paddingBottom: 20,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#00b894']}
+            tintColor={'#00b894'}
+          />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={() => 
+          loading && conversations.length > 0 ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#00b894" />
+            </View>
+          ) : null
+        }
+        ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
+        ListEmptyComponent={() => 
+          !loading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 }}>
+              <Ionicons name="chatbubbles-outline" size={64} color="#ddd" />
+              <Text style={{ fontSize: 16, color: 'gray', textAlign: 'center', marginTop: 16 }}>
+                No conversations yet{'\n'}Start a conversation with a service provider
+              </Text>
+            </View>
+          ) : null
+        }
+      />
     </View>
   )
 }

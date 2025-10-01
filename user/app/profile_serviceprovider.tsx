@@ -143,6 +143,18 @@ export default function profile_serviceprovider() {
   const [userLocation, setUserLocation] = useState<string>('');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [showAllRatings, setShowAllRatings] = useState(false);
+  const [allRatings, setAllRatings] = useState<Rating[]>([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [ratingsPagination, setRatingsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalRatings: 0,
+    hasNext: false,
+  });
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedStarFilter, setSelectedStarFilter] = useState<number | null>(null);
 
   // Calculate total images for pagination
   const getTotalImages = () => {
@@ -454,8 +466,8 @@ export default function profile_serviceprovider() {
 
       console.log('🔍 Fetching ratings for provider ID:', providerIdToUse);
 
-      // This is a public endpoint according to the documentation
-      const response = await fetch(`${BACKEND_URL}/api/ratings/provider/${providerIdToUse}`, {
+      // Fetch first page with pagination
+      const response = await fetch(`${BACKEND_URL}/api/ratings/provider/${providerIdToUse}?page=1&limit=3`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -472,7 +484,17 @@ export default function profile_serviceprovider() {
         
         if (result.success && result.data) {
           ratingsData = result.data.ratings || [];
-          averageRating = result.data.averageRating || 0;
+          averageRating = result.data.statistics?.average_rating || result.data.averageRating || 0;
+          
+          // Store pagination info
+          if (result.data.pagination) {
+            setRatingsPagination({
+              currentPage: result.data.pagination.current_page || 1,
+              totalPages: result.data.pagination.total_pages || 1,
+              totalRatings: result.data.pagination.total_ratings || ratingsData.length,
+              hasNext: result.data.pagination.has_next || false,
+            });
+          }
         } else if (result.ratings) {
           ratingsData = result.ratings;
           // Calculate average if not provided
@@ -491,7 +513,7 @@ export default function profile_serviceprovider() {
           id: rating.id || rating.rating_id,
           rating_value: rating.rating_value || rating.rating || 5,
           rating_comment: rating.rating_comment || rating.comment,
-          rating_photo: rating.rating_photo || rating.photo,
+          rating_photo: rating.rating_photo || rating.photo || null,
           created_at: rating.created_at || rating.createdAt || new Date().toISOString(),
           user: {
             user_id: rating.user?.user_id || rating.customer?.user_id || 0,
@@ -534,6 +556,113 @@ export default function profile_serviceprovider() {
     await fetchAllData();
     await fetchCustomerProfile();
     setRefreshing(false);
+  };
+
+  const fetchAllRatings = async (page: number = 1, starFilter: number | null = null) => {
+    try {
+      setRatingsLoading(true);
+      const providerIdToUse = providerId || serviceData?.provider?.id;
+      
+      if (!providerIdToUse) {
+        Alert.alert('Error', 'Provider ID not found');
+        return;
+      }
+
+      // Build URL with optional star filter
+      let url = `${BACKEND_URL}/api/ratings/provider/${providerIdToUse}?page=${page}&limit=10`;
+      if (starFilter !== null) {
+        url += `&rating=${starFilter}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        let ratingsData = [];
+        if (result.success && result.data) {
+          ratingsData = result.data.ratings || [];
+          
+          // Update pagination info (but adjust if we're filtering client-side)
+          if (result.data.pagination) {
+            setRatingsPagination({
+              currentPage: result.data.pagination.current_page || page,
+              totalPages: result.data.pagination.total_pages || 1,
+              totalRatings: result.data.pagination.total_ratings || ratingsData.length,
+              hasNext: result.data.pagination.has_next || false,
+            });
+          }
+        }
+
+        // Transform ratings data
+        let transformedRatings = ratingsData.map((rating: any) => ({
+          id: rating.id || rating.rating_id,
+          rating_value: rating.rating_value || rating.rating || 5,
+          rating_comment: rating.rating_comment || rating.comment,
+          rating_photo: rating.rating_photo || rating.photo || null,
+          created_at: rating.created_at || rating.createdAt || new Date().toISOString(),
+          user: {
+            user_id: rating.user?.user_id || rating.customer?.user_id || 0,
+            first_name: rating.user?.first_name || rating.customer?.first_name || 'Anonymous',
+            last_name: rating.user?.last_name || rating.customer?.last_name || '',
+            userName: rating.user?.userName || rating.customer?.userName || 'user',
+            profile_photo: rating.user?.profile_photo || rating.customer?.profile_photo
+          }
+        }));
+
+        // Client-side filter as backup (in case backend doesn't filter properly)
+        if (starFilter !== null) {
+          transformedRatings = transformedRatings.filter((rating: Rating) => rating.rating_value === starFilter);
+          
+          // Update pagination to reflect actual filtered count
+          setRatingsPagination(prev => ({
+            ...prev,
+            totalRatings: page === 1 ? transformedRatings.length : prev.totalRatings,
+            hasNext: false, // Disable pagination when client-side filtering
+          }));
+        }
+
+        if (page === 1) {
+          setAllRatings(transformedRatings);
+        } else {
+          setAllRatings(prev => [...prev, ...transformedRatings]);
+        }
+      } else {
+        Alert.alert('Error', 'Failed to load ratings');
+      }
+    } catch (error) {
+      console.error('Error fetching all ratings:', error);
+      Alert.alert('Error', 'Failed to load ratings');
+    } finally {
+      setRatingsLoading(false);
+    }
+  };
+
+  const handleSeeAllRatings = () => {
+    setShowAllRatings(true);
+    setSelectedStarFilter(null);
+    fetchAllRatings(1, null);
+  };
+
+  const handleStarFilterChange = (star: number | null) => {
+    setSelectedStarFilter(star);
+    fetchAllRatings(1, star);
+  };
+
+  const loadMoreRatings = () => {
+    if (ratingsPagination.hasNext && !ratingsLoading) {
+      fetchAllRatings(ratingsPagination.currentPage + 1, selectedStarFilter);
+    }
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setShowImageModal(true);
   };
 
   const handleBookingConfirmation = async () => {
@@ -669,7 +798,7 @@ export default function profile_serviceprovider() {
           [
             {
               text: 'OK',
-              onPress: () => router.push('/bookingmaps')
+              onPress: () => router.push('/(tabs)/bookings')
             }
           ]
         );
@@ -1117,7 +1246,7 @@ export default function profile_serviceprovider() {
               <Text style={{ fontSize: 20, fontWeight: "bold" }}>Reviews</Text>
 
               <View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleSeeAllRatings}>
                   <Text
                     style={{
                       color: "#008080",
@@ -1146,7 +1275,7 @@ export default function profile_serviceprovider() {
                   }}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <View style={{ flex: 1, marginRight: 10 }}>
+                    <View style={{ flex: 1, marginRight: rating.rating_photo ? 10 : 0 }}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
                         <Text style={{ fontSize: 14, color: "#333", marginBottom: 8 }}>
                           {rating.rating_comment || 'Great service!'}
@@ -1164,21 +1293,18 @@ export default function profile_serviceprovider() {
                         {new Date(rating.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    {rating.rating_photo ? (
-                      <Image
-                        source={{ 
-                          uri: rating.rating_photo.startsWith('http') 
-                            ? rating.rating_photo 
-                            : `${BACKEND_URL}/${rating.rating_photo}`
-                        }}
-                        style={{ width: 75, height: 75, borderRadius: 5 }}
-                        onError={() => console.log('❌ Failed to load rating photo')}
-                      />
-                    ) : (
-                      <Image
-                        source={require("../assets/images/service-provider.jpg")}
-                        style={{ width: 75, height: 75, borderRadius: 5 }}
-                      />
+                    {rating.rating_photo && (
+                      <TouchableOpacity onPress={() => handleImageClick(rating.rating_photo!)}>
+                        <Image
+                          source={{ 
+                            uri: rating.rating_photo.startsWith('http') 
+                              ? rating.rating_photo 
+                              : `${BACKEND_URL}/${rating.rating_photo}`
+                          }}
+                          style={{ width: 75, height: 75, borderRadius: 5 }}
+                          onError={() => console.log('❌ Failed to load rating photo')}
+                        />
+                      </TouchableOpacity>
                     )}
                   </View>
                 </View>
@@ -1337,6 +1463,244 @@ export default function profile_serviceprovider() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* All Ratings Modal */}
+      <Modal
+        visible={showAllRatings}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setShowAllRatings(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+          {/* Header */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingVertical: 15,
+            backgroundColor: '#e7ecec',
+            borderBottomWidth: 1,
+            borderBottomColor: '#ddd',
+          }}>
+            <TouchableOpacity 
+              onPress={() => setShowAllRatings(false)}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#399d9d" />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black', flex: 1 }}>
+              All Reviews ({ratingsPagination.totalRatings})
+            </Text>
+          </View>
+
+          {/* Star Filter */}
+          <View style={{
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: '#f8f9fa',
+            borderBottomWidth: 1,
+            borderBottomColor: '#e9ecef',
+          }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' }}>
+              Filter by Rating:
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => handleStarFilterChange(null)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    backgroundColor: selectedStarFilter === null ? '#008080' : '#e9ecef',
+                    borderWidth: 1,
+                    borderColor: selectedStarFilter === null ? '#008080' : '#ddd',
+                  }}
+                >
+                  <Text style={{
+                    color: selectedStarFilter === null ? 'white' : '#666',
+                    fontWeight: '600',
+                    fontSize: 13,
+                  }}>
+                    All
+                  </Text>
+                </TouchableOpacity>
+                {[5, 4, 3, 2, 1].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => handleStarFilterChange(star)}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      backgroundColor: selectedStarFilter === star ? '#008080' : '#e9ecef',
+                      borderWidth: 1,
+                      borderColor: selectedStarFilter === star ? '#008080' : '#ddd',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Ionicons name="star" size={14} color={selectedStarFilter === star ? 'white' : '#FFD700'} />
+                    <Text style={{
+                      color: selectedStarFilter === star ? 'white' : '#666',
+                      fontWeight: '600',
+                      fontSize: 13,
+                    }}>
+                      {star}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Ratings List */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 16 }}
+            onScroll={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+              const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+              if (isCloseToBottom) {
+                loadMoreRatings();
+              }
+            }}
+            scrollEventThrottle={400}
+          >
+            {allRatings.length > 0 ? (
+              allRatings.map((rating) => (
+                <View
+                  key={rating.id}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#f7f9f9",
+                    borderRadius: 5,
+                    backgroundColor: "#f7f9f9",
+                    marginBottom: 16,
+                    padding: 10,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ flex: 1, marginRight: rating.rating_photo ? 10 : 0 }}>
+                      <View style={{ flex: 1, paddingRight: 12 }}>
+                        <Text style={{ fontSize: 14, color: "#333", marginBottom: 8 }}>
+                          {rating.rating_comment || 'Great service!'}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Text style={{ fontWeight: 'bold' }}>
+                          {rating.user?.first_name || rating.user?.userName || 'Anonymous'}
+                        </Text>
+                        <View style={{ flexDirection: "row" }}>
+                          {renderStars(rating.rating_value)}
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 12, color: "#999", marginTop: 4 }}>
+                        {new Date(rating.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    {rating.rating_photo && (
+                      <TouchableOpacity onPress={() => handleImageClick(rating.rating_photo!)}>
+                        <Image
+                          source={{ 
+                            uri: rating.rating_photo.startsWith('http') 
+                              ? rating.rating_photo 
+                              : `${BACKEND_URL}/${rating.rating_photo}`
+                          }}
+                          style={{ width: 75, height: 75, borderRadius: 5 }}
+                          onError={() => console.log('❌ Failed to load rating photo')}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={{ 
+                padding: 20, 
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: "#f7f9f9",
+                borderRadius: 5,
+                backgroundColor: "#f7f9f9",
+              }}>
+                <Ionicons name="chatbubble-outline" size={40} color="#ccc" />
+                <Text style={{ color: '#999', marginTop: 10 }}>
+                  No reviews yet
+                </Text>
+              </View>
+            )}
+
+            {/* Loading indicator */}
+            {ratingsLoading && (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#399d9d" />
+              </View>
+            )}
+
+            {/* End message */}
+            {!ratingsLoading && !ratingsPagination.hasNext && allRatings.length > 0 && (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#999', fontSize: 14 }}>
+                  No more reviews
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          {/* Close Button */}
+          <TouchableOpacity
+            onPress={() => setShowImageModal(false)}
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              borderRadius: 20,
+              padding: 8,
+            }}
+          >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+
+          {/* Full Screen Image */}
+          {selectedImage && (
+            <Image
+              source={{ 
+                uri: selectedImage.startsWith('http') 
+                  ? selectedImage 
+                  : `${BACKEND_URL}/${selectedImage}`
+              }}
+              style={{
+                width: screenWidth,
+                height: screenWidth,
+                resizeMode: 'contain',
+              }}
+              onError={() => {
+                Alert.alert('Error', 'Failed to load image');
+                setShowImageModal(false);
+              }}
+            />
+          )}
         </View>
       </Modal>
     </View>
