@@ -1,9 +1,12 @@
 // Authentication and User Context utilities
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MessageService } from './messageAPI';
+import { Router } from 'expo-router';
+import { Alert } from 'react-native';
 
 const TOKEN_KEY = 'token';
 const USER_DATA_KEY = 'userData';
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
 export interface UserData {
   user_id: number;
@@ -19,6 +22,12 @@ export interface UserData {
 export class AuthService {
   private static currentUser: UserData | null = null;
   private static token: string | null = null;
+  private static router: Router | null = null;
+
+  // Initialize router for navigation
+  static setRouter(router: Router) {
+    this.router = router;
+  }
 
   // Initialize from stored data on app startup
   static async initialize(): Promise<void> {
@@ -95,7 +104,8 @@ export class AuthService {
     try {
       await Promise.all([
         AsyncStorage.removeItem(TOKEN_KEY),
-        AsyncStorage.removeItem(USER_DATA_KEY)
+        AsyncStorage.removeItem(USER_DATA_KEY),
+        AsyncStorage.removeItem('userId')
       ]);
 
       this.token = null;
@@ -103,6 +113,61 @@ export class AuthService {
     } catch (error) {
       console.error('Failed to clear auth data:', error);
     }
+  }
+
+  // Force logout due to token expiration
+  static async forceLogout(reason: string = 'Session expired'): Promise<void> {
+    await this.logout();
+    
+    Alert.alert(
+      'Session Expired',
+      reason,
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (this.router) {
+              this.router.replace('/login');
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  }
+
+  // Validate token with backend
+  static async validateToken(): Promise<boolean> {
+    if (!this.token) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/validate-token`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        // Token is invalid or expired
+        await this.forceLogout('Your session has expired. Please login again.');
+        return false;
+      }
+
+      return response.ok;
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      // Don't force logout on network errors
+      return true;
+    }
+  }
+
+  // Check if token is expired (call this before API requests)
+  static async checkTokenExpiration(): Promise<boolean> {
+    return await this.validateToken();
   }
 
   // Get current user data

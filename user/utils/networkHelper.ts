@@ -1,24 +1,46 @@
 // Network connectivity and API health checker
+import * as Network from 'expo-network';
+
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
 export interface NetworkStatus {
   isConnected: boolean;
   apiAvailable: boolean;
   backendUrl: string;
+  hasInternet: boolean;
   error?: string;
 }
 
 export class NetworkHelper {
+  // Check if device has internet connection
+  static async checkInternetConnection(): Promise<boolean> {
+    try {
+      const networkState = await Network.getNetworkStateAsync();
+      return networkState.isConnected === true && networkState.isInternetReachable !== false;
+    } catch (error) {
+      console.error('Error checking internet connection:', error);
+      return false;
+    }
+  }
+
   // Check if the backend API is reachable
   static async checkAPIHealth(): Promise<NetworkStatus> {
     const status: NetworkStatus = {
       isConnected: false,
       apiAvailable: false,
-      backendUrl: BACKEND_URL
+      backendUrl: BACKEND_URL,
+      hasInternet: false
     };
 
     try {
-      // First check basic network connectivity
+      // First check basic internet connectivity
+      status.hasInternet = await this.checkInternetConnection();
+      
+      if (!status.hasInternet) {
+        status.error = 'No internet connection detected';
+        return status;
+      }
+
       console.log(`Checking API health at: ${BACKEND_URL}`);
       
       // Try to reach a simple health endpoint or any endpoint
@@ -49,12 +71,18 @@ export class NetworkHelper {
       const err = error as Error;
       console.error('Network health check failed:', err.message);
       
-      if (err.message.includes('Network request failed')) {
-        status.error = 'Cannot reach the server. Check if your backend is running.';
-      } else if (err.message.includes('timeout') || err.name === 'AbortError') {
-        status.error = 'Connection timeout. Server may be slow or unreachable.';
+      // Distinguish between no internet and server issues
+      if (status.hasInternet) {
+        // Has internet but can't reach server
+        if (err.message.includes('Network request failed')) {
+          status.error = 'Cannot reach the server. Check if your backend is running.';
+        } else if (err.message.includes('timeout') || err.name === 'AbortError') {
+          status.error = 'Connection timeout. Server may be slow or unreachable.';
+        } else {
+          status.error = `Network error: ${err.message}`;
+        }
       } else {
-        status.error = `Network error: ${err.message}`;
+        status.error = 'No internet connection';
       }
     }
 

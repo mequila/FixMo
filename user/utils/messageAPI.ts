@@ -9,6 +9,7 @@ import {
   WebSocketMessage
 } from '../types/message.types';
 import { io, Socket } from 'socket.io-client';
+import { ApiErrorHandler } from './apiErrorHandler';
 
 // Get backend URL from environment variables (same as your existing app)
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -47,6 +48,16 @@ export class MessageAPI {
         }
       });
 
+      // Check internet connection first
+      const hasInternet = await ApiErrorHandler.checkInternetConnection();
+      if (!hasInternet) {
+        ApiErrorHandler.handleNoInternet();
+        return {
+          success: false,
+          message: 'No internet connection'
+        } as ApiErrorResponse;
+      }
+
       const response = await fetch(fullUrl, {
         ...options,
         headers: {
@@ -56,6 +67,15 @@ export class MessageAPI {
       });
 
       console.log(`Response status: ${response.status} ${response.statusText}`);
+
+      // Handle 401 - Token expired
+      if (response.status === 401) {
+        await ApiErrorHandler.handleError(response, 'MessageAPI');
+        return {
+          success: false,
+          message: 'Session expired'
+        } as ApiErrorResponse;
+      }
 
       if (!response.ok) {
         let errorData;
@@ -68,6 +88,9 @@ export class MessageAPI {
           };
         }
         console.error('API Error Response:', errorData);
+        
+        // Handle other HTTP errors
+        await ApiErrorHandler.handleError(response, 'MessageAPI');
         return errorData as ApiErrorResponse;
       }
 
@@ -81,6 +104,9 @@ export class MessageAPI {
         error: err.message || String(error),
         stack: err.stack
       });
+      
+      // Use centralized error handler
+      await ApiErrorHandler.handleError(error, 'MessageAPI');
       
       // Determine the type of error for better user feedback
       let errorMessage = 'Network error occurred';

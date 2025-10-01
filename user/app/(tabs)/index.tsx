@@ -2,11 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, ActivityIndicator, Alert } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { homeStyles } from "../components/homeStyles";
 import SearchBar from "../components/searchbar";
 import ServiceIcon from "../components/index/ServiceIcon";
+import { ApiErrorHandler } from "../../utils/apiErrorHandler";
+import { AuthService } from "../../utils/authService";
+import { NetworkHelper } from "../../utils/networkHelper";
 
 interface CustomerData {
   id: number;
@@ -48,6 +51,10 @@ export default function Index() {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
+    // Initialize error handler with router
+    ApiErrorHandler.initialize(router);
+    AuthService.setRouter(router);
+    
     fetchCustomerData();
   }, []);
 
@@ -56,9 +63,12 @@ export default function Index() {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         setLoading(false);
+        // No token - user not logged in, but still show the page
+        console.log('No token found - user not logged in');
         return;
       }
 
+      // Make API request directly - let the network error handling catch issues
       const response = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
         method: 'GET',
         headers: {
@@ -67,14 +77,31 @@ export default function Index() {
         },
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setCustomerData(result.data);
-        setImageError(false); // Reset image error when new data loads
-        console.log('Customer data loaded:', result.data);
+      // Check for 401 - token expired
+      if (response.status === 401) {
+        console.log('Token expired, handling logout...');
+        await ApiErrorHandler.handleError(response, 'Customer Profile');
+        setLoading(false);
+        return;
       }
+
+      // Check for other errors
+      if (!response.ok) {
+        console.error('API error:', response.status);
+        // Don't show alert on initial load, just log
+        setLoading(false);
+        return;
+      }
+
+      const result = await response.json();
+      setCustomerData(result.data);
+      setImageError(false); // Reset image error when new data loads
+      console.log('Customer data loaded:', result.data);
+      
     } catch (error) {
       console.error('Error fetching customer data:', error);
+      // Don't show alert on initial page load, just log
+      // Page will still show "Good day, User!" without profile data
     } finally {
       setLoading(false);
     }

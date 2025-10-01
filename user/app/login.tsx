@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ApiErrorHandler } from '../utils/apiErrorHandler';
+import { AuthService } from '../utils/authService';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -33,6 +35,14 @@ export default function Login() {
     setLoading(true);
     
     try {
+      // Check internet connection first
+      const hasInternet = await ApiErrorHandler.checkInternetConnection();
+      if (!hasInternet) {
+        ApiErrorHandler.handleNoInternet();
+        setLoading(false);
+        return;
+      }
+
       const loginUrl = `${BACKEND_URL}/auth/login`;
       console.log('Attempting login to:', loginUrl);
       console.log('Backend URL from env:', BACKEND_URL);
@@ -60,6 +70,9 @@ export default function Login() {
         await AsyncStorage.setItem('userId', data.userId.toString());
         await AsyncStorage.setItem('userName', data.userName);
         
+        // Initialize AuthService with router
+        AuthService.setRouter(router);
+        
         Alert.alert(
           'Success', 
           'Login successful!', 
@@ -76,15 +89,9 @@ export default function Login() {
     } catch (error) {
       console.error('Login error:', error);
       
-      // More specific error handling
-      if (error.message?.includes('Network request failed')) {
-        Alert.alert(
-          'Connection Error', 
-          'Cannot connect to the server at localhost:3000.\n\nPlease check:\n• Backend server is running\n• Server is accessible at localhost:3000\n• No firewall blocking the connection'
-        );
-      } else {
-        Alert.alert('Error', `Network error: ${error.message}`);
-      }
+      // Use centralized error handler
+      await ApiErrorHandler.handleError(error, 'Login');
+      
     } finally {
       setLoading(false);
     }
@@ -111,10 +118,7 @@ export default function Login() {
       );
     } catch (error) {
       console.error('Connection test error:', error);
-      Alert.alert(
-        'Server Connection Failed',
-        `Cannot reach server: ${error.message}\n\nMake sure your backend server is running on localhost:3000`
-      );
+      await ApiErrorHandler.handleError(error, 'Connection Test');
     }
   };
 
