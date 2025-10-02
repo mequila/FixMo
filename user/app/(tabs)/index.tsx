@@ -168,9 +168,10 @@ export default function Index() {
 
 
       <View>
-        <TouchableOpacity onPress={() => router.push("/search")}>
-          <SearchBar/>
-        </TouchableOpacity>
+        <SearchBar
+          placeholder="Search for services..."
+          onPress={() => router.push("/search")}
+        />
       </View>
 
       <View style={{ marginTop: 25, marginHorizontal: 20, marginBottom: 10 }}>
