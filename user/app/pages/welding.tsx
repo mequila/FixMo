@@ -34,15 +34,6 @@ const Welding = () => {
           />
         ))}
       </ScrollView>
-
-      <View style={homeStyles.marginEmergencyFix}>
-        <TouchableOpacity onPress={() => router.push("/emergencyfix")}>
-          <View style={homeStyles.emergencyFix}>
-            <Ionicons name="alert-circle-outline" size={24} color="white" />
-            <Text style={homeStyles.emergencyFixText}>Emergency Fix</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
