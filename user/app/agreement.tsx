@@ -1,29 +1,31 @@
+import { useRouter, Stack } from 'expo-router';
 import React from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
     Image,
-    TouchableOpacity,
     SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import {useRouter} from 'expo-router';
 
 export default function AgreementScreen() {
     const router = useRouter();
 
     const handleAgree = () => {
-        router.push('/(tabs)/home');
+        router.push('/basicinfo');
     };
 
     return (
-        <SafeAreaView style={styles.wrapper}>
-            <View style={styles.content}>
-                <Image
-                    source={require('./assets/images/fixmo-logo.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
+        <>
+            <Stack.Screen options={{ headerShown: false }} />
+            <SafeAreaView style={styles.wrapper}>
+                <View style={styles.content}>
+                    <Image
+                        source={require('../assets/images/fixmo-logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
 
                 <Text style={styles.title}>We’ve updated FixMo' Terms and Privacy Policy.</Text>
                 <Text style={styles.text}>
@@ -39,6 +41,7 @@ export default function AgreementScreen() {
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
+        </>
     );
 }
 

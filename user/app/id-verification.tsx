@@ -1,29 +1,59 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    Image,
     Alert,
+    Image,
     Modal,
     Pressable,
     ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import {useState} from 'react';
-import {useRouter} from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import {Ionicons} from '@expo/vector-icons';
 
 export default function IDVerificationScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
 
-    const [idType, setIdType] = useState('');
-    const [idNumber, setIdNumber] = useState('');
-    const [idPhotoFront, setIdPhotoFront] = useState<string | null>(null);
-    const [idPhotoBack, setIdPhotoBack] = useState<string | null>(null);
-    const [showSourceModal, setShowSourceModal] = useState<null | 'front' | 'back'>(null);
+    const [idType, setIdType] = useState(params.idType as string || '');
+    const [idPhotoFront, setIdPhotoFront] = useState<string | null>((params.idPhotoFront as string) || null);
+    const [showSourceModal, setShowSourceModal] = useState<boolean>(false);
     const [showTypeModal, setShowTypeModal] = useState(false);
+
+    // Load saved data from AsyncStorage on mount
+    useEffect(() => {
+        loadSavedData();
+    }, []);
+
+    // Save data to AsyncStorage whenever it changes
+    useEffect(() => {
+        saveData();
+    }, [idType, idPhotoFront]);
+
+    const loadSavedData = async () => {
+        try {
+            const savedIdType = await AsyncStorage.getItem('idVerification_idType');
+            const savedIdPhotoFront = await AsyncStorage.getItem('idVerification_idPhotoFront');
+
+            if (savedIdType && !params.idType) setIdType(savedIdType);
+            if (savedIdPhotoFront && !params.idPhotoFront) setIdPhotoFront(savedIdPhotoFront);
+        } catch (error) {
+            console.log('Error loading saved ID verification data:', error);
+        }
+    };
+
+    const saveData = async () => {
+        try {
+            if (idType) await AsyncStorage.setItem('idVerification_idType', idType);
+            if (idPhotoFront) await AsyncStorage.setItem('idVerification_idPhotoFront', idPhotoFront);
+        } catch (error) {
+            console.log('Error saving ID verification data:', error);
+        }
+    };
 
     const idTypes = [
         'PhilSys (National ID)',
@@ -39,15 +69,15 @@ export default function IDVerificationScreen() {
     ];
 
     const handleNext = () => {
-        if (!idType || !idNumber.trim() || !idPhotoFront || !idPhotoBack) {
-            Alert.alert('Missing Information', 'Please complete all fields before continuing.');
+        if (!idType || !idPhotoFront) {
+            Alert.alert('Missing Information', 'Please select ID type and upload your ID photo.');
             return;
         }
-        router.push('/Selfie');
+        router.push('/applicationreview');
     };
 
-    const handlePhotoSource = async (side: 'front' | 'back', source: 'camera' | 'gallery') => {
-        setShowSourceModal(null);
+    const handlePhotoSource = async (source: 'camera' | 'gallery') => {
+        setShowSourceModal(false);
 
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
@@ -61,15 +91,20 @@ export default function IDVerificationScreen() {
                 : await ImagePicker.launchImageLibraryAsync({allowsEditing: true, quality: 0.8});
 
         if (!result.canceled) {
-            if (side === 'front') setIdPhotoFront(result.assets[0].uri);
-            if (side === 'back') setIdPhotoBack(result.assets[0].uri);
+            setIdPhotoFront(result.assets[0].uri);
         }
+    };
+
+    const handleBack = () => {
+        router.back();
     };
 
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-                <Ionicons name="arrow-back" size={30} color="#008080" style={{marginTop: 20}}/>
+                <TouchableOpacity onPress={handleBack}>
+                    <Ionicons name="arrow-back" size={30} color="#008080" style={{marginTop: 20}}/>
+                </TouchableOpacity>
                 <Text style={styles.title}>Valid Government ID</Text>
                 <Text style={styles.subtitle}>
                     Your full name will help us verify your identity and display it to customers.
@@ -86,9 +121,9 @@ export default function IDVerificationScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* FRONT Photo */}
+                {/* ID Photo */}
                 <View style={styles.section}>
-                    <Text style={styles.label}>Front of ID</Text>
+                    <Text style={styles.label}>Valid Government ID Photo</Text>
                     <TouchableOpacity
                         style={[
                             styles.photoUpload,
@@ -100,7 +135,7 @@ export default function IDVerificationScreen() {
                                 Alert.alert('Select ID Type', 'Please select an ID type first.');
                                 return;
                             }
-                            setShowSourceModal('front');
+                            setShowSourceModal(true);
                         }}
                         disabled={!idType}
                     >
@@ -108,7 +143,7 @@ export default function IDVerificationScreen() {
                             <Image source={{uri: idPhotoFront}} style={styles.photoPreview}/>
                         ) : (
                             <Text style={styles.uploadText}>
-                                {idType ? `Upload ${idType} Front` : 'Select ID type first'}
+                                {idType ? `Upload ${idType}` : 'Select ID type first'}
                             </Text>
                         )}
                     </TouchableOpacity>
@@ -119,7 +154,7 @@ export default function IDVerificationScreen() {
                             onPress={() =>
                                 Alert.alert(
                                     'Remove Photo',
-                                    'Are you sure you want to remove the front photo?',
+                                    'Are you sure you want to remove the ID photo?',
                                     [
                                         {text: 'Cancel', style: 'cancel'},
                                         {text: 'Remove', style: 'destructive', onPress: () => setIdPhotoFront(null)},
@@ -132,64 +167,6 @@ export default function IDVerificationScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
-
-                {/* BACK Photo */}
-                <View style={styles.section}>
-                    <Text style={styles.label}>Back of ID</Text>
-                    <TouchableOpacity
-                        style={[
-                            styles.photoUpload,
-                            idPhotoBack && {borderColor: '#4caf50', borderWidth: 1},
-                            !idType && {backgroundColor: '#f0f0f0'},
-                        ]}
-                        onPress={() => {
-                            if (!idType) {
-                                Alert.alert('Select ID Type', 'Please select an ID type first.');
-                                return;
-                            }
-                            setShowSourceModal('back');
-                        }}
-                        disabled={!idType}
-                    >
-                        {idPhotoBack ? (
-                            <Image source={{uri: idPhotoBack}} style={styles.photoPreview}/>
-                        ) : (
-                            <Text style={styles.uploadText}>
-                                {idType ? `Upload ${idType} Back` : 'Select ID type first'}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-
-                    {idPhotoBack && (
-                        <TouchableOpacity
-                            style={styles.removeBtn}
-                            onPress={() =>
-                                Alert.alert(
-                                    'Remove Photo',
-                                    'Are you sure you want to remove the back photo?',
-                                    [
-                                        {text: 'Cancel', style: 'cancel'},
-                                        {text: 'Remove', style: 'destructive', onPress: () => setIdPhotoBack(null)},
-                                    ]
-                                )
-                            }
-                        >
-                            <Ionicons name="trash-outline" size={16} color="red"/>
-                            <Text style={styles.removeText}>Remove</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* ID Number */}
-                <View style={styles.section}>
-                    <Text style={styles.label}>Valid Government ID number</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your ID number"
-                        value={idNumber}
-                        onChangeText={(text) => setIdNumber(text.toUpperCase())}
-                    />
-                </View>
             </ScrollView>
 
             {/* Fixed Next Button */}
@@ -200,22 +177,22 @@ export default function IDVerificationScreen() {
             </View>
 
             {/* Photo Source Modal */}
-            <Modal visible={!!showSourceModal} transparent animationType="fade">
+            <Modal visible={showSourceModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Select Source</Text>
 
-                        <Pressable onPress={() => handlePhotoSource(showSourceModal!, 'camera')}
+                        <Pressable onPress={() => handlePhotoSource('camera')}
                                    style={styles.modalOption}>
                             <Text style={styles.modalText}>Take Picture</Text>
                         </Pressable>
 
-                        <Pressable onPress={() => handlePhotoSource(showSourceModal!, 'gallery')}
+                        <Pressable onPress={() => handlePhotoSource('gallery')}
                                    style={styles.modalOption}>
                             <Text style={styles.modalText}>Choose from Gallery</Text>
                         </Pressable>
 
-                        <Pressable onPress={() => setShowSourceModal(null)} style={styles.modalCancel}>
+                        <Pressable onPress={() => setShowSourceModal(false)} style={styles.modalCancel}>
                             <Text style={{color: 'red'}}>Cancel</Text>
                         </Pressable>
                     </View>

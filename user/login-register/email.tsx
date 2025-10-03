@@ -1,30 +1,118 @@
-import React, {useState} from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
+    ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import {useRouter} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+
+// Use the exact environment variable from .env
+const BACKEND_URL = 'http://192.168.1.27:3000';
 
 export default function EmailScreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleNext = () => {
+    const handleNext = async () => {
+        Alert.alert('DEBUG', 'Button clicked!');
+        console.log('🔘 Next button clicked!');
+        console.log('📧 Email entered:', email);
+        
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailRegex.test(email)) {
-            router.push({
-                pathname: '/otp',
-                params: {email},
-            });
-        } else {
-            alert('Please enter a valid email address');
+        
+        if (!emailRegex.test(email)) {
+            console.log('❌ Invalid email format');
+            Alert.alert('Invalid Email', 'Please enter a valid email address');
+            return;
+        }
+
+        console.log('✅ Email validation passed');
+        setLoading(true);
+
+        try {
+            // Send OTP to customer email using customer endpoint
+            // Try multiple possible endpoint paths
+            const possibleEndpoints = [
+                '/auth/send-otp',           // Standard customer endpoint
+                '/auth/customer-send-otp',  // Alternative naming
+                '/auth/customer/send-otp',  // Alternative structure
+                '/customer/send-otp',       // Different base path
+            ];
+
+            let response;
+            let successfulEndpoint = null;
+
+            // Try each endpoint until one works
+            for (const endpoint of possibleEndpoints) {
+                console.log('� Trying endpoint:', `${BACKEND_URL}${endpoint}`);
+                try {
+                    response = await fetch(`${BACKEND_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email }),
+                    });
+
+                    if (response.status !== 404) {
+                        successfulEndpoint = endpoint;
+                        break;
+                    }
+                } catch (err) {
+                    console.log('❌ Failed with endpoint:', endpoint);
+                    continue;
+                }
+            }
+
+            if (!response || !successfulEndpoint) {
+                Alert.alert(
+                    'Error',
+                    'Could not connect to server. Please ensure the backend is running and the endpoint exists.'
+                );
+                return;
+            }
+
+            console.log('✅ Successful endpoint:', successfulEndpoint);
+            console.log('📊 Response status:', response.status);
+            const data = await response.json();
+            console.log('📦 Response data:', data);
+
+            if (response.ok) {
+                Alert.alert(
+                    'Success', 
+                    'OTP has been sent to your email. Please check your inbox.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                router.push({
+                                    pathname: '/login-register/otp',
+                                    params: {email},
+                                });
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Error', data.message || `Request failed with status ${response.status}`);
+            }
+        } catch (error: any) {
+            console.error('❌ Error sending OTP:', error);
+            Alert.alert(
+                'Error', 
+                error.message || 'Unable to send OTP. Please check your internet connection and try again.'
+            );
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -55,8 +143,16 @@ export default function EmailScreen() {
                 </View>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity style={styles.button} onPress={handleNext}>
-                        <Text style={styles.buttonText}>Next</Text>
+                    <TouchableOpacity 
+                        style={[styles.button, loading && styles.buttonDisabled]} 
+                        onPress={handleNext}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.buttonText}>Next</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -115,6 +211,9 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 30,
         alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     buttonText: {
         color: '#fff',

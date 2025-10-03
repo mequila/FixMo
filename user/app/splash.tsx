@@ -212,7 +212,7 @@ export default function Splash() {
 
                         {/* Forgot Password Link */}
                         <TouchableOpacity
-                            onPress={() => router.push("/login-register/forgot-password")}
+                            onPress={() => router.push("/forgot-password")}
                             style={styles.forgotPasswordContainer}
                         >
                             <Text style={styles.forgotPasswordText}>
@@ -243,7 +243,7 @@ export default function Splash() {
                                 Don't have an account?{" "}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => router.push("/login-register/email")}
+                                onPress={() => router.push("/register-email")}
                             >
                                 <Text style={styles.registerLink}>
                                     Sign Up

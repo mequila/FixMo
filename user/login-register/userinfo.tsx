@@ -10,43 +10,51 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    ActivityIndicator,
 } from "react-native";
 import {Ionicons} from "@expo/vector-icons";
-import {useRouter} from "expo-router";
+import {useRouter, useLocalSearchParams} from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-export default function ProfileScreen() {
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
+
+export default function UserInfoScreen() {
     const router = useRouter();
+    const {email} = useLocalSearchParams<{ email: string }>();
 
     // --- Personal Info ---
-    const [photo, setPhoto] = useState<string | null>(null);
+    const [profilePhoto, setProfilePhoto] = useState<any>(null);
+    const [validId, setValidId] = useState<any>(null);
     const [firstName, setFirstName] = useState("");
-    const [middleName, setMiddleName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [dob, setDob] = useState(""); // yyyy-mm-dd
+    const [userName, setUserName] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [birthday, setBirthday] = useState("");
+    const [userLocation, setUserLocation] = useState("");
+    const [exactLocation, setExactLocation] = useState("");
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    // --- Contact Info ---
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [username, setUsername] = useState("");
-
-    // --- CAMERA ---
-    const openCamera = async () => {
-        const {status} = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-            Alert.alert("Permission Required", "Camera access is needed to take a photo.");
-            return;
-        }
-        const result = await ImagePicker.launchCameraAsync({
+    // --- CAMERA/Gallery ---
+    const pickImage = async (type: 'profile' | 'id') => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            aspect: [1, 1],
+            aspect: type === 'profile' ? [1, 1] : [4, 3],
             quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            setPhoto(result.assets[0].uri);
+            if (type === 'profile') {
+                setProfilePhoto(result.assets[0]);
+            } else {
+                setValidId(result.assets[0]);
+            }
         }
     };
 
@@ -54,36 +62,107 @@ export default function ProfileScreen() {
     const handleDateChange = (_event: any, selectedDate?: Date) => {
         setShowDatePicker(false);
         if (selectedDate) {
-            setDob(selectedDate.toISOString().split("T")[0]); // yyyy-mm-dd
+            setBirthday(selectedDate.toISOString().split("T")[0]); // yyyy-mm-dd
         }
     };
 
     // --- Validation ---
-    const validateRequiredFields = () => {
-        const required = [
-            {label: "First Name", value: firstName},
-            {label: "Last Name", value: lastName},
-            {label: "Date of Birth", value: dob},
-            {label: "Email", value: email},
-            {label: "Username", value: username},
-            {label: "Phone Number", value: phone},
-        ];
-
-        for (const field of required) {
-            if (!field.value.trim()) {
-                Alert.alert("Missing Information", `Please enter your ${field.label}.`);
-                return false;
-            }
+    const validateFields = () => {
+        if (!firstName.trim()) {
+            Alert.alert("Error", "Please enter your first name");
+            return false;
+        }
+        if (!lastName.trim()) {
+            Alert.alert("Error", "Please enter your last name");
+            return false;
+        }
+        if (!userName.trim()) {
+            Alert.alert("Error", "Please enter a username");
+            return false;
+        }
+        if (!password || password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters");
+            return false;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert("Error", "Passwords do not match");
+            return false;
+        }
+        if (!phoneNumber.trim()) {
+            Alert.alert("Error", "Please enter your phone number");
+            return false;
         }
         return true;
     };
 
-    // --- Next Button ---
-    const handleNext = () => {
-        if (!validateRequiredFields()) return;
+    // --- Register ---
+    const handleRegister = async () => {
+        if (!validateFields()) return;
 
-        // Pass data if needed using params, context, or store
-        router.push("/locationscreen"); // ✅ goes to LocationScreen
+        setLoading(true);
+
+        try {
+            const formData = new FormData();
+            
+            // Required fields
+            formData.append('first_name', firstName.trim());
+            formData.append('last_name', lastName.trim());
+            formData.append('userName', userName.trim());
+            formData.append('email', email || '');
+            formData.append('password', password);
+            formData.append('phone_number', phoneNumber.trim());
+
+            // Optional fields
+            if (birthday) formData.append('birthday', birthday);
+            if (userLocation.trim()) formData.append('user_location', userLocation.trim());
+            if (exactLocation.trim()) formData.append('exact_location', exactLocation.trim());
+
+            // Optional files
+            if (profilePhoto) {
+                formData.append('profile_photo', {
+                    uri: profilePhoto.uri,
+                    type: profilePhoto.type || 'image/jpeg',
+                    name: profilePhoto.fileName || 'profile.jpg',
+                } as any);
+            }
+            if (validId) {
+                formData.append('valid_id', {
+                    uri: validId.uri,
+                    type: validId.type || 'image/jpeg',
+                    name: validId.fileName || 'id.jpg',
+                } as any);
+            }
+
+            const response = await fetch(`${BACKEND_URL}/auth/register`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Alert.alert(
+                    'Success!',
+                    'Your account has been created successfully. Please login to continue.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.replace('/splash')
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Registration Failed', data.message || 'Please try again');
+            }
+        } catch (error: any) {
+            console.error('Registration error:', error);
+            Alert.alert('Error', 'Unable to register. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
