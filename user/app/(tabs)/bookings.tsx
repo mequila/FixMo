@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Image, Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert, RefreshControl, TextInput, Modal, Animated, Easing, useWindowDimensions } from "react-native";
+import { Image, Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert, RefreshControl, TextInput, Modal, Animated, Easing, useWindowDimensions, KeyboardAvoidingView, Platform } from "react-native";
 import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
 import homeStyles from "../components/homeStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -2394,26 +2394,37 @@ export default function Bookings() {
           }
         }}
       >
-        <TouchableOpacity 
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: 20,
-            zIndex: 9999,
-            elevation: 9999, // Android elevation
-          }}
-          activeOpacity={1}
-          onPress={() => {
-            console.log('Modal backdrop pressed');
-            if (!backjobLoading) {
-              setIsBackjobModalVisible(false);
-              setBackjobReason('');
-              setBackjobEvidence('');
-            }
-          }}
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
+          <ScrollView 
+            style={{ flex: 1 }} 
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TouchableOpacity 
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 20,
+                zIndex: 9999,
+                elevation: 9999, // Android elevation
+              }}
+              activeOpacity={1}
+              onPress={() => {
+                console.log('Modal backdrop pressed');
+                if (!backjobLoading) {
+                  setIsBackjobModalVisible(false);
+                  setBackjobReason('');
+                  setBackjobEvidence('');
+                }
+              }}
+            >
           <TouchableOpacity 
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
@@ -2667,7 +2678,9 @@ export default function Bookings() {
               </Text>
             </View>
           </TouchableOpacity>
-        </TouchableOpacity>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
 

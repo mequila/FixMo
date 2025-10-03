@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiErrorHandler } from '../utils/apiErrorHandler';
 import { AuthService } from '../utils/authService';
+import { Ionicons } from '@expo/vector-icons';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -24,6 +26,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDeactivatedModal, setShowDeactivatedModal] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -72,6 +75,32 @@ export default function Login() {
         
         // Initialize AuthService with router
         AuthService.setRouter(router);
+        
+        // Check user profile to verify account status
+        try {
+          const profileResponse = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${data.token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            console.log('Profile data after login:', profileData.data);
+            
+            // Check if account is deactivated
+            if (profileData.data.is_activated === false || profileData.data.account_status === 'deactivated') {
+              setLoading(false);
+              setShowDeactivatedModal(true);
+              return;
+            }
+          }
+        } catch (profileError) {
+          console.error('Error checking profile:', profileError);
+          // Continue with normal login flow if profile check fails
+        }
         
         Alert.alert(
           'Success', 
@@ -246,6 +275,110 @@ export default function Login() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Deactivated Account Modal */}
+      <Modal
+        visible={showDeactivatedModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 15,
+            padding: 25,
+            width: '100%',
+            maxWidth: 350,
+            borderWidth: 3,
+            borderColor: '#ff4444',
+          }}>
+            <View style={{
+              alignItems: 'center',
+              marginBottom: 20,
+            }}>
+              <Ionicons name="warning" size={70} color="#ff4444" />
+            </View>
+
+            <Text style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: 15,
+              color: '#333',
+            }}>
+              Account Deactivated
+            </Text>
+            
+            <Text style={{
+              fontSize: 16,
+              textAlign: 'center',
+              marginBottom: 20,
+              color: '#666',
+              lineHeight: 24,
+            }}>
+              Your account has been deactivated by an administrator. 
+              Please contact customer service for assistance.
+            </Text>
+
+            <View style={{
+              backgroundColor: '#fff3cd',
+              borderLeftWidth: 4,
+              borderLeftColor: '#ffc107',
+              padding: 15,
+              marginBottom: 20,
+              borderRadius: 4,
+            }}>
+              <Text style={{
+                fontSize: 14,
+                color: '#856404',
+                fontStyle: 'italic',
+                textAlign: 'center',
+              }}>
+                You will not be able to access the app until your account is reactivated.
+              </Text>
+            </View>
+            
+            <View style={{
+              flexDirection: 'column',
+              gap: 10,
+            }}>
+              <TouchableOpacity 
+                onPress={async () => {
+                  setShowDeactivatedModal(false);
+                  // Clear stored data and logout
+                  try {
+                    await AsyncStorage.multiRemove(['token', 'userId', 'userName', 'userData']);
+                    await AuthService.logout();
+                  } catch (error) {
+                    console.error('Error during logout:', error);
+                  }
+                }}
+                style={{
+                  backgroundColor: '#ff4444',
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 16,
+                  color: 'white',
+                  fontWeight: '600',
+                }}>
+                  Logout
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

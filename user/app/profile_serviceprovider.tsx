@@ -92,6 +92,11 @@ interface CustomerProfile {
   profile_photo?: string;
   user_location?: string;
   exact_location?: string;
+  is_verified?: boolean;
+  account_status?: string;
+  is_activated?: boolean;
+  verification_status?: string;
+  rejection_reason?: string;
 }
 
 interface ProviderProfession {
@@ -146,6 +151,9 @@ export default function profile_serviceprovider() {
   const [showAllRatings, setShowAllRatings] = useState(false);
   const [allRatings, setAllRatings] = useState<Rating[]>([]);
   const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<string>('');
+  const [rejectionReason, setRejectionReason] = useState<string>('');
   const [ratingsPagination, setRatingsPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -199,11 +207,52 @@ export default function profile_serviceprovider() {
         if (result.success && result.data) {
           setCustomerProfile(result.data);
           setUserLocation(result.data.user_location || result.data.exact_location || 'Location not set');
+          // Store verification status
+          setVerificationStatus(result.data.verification_status || 'pending');
+          setRejectionReason(result.data.rejection_reason || '');
         }
       }
     } catch (error) {
       console.error('Error fetching customer profile:', error);
     }
+  };
+
+  const handleBookNowPress = () => {
+    // Check if user is verified before allowing booking
+    if (!customerProfile) {
+      Alert.alert('Error', 'Please log in to book an appointment');
+      return;
+    }
+
+    // Check account status (handle both is_activated: false and account_status: 'deactivated')
+    if (customerProfile.is_activated === false || customerProfile.account_status === 'deactivated') {
+      Alert.alert(
+        'Account Deactivated',
+        'Your account has been deactivated. Please contact customer service for assistance.',
+        [
+          {
+            text: 'Contact Support',
+            onPress: () => router.push('/contactUs'),
+          },
+          {
+            text: 'OK',
+            style: 'cancel',
+          }
+        ]
+      );
+      return;
+    }
+
+    // Check verification status - must be verified AND approved
+    if (!customerProfile.is_verified || customerProfile.verification_status !== 'approved') {
+      setShowVerificationModal(true);
+      setVerificationStatus(customerProfile.verification_status || 'not_verified');
+      setRejectionReason(customerProfile.rejection_reason || '');
+      return;
+    }
+
+    // User is verified, proceed with booking
+    setShowBookingModal(true);
   };
 
   const fetchAllData = async () => {
@@ -1154,7 +1203,7 @@ export default function profile_serviceprovider() {
                 </View>
               </View>
 
-              <TouchableOpacity onPress={() => setShowBookingModal(true)}>
+              <TouchableOpacity onPress={handleBookNowPress}>
                   <View style={{ marginTop: 16,
                         backgroundColor: "#008080",
                         paddingVertical: 12,
@@ -1460,6 +1509,156 @@ export default function profile_serviceprovider() {
                     Yes, Book Now
                   </Text>
                 )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Verification Required Modal */}
+      <Modal
+        visible={showVerificationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVerificationModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 15,
+            padding: 20,
+            width: '100%',
+            maxWidth: 350,
+            borderWidth: 2,
+            borderColor: '#ff6b35',
+          }}>
+            <View style={{
+              alignItems: 'center',
+              marginBottom: 15,
+            }}>
+              <Ionicons 
+                name={verificationStatus === 'rejected' ? 'close-circle' : 'alert-circle'} 
+                size={60} 
+                color={verificationStatus === 'rejected' ? '#ff4444' : '#FFA500'} 
+              />
+            </View>
+
+            <Text style={{
+              fontSize: 20,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: 15,
+              color: '#333',
+            }}>
+              {verificationStatus === 'rejected' ? 'Verification Rejected' : 'Verification Required'}
+            </Text>
+            
+            <Text style={{
+              fontSize: 16,
+              textAlign: 'center',
+              marginBottom: 15,
+              color: '#666',
+              lineHeight: 24,
+            }}>
+              {verificationStatus === 'rejected' 
+                ? 'Your account verification was rejected. Please resubmit your documents to continue booking.'
+                : 'Please verify your account before booking appointments. This helps us maintain a safe and trusted community.'}
+            </Text>
+
+            {verificationStatus === 'rejected' && rejectionReason && (
+              <View style={{
+                backgroundColor: '#fff3cd',
+                borderColor: '#ffeaa7',
+                borderWidth: 1,
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 15,
+              }}>
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#856404',
+                  marginBottom: 5,
+                }}>
+                  Rejection Reason:
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#856404',
+                }}>
+                  {rejectionReason}
+                </Text>
+              </View>
+            )}
+
+            <View style={{
+              backgroundColor: '#e7f5ff',
+              borderLeftWidth: 4,
+              borderLeftColor: '#008080',
+              padding: 12,
+              marginBottom: 20,
+              borderRadius: 4,
+            }}>
+              <Text style={{
+                fontSize: 13,
+                color: '#666',
+                fontStyle: 'italic',
+              }}>
+                Verification Status: {verificationStatus === 'pending' ? 'Pending Review' : 
+                  verificationStatus === 'rejected' ? 'Rejected' : 'Not Submitted'}
+              </Text>
+            </View>
+            
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              gap: 15,
+            }}>
+              <TouchableOpacity 
+                onPress={() => setShowVerificationModal(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#ddd',
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 16,
+                  color: '#666',
+                  fontWeight: '600',
+                }}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowVerificationModal(false);
+                  router.push('/editprofile');
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#008080',
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 16,
+                  color: 'white',
+                  fontWeight: '600',
+                }}>
+                  {verificationStatus === 'rejected' ? 'Resubmit' : 'Verify Now'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

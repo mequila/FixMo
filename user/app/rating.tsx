@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -227,9 +229,20 @@ const Rating = () => {
           }
         }}
       >
-        <View style={styles.overlay}>
-          <View style={styles.card}>
-            <Text style={styles.title}>Rate Your Experience</Text>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView 
+            style={{ flex: 1 }} 
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.overlay}>
+              <View style={styles.card}>
+                <Text style={styles.title}>Rate Your Experience</Text>
             
             {/* Provider Information */}
             <View style={styles.providerInfo}>
@@ -246,7 +259,7 @@ const Rating = () => {
                   <Ionicons
                     name={rating >= star ? "star" : "star-outline"}
                     size={40}
-                    color={rating >= star ? "#FFD700" : "#b2d7d7"}
+                    color={rating >= star ? "#008080" : "#b2d7d7"}
                     style={{ marginRight: 8 }}
                   />
                 </TouchableOpacity>
@@ -338,8 +351,10 @@ const Rating = () => {
             <Text style={styles.requiredNotice}>
               ⭐ Rating is required to continue
             </Text>
-          </View>
-        </View>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Photo Selection Modal */}

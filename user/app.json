@@ -25,7 +25,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.fixmo.fixmoUser"
     },
     "web": {
       "bundler": "metro",
@@ -54,6 +55,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "65744d48-0b06-43b1-ab9e-d8a9930997bd"
+      }
     }
   }
 }
