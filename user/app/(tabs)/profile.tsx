@@ -127,10 +127,10 @@ const Profile = () => {
             try {
               await AsyncStorage.multiRemove(['token', 'userId', 'userName', 'userData']);
               await AuthService.logout();
-              router.replace('/login');
+              router.replace('/splash');
             } catch (error) {
               console.error('Error during logout:', error);
-              router.replace('/login');
+              router.replace('/splash');
             }
           }
         }
@@ -383,10 +383,10 @@ const Profile = () => {
                   try {
                     await AsyncStorage.multiRemove(['token', 'userId', 'userName', 'userData']);
                     await AuthService.logout();
-                    router.replace('/login');
+                    router.replace('/splash');
                   } catch (error) {
                     console.error('Error during logout:', error);
-                    router.replace('/login');
+                    router.replace('/splash');
                   }
                 }}
                 style={{

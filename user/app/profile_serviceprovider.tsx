@@ -230,13 +230,7 @@ export default function profile_serviceprovider() {
   const checkBookingAvailability = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('❌ No token found for booking availability check');
-        return;
-      }
-
-      console.log('🔍 Checking booking availability...');
-      console.log('🔗 API URL:', `${BACKEND_URL}/auth/customer-booking-availability`);
+      if (!token) return;
 
       const response = await fetch(`${BACKEND_URL}/auth/customer-booking-availability`, {
         method: 'GET',
@@ -246,27 +240,14 @@ export default function profile_serviceprovider() {
         },
       });
 
-      console.log('📡 Booking availability response status:', response.status);
-
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Full booking availability response:', JSON.stringify(result, null, 2));
-        
         if (result.success && result.data) {
           setBookingAvailability(result.data);
-          console.log('✅ Booking availability set:', result.data);
-          console.log('📊 Can book:', result.data.canBook);
-          console.log('📊 Scheduled count:', result.data.scheduledCount);
-          console.log('📊 Available slots:', result.data.availableSlots);
-        } else {
-          console.log('⚠️ Booking availability response missing success or data:', result);
         }
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Booking availability API error:', response.status, errorText);
       }
     } catch (error) {
-      console.error('❌ Error checking booking availability:', error);
+      console.error('Error checking booking availability:', error);
     }
   };
 

@@ -668,8 +668,6 @@ export default function Account() {
         <PageHeader 
           title="Edit Profile" 
           backRoute="/(tabs)/profile" 
-          showSave 
-          onSave={handleSave} 
         />
 
         {/* OTP Request Section - Only for approved users */}
@@ -1006,9 +1004,9 @@ export default function Account() {
           {/* Save Button */}
           <TouchableOpacity
             onPress={handleSave}
-            disabled={saving}
+            disabled={saving || (userData?.verification_status === 'approved' && !otpRequested)}
             style={{
-              backgroundColor: saving ? '#ccc' : '#008080',
+              backgroundColor: (saving || (userData?.verification_status === 'approved' && !otpRequested)) ? '#ccc' : '#008080',
               borderRadius: 10,
               paddingVertical: 15,
               alignItems: 'center',

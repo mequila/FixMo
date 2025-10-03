@@ -108,7 +108,7 @@ export default function Splash() {
                 Alert.alert("Success", "Login successful!", [
                     {
                         text: "OK",
-                        onPress: () => router.push("/(tabs)"),
+                        onPress: () => router.replace("/(tabs)"),
                     },
                 ]);
             } else {
@@ -141,7 +141,7 @@ export default function Splash() {
                     {/* Logo Section */}
                     <View style={styles.logoContainer}>
                         <Image
-                            source={require("./assets/images/fixmo-logo.png")}
+                            source={require("../assets/images/fixmo-logo.png")}
                             style={styles.logo}
                             resizeMode="contain"
                         />
@@ -210,6 +210,16 @@ export default function Splash() {
                             </View>
                         </View>
 
+                        {/* Forgot Password Link */}
+                        <TouchableOpacity
+                            onPress={() => router.push("/login-register/forgot-password")}
+                            style={styles.forgotPasswordContainer}
+                        >
+                            <Text style={styles.forgotPasswordText}>
+                                Forgot Password?
+                            </Text>
+                        </TouchableOpacity>
+
                         <TouchableOpacity
                             style={[
                                 styles.loginButton,
@@ -227,18 +237,13 @@ export default function Splash() {
                             )}
                         </TouchableOpacity>
 
-                        {/* Register link - to be implemented later */}
+                        {/* Register link */}
                         <View style={styles.registerContainer}>
                             <Text style={styles.registerText}>
                                 Don't have an account?{" "}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => {
-                                    Alert.alert(
-                                        "Coming Soon",
-                                        "Registration feature will be implemented soon!"
-                                    );
-                                }}
+                                onPress={() => router.push("/login-register/email")}
                             >
                                 <Text style={styles.registerLink}>
                                     Sign Up
@@ -391,6 +396,16 @@ const styles = StyleSheet.create({
         position: "absolute",
         right: 15,
         padding: 5,
+    },
+    forgotPasswordContainer: {
+        alignItems: "flex-end",
+        marginTop: 8,
+        marginBottom: 5,
+    },
+    forgotPasswordText: {
+        fontSize: 14,
+        color: "#399d9d",
+        fontWeight: "600",
     },
     loginButton: {
         backgroundColor: "#399d9d",

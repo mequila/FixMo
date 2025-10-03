@@ -1,11 +1,21 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { useNavigation } from 'expo-router'
-import React from 'react'
-import { TouchableOpacity } from 'react-native'
+import React, { useEffect } from 'react'
+import { TouchableOpacity, BackHandler } from 'react-native'
 
 const _layout = () => {
   const navigation = useNavigation();
+
+  // Prevent back navigation when on tabs (home screen)
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Return true to prevent default back behavior (going back to login)
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <Tabs
