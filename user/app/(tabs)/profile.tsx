@@ -30,7 +30,7 @@ interface CustomerData {
   phone_number: string;
   user_location: string;
   profile_photo?: string;
-  is_verified?: boolean;
+  valid_id?: string;
   account_status?: string;
   is_activated?: boolean;
   verification_status?: string;
@@ -88,9 +88,18 @@ const Profile = () => {
       }
 
       const result = await response.json();
+      console.log('=== FULL API RESPONSE ===');
+      console.log('Full response:', JSON.stringify(result, null, 2));
+      console.log('Result.data:', result.data);
+      console.log('========================');
+      
       setCustomerData(result.data);
       setImageError(false); // Reset image error when new data loads
       console.log('Customer profile loaded:', result.data);
+      console.log('Verification status:', result.data?.verification_status);
+      console.log('Rejection reason:', result.data?.rejection_reason);
+      console.log('Valid ID:', result.data?.valid_id);
+      console.log('Is verified:', result.data?.is_verified);
       
       // Check if account is deactivated (handle both is_activated: false and account_status: 'deactivated')
       if (result.data.is_activated === false || result.data.account_status === 'deactivated') {
@@ -172,7 +181,7 @@ const Profile = () => {
                     <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>
                         {customerData ? `${customerData.first_name} ${customerData.last_name}` : 'User'}
                     </Text>
-                    {customerData?.is_verified && (
+                    {customerData?.verification_status === 'approved' && (
                         <Ionicons 
                             name="checkmark-circle" 
                             size={20} 
@@ -188,7 +197,7 @@ const Profile = () => {
         </View>
  
       {/* Verification Status Banner */}
-      {customerData && !customerData.is_verified && (
+      {customerData && customerData.verification_status !== 'approved' && (
         <TouchableOpacity 
           onPress={() => setShowVerificationModal(true)}
           style={{
@@ -219,10 +228,15 @@ const Profile = () => {
               {customerData.verification_status === 'rejected' ? 'Verification Rejected' : 
                customerData.verification_status === 'pending' ? 'Verification Pending' : 'Account Not Verified'}
             </Text>
-            <Text style={{ fontSize: 12, color: '#666' }}>
-              {customerData.verification_status === 'rejected' ? 'Tap to resubmit documents' : 
-               customerData.verification_status === 'pending' ? 'Under review' : 'Tap to verify your account'}
-            </Text>
+            {customerData.verification_status === 'rejected' && customerData.rejection_reason ? (
+              <Text style={{ fontSize: 12, color: '#ff4444', fontWeight: '500' }}>
+                {customerData.rejection_reason}
+              </Text>
+            ) : (
+              <Text style={{ fontSize: 12, color: '#666' }}>
+                {customerData.verification_status === 'pending' ? 'Under review' : 'Tap to verify your account'}
+              </Text>
+            )}
           </View>
           <Ionicons name="chevron-forward" size={20} color="#999" />
         </TouchableOpacity>

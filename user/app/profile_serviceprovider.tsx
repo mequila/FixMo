@@ -17,6 +17,7 @@ import homeStyles from "./components/homeStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ReVerificationModal from './components/ReVerificationModal';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -152,6 +153,7 @@ export default function profile_serviceprovider() {
   const [allRatings, setAllRatings] = useState<Rating[]>([]);
   const [ratingsLoading, setRatingsLoading] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showReVerificationModal, setShowReVerificationModal] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [ratingsPagination, setRatingsPagination] = useState({
@@ -1543,9 +1545,9 @@ export default function profile_serviceprovider() {
               marginBottom: 15,
             }}>
               <Ionicons 
-                name={verificationStatus === 'rejected' ? 'close-circle' : 'alert-circle'} 
+                name={verificationStatus === 'rejected' ? 'close-circle' : verificationStatus === 'pending' ? 'time-outline' : 'alert-circle'} 
                 size={60} 
-                color={verificationStatus === 'rejected' ? '#ff4444' : '#FFA500'} 
+                color={verificationStatus === 'rejected' ? '#ff4444' : verificationStatus === 'pending' ? '#008080' : '#FFA500'} 
               />
             </View>
 
@@ -1556,7 +1558,8 @@ export default function profile_serviceprovider() {
               marginBottom: 15,
               color: '#333',
             }}>
-              {verificationStatus === 'rejected' ? 'Verification Rejected' : 'Verification Required'}
+              {verificationStatus === 'rejected' ? 'Verification Rejected' : 
+               verificationStatus === 'pending' ? 'Verification Under Review' : 'Verification Required'}
             </Text>
             
             <Text style={{
@@ -1568,6 +1571,8 @@ export default function profile_serviceprovider() {
             }}>
               {verificationStatus === 'rejected' 
                 ? 'Your account verification was rejected. Please resubmit your documents to continue booking.'
+                : verificationStatus === 'pending'
+                ? 'Your verification is currently under review. You cannot book appointments until your verification is approved. Please wait for admin approval.'
                 : 'Please verify your account before booking appointments. This helps us maintain a safe and trusted community.'}
             </Text>
 
@@ -1615,37 +1620,10 @@ export default function profile_serviceprovider() {
               </Text>
             </View>
             
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: 15,
-            }}>
+            {verificationStatus === 'pending' ? (
               <TouchableOpacity 
                 onPress={() => setShowVerificationModal(false)}
                 style={{
-                  flex: 1,
-                  backgroundColor: '#ddd',
-                  paddingVertical: 12,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{
-                  fontSize: 16,
-                  color: '#666',
-                  fontWeight: '600',
-                }}>
-                  Close
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                onPress={() => {
-                  setShowVerificationModal(false);
-                  router.push('/editprofile');
-                }}
-                style={{
-                  flex: 1,
                   backgroundColor: '#008080',
                   paddingVertical: 12,
                   borderRadius: 8,
@@ -1657,10 +1635,57 @@ export default function profile_serviceprovider() {
                   color: 'white',
                   fontWeight: '600',
                 }}>
-                  {verificationStatus === 'rejected' ? 'Resubmit' : 'Verify Now'}
+                  OK
                 </Text>
               </TouchableOpacity>
-            </View>
+            ) : (
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: 15,
+              }}>
+                <TouchableOpacity 
+                  onPress={() => setShowVerificationModal(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ddd',
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 16,
+                    color: '#666',
+                    fontWeight: '600',
+                  }}>
+                    Close
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={() => {
+                    setShowVerificationModal(false);
+                    setShowReVerificationModal(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#008080',
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 16,
+                    color: 'white',
+                    fontWeight: '600',
+                  }}>
+                    Verify Now
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -1902,6 +1927,20 @@ export default function profile_serviceprovider() {
           )}
         </View>
       </Modal>
+
+      {/* Re-Verification Modal */}
+      <ReVerificationModal
+        visible={showReVerificationModal}
+        onClose={() => setShowReVerificationModal(false)}
+        onSuccess={() => {
+          fetchCustomerProfile();
+          Alert.alert(
+            'Success',
+            'Your verification has been resubmitted. Please wait for admin approval.'
+          );
+        }}
+        rejectionReason={rejectionReason}
+      />
     </View>
   );
 }
