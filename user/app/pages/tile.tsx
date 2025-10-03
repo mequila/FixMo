@@ -7,11 +7,34 @@ import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
 
 const TileServiceCardDetails = [
-  {
-    title: "Tile Works and Installation",
-    description:
-      "Uneven or cracked floor surfaces, need for tile surface preparation, tiles not aligned properly, chipped or broken tiles, difficulty cutting tiles to fit edges, loose or hollow-sounding tiles, gaps between tiles, missing or damaged grout, water seepage through joints, request for new tile installation or replacement.",
-  },
+      {
+        title: "Surface Preparation & Finishing",
+        description: "Leveling and smoothing surfaces; mixing adhesive/mortar correctly; cleaning surfaces; making sure substrate is appropriate."
+      },
+      {
+        title: "Tiling Corners",
+        description: "Proper installation at corners: ensuring internal corners (inside corners) and external corners are neat."
+      },
+      {
+        title: "Installing Tiles on Curved Surfaces",
+        description: "Laying ceramic, porcelain, or natural stone tiles on indoor and outdoor floors with proper leveling and alignment."
+      },
+      {
+        title: "Tile Repair / Maintenance",
+        description: "Replacing cracked, chipped, or misaligned tiles while ensuring consistent color and pattern."
+      },
+      {
+        title: "Wall Tiling",
+        description: "Installing wall tiles in kitchens, bathrooms, and other interior/exterior walls for protection and aesthetics."
+      },
+      {
+        title: "Tile Installation on Floors",
+        description: "Working on curved or irregular surfaces (e.g. rounded pillars, curved walls or niches)."
+      },
+      {
+        title: "Grouting",
+        description: "Applying grout, sealants, and polishing tiles to enhance durability and appearance."
+      },
 ];
 
 const Tile = () => {

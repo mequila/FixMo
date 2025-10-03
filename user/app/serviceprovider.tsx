@@ -291,6 +291,11 @@ const ServiceProvider = () => {
                 <Ionicons name="calendar-outline" size={20} color="#399d9d" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
+            <View style={{ marginTop: 8, paddingHorizontal: 5 }}>
+              <Text style={{ fontSize: 11, color: "#666", fontStyle: "italic" }}>
+                📅 You can book appointments up to 15 days in advance
+              </Text>
+            </View>
           </View>
 
           {/* Date Picker Modal */}
@@ -300,6 +305,11 @@ const ServiceProvider = () => {
             onConfirm={handleDateConfirm}
             onCancel={hideDatePicker}
             minimumDate={new Date()} // Prevent selecting past dates
+            maximumDate={(() => {
+              const maxDate = new Date();
+              maxDate.setDate(maxDate.getDate() + 15); // Allow booking up to 15 days ahead
+              return maxDate;
+            })()}
           />
         </SafeAreaView>
 

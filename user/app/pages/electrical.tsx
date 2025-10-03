@@ -7,23 +7,26 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 
 const ElectricalServiceCardDetails = [
-  {
-    title: "Wiring & Connections",
-    description:
-      "Exposed or faulty wiring, frequent short circuits, tripped breakers, loose outlets or switches, flickering lights, sparking connections, overheating wires, and unsafe electrical joints.",
-  },
-  { title: "Fixture Installation",          
-    description:
-      "Installation of light fixtures, ceiling fans, outlets, switches, and circuit breakers; fixing misaligned or malfunctioning fixtures; ensuring proper grounding and safe operation.",
-  },
-  { title: "Circuit & Breaker Repair",     
-    description:
-      "Power outages in certain areas, breaker tripping frequently, overloaded circuits, burnt smells near panels, buzzing sounds, faulty breakers needing replacement, or fuse box upgrades.",
-  },
-  { title: "Appliance Wiring & Repair",    
-    description:
-      "Appliances not powering on, faulty or damaged cords, incorrect wiring setups, sparks when plugged in, grounding issues, or need for proper installation and repair of electrical appliances.",
-  },
+      {
+        title: "House Wiring Installation",
+        description: "Installing new electrical wiring systems in houses, including outlets, switches, lighting, and circuit breakers."
+      },
+      {
+        title: "Outlet and Switch Installation",
+        description: "Adding or relocating power outlets and switches to improve household convenience and safety."
+      },
+      {
+        title: "Lighting Fixture Installation and Repair",
+        description: "Setting up ceiling lights, chandeliers, LED fixtures, outdoor lighting, and replacing defective bulbs or wirings."
+      },
+      {
+        title: "Electrical System Troubleshooting and Repair",
+        description: "Identifying faults such as short circuits, tripped breakers, or faulty switches and repairing them safely."
+      },
+      {
+        title: "Preventive Electrical Maintenance",
+        description: "Inspecting electrical systems for loose connections, damaged wires, or overloaded circuits to avoid accidents."
+      }
 ];
 
 const Electrical = () => {

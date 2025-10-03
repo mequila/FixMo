@@ -7,22 +7,30 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 
 const AppliancesServiceCardDetails = [
-  {
-    title: "TV Repair",
-    description: "No power, distorted or no display, lines or flickering on screen, no sound or weak audio, buzzing or static noise, HDMI or input ports not working, overheating unit, remote not responding, intermittent signal, sudden shutdowns."
-  },
-  {
-    title: "Refrigerator Diagnosis & Maintenance",
-    description: "Not cooling properly, uneven temperature, water leaks, frost build-up, compressor problems, control panel issues, frequent breaker trips, unusual noises (buzzing, humming), dirty coils, worn door seals, bad odors, or electrical component faults."
-  },
-  {
-    title: "Audio Systems Repair",
-    description: "No sound output, distorted or muffled audio, crackling or buzzing noise, rattling speakers, weak bass or treble, intermittent connection, volume control not working, blown speakers, input/output jacks damaged, system not powering on."
-  },
-  {
-    title: "Washing Machine Circuit Repair",
-    description: "Unit not starting, buttons not responding, control board malfunction, drum not spinning, water not draining, power surges affecting operation, intermittent power supply, overheating circuits, blown fuses, error codes showing on display."
-  }
+      {
+        title: "Television Installation and Repair",
+        description: "Setting up LED/LCD/Smart TVs, wall-mounting, troubleshooting display issues, and repairing power or sound defects."
+      },
+      {
+        title: "Repairing/Troubleshooting Audio, Video Equipment",
+        description: "Installing, configuring, and repairing speakers, amplifiers, and surround sound systems."
+      },
+      {
+        title: "Repair / Maintenance of Domestic Electronic Appliances",
+        description: ""
+      },
+      {
+        title: "Mobile and Gadget Repair (Basic)",
+        description: "Performing minor repairs on mobile phones, tablets, and electronic devices such as charging port or battery issues."
+      },
+      {
+        title: "Small Electronics Repair",
+        description: "Servicing household gadgets like electric fans, rice cookers, blenders, and induction cookers."
+      },
+      {
+        title: "Home Electronics Installation and Setup",
+        description: "Installing Wi-Fi routers, CCTV systems, set-top boxes, or entertainment systems for household use."
+      }
 ];
 
 const Appliances = () => {

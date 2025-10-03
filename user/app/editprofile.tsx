@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   ScrollView,
@@ -15,12 +15,15 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Picker } from "@react-native-picker/picker";
 import PageHeader from "./components/PageHeader";
 import LocationMapPicker from "./components/LocationMapPicker";
+import MapView from 'react-native-maps';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
+
+// Import Metro Manila locations data
+const metroManilaLocations = require('./data/metro-manila-locations.json');
 
 interface UserData {
   user_id: number;
@@ -51,18 +54,148 @@ export default function Account() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [profileUri, setProfileUri] = useState<string | null>(null);
-  const [validIdUri, setValidIdUri] = useState<string | null>(null);
   const [birthday, setBirthday] = useState<Date | null>(null);
-  const [gender, setGender] = useState<string>("");
   const [locationCoordinates, setLocationCoordinates] = useState<{ lat: number; lng: number } | undefined>();
+
+  // Location cascading states
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedMunicipality, setSelectedMunicipality] = useState('');
+  const [selectedBarangay, setSelectedBarangay] = useState('');
+  const [showProvincePicker, setShowProvincePicker] = useState(false);
+  const [showMunicipalityPicker, setShowMunicipalityPicker] = useState(false);
+  const [showBarangayPicker, setShowBarangayPicker] = useState(false);
+
+  // OTP states
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [requestingOtp, setRequestingOtp] = useState(false);
+  const [originalEmail, setOriginalEmail] = useState('');
   
-  // UI states
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const [showGenderPicker, setShowGenderPicker] = useState(false);
+  // Email change states
+  const [showSecondOtpModal, setShowSecondOtpModal] = useState(false);
+  const [secondOtp, setSecondOtp] = useState('');
+  const [newEmailForVerification, setNewEmailForVerification] = useState('');
+  
+  // Map picker state
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const mapRef = React.useRef<MapView>(null);
 
   useEffect(() => {
     loadUserProfile();
   }, []);
+
+  // OTP Timer countdown
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const interval = setInterval(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [otpTimer]);
+
+  // Location helper functions
+  const getProvinces = () => {
+    if (!metroManilaLocations.NCR?.province_list) return [];
+    return Object.keys(metroManilaLocations.NCR.province_list);
+  };
+
+  const getMunicipalities = () => {
+    if (!selectedProvince || !metroManilaLocations.NCR?.province_list[selectedProvince]?.municipality_list) return [];
+    return Object.keys(metroManilaLocations.NCR.province_list[selectedProvince].municipality_list);
+  };
+
+  const getBarangays = () => {
+    if (!selectedProvince || !selectedMunicipality) return [];
+    const municipalityData = metroManilaLocations.NCR?.province_list[selectedProvince]?.municipality_list[selectedMunicipality];
+    return municipalityData?.barangay_list || [];
+  };
+
+  // Reset cascading selections when parent changes
+  useEffect(() => {
+    setSelectedMunicipality('');
+    setSelectedBarangay('');
+  }, [selectedProvince]);
+
+  useEffect(() => {
+    setSelectedBarangay('');
+  }, [selectedMunicipality]);
+
+  // Update homeAddress when location is selected
+  useEffect(() => {
+    if (selectedBarangay && selectedMunicipality && selectedProvince) {
+      const locationString = `${selectedBarangay}, ${selectedMunicipality}, ${selectedProvince}`;
+      setHomeAddress(locationString);
+    }
+  }, [selectedBarangay, selectedMunicipality, selectedProvince]);
+
+  const handleMapLocationSelect = (location: string, coordinates: { lat: number; lng: number }) => {
+    setLocationCoordinates(coordinates);
+    console.log('Map location selected:', { location, coordinates });
+  };
+
+  // Geocode address to get coordinates and center map
+  const geocodeAddress = async () => {
+    if (!selectedProvince || !selectedMunicipality || !selectedBarangay) {
+      Alert.alert('Missing Location', 'Please select Province, Municipality, and Barangay first');
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      // Construct address string
+      const address = `${selectedBarangay}, ${selectedMunicipality}, ${selectedProvince}, Philippines`;
+      
+      // Use Nominatim OpenStreetMap geocoding API (free, no key required)
+      const encodedAddress = encodeURIComponent(address);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'FixMoApp/1.0', // Required by Nominatim
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        const newLat = parseFloat(lat);
+        const newLng = parseFloat(lon);
+        
+        // Set coordinates for the map
+        setLocationCoordinates({ lat: newLat, lng: newLng });
+        
+        Alert.alert(
+          'Location Found',
+          'Map will center on your area. You can adjust the pin to your exact location.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Location Not Found',
+          'Could not find exact coordinates. The map will open for you to manually pin your location.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      Alert.alert(
+        'Geocoding Error',
+        'Failed to locate address. You can manually pin your location on the map.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsGeocoding(false);
+      // Open map picker after geocoding attempt
+      setShowMapPicker(true);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -90,9 +223,19 @@ export default function Account() {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
         setEmail(data.email || '');
+        setOriginalEmail(data.email || ''); // Store original email
         setPhone(data.phone_number ? data.phone_number.replace('+63', '') : '');
         setHomeAddress(data.user_location || '');
-        setGender(data.gender || '');
+        
+        // Parse location to pre-populate cascading dropdowns
+        if (data.user_location) {
+          const locationParts = data.user_location.split(', ');
+          if (locationParts.length === 3) {
+            setSelectedBarangay(locationParts[0].trim());
+            setSelectedMunicipality(locationParts[1].trim());
+            setSelectedProvince(locationParts[2].trim());
+          }
+        }
         
         // Set profile photo
         if (data.profile_photo) {
@@ -100,14 +243,6 @@ export default function Account() {
             ? data.profile_photo 
             : `${BACKEND_URL}/${data.profile_photo}`;
           setProfileUri(photoUrl);
-        }
-        
-        // Set valid ID
-        if (data.valid_id) {
-          const idUrl = data.valid_id.startsWith('http') 
-            ? data.valid_id 
-            : `${BACKEND_URL}/${data.valid_id}`;
-          setValidIdUri(idUrl);
         }
         
         // Set birthday
@@ -128,7 +263,87 @@ export default function Account() {
     }
   };
 
+  const requestOTP = async () => {
+    try {
+      // Check if user is approved
+      if (userData?.verification_status !== 'approved') {
+        Alert.alert(
+          'Profile Edit Restricted',
+          'You can only edit your profile once your account is approved. Current status: ' + 
+          (userData?.verification_status || 'pending'),
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      setRequestingOtp(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Please login first');
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/auth/customer-profile/request-otp`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log('OTP Request Response:', result);
+      console.log('HTTP Status:', response.status);
+
+      if (!response.ok) {
+        Alert.alert('Error', result.message || `Server error: ${response.status}`);
+        return;
+      }
+
+      if (result.success) {
+        const maskedEmailValue = result.data?.maskedEmail || result.maskedEmail || 'your email';
+        setMaskedEmail(maskedEmailValue);
+        setOtpRequested(true);
+        setOtpTimer(600); // 10 minutes = 600 seconds
+        Alert.alert(
+          'Verification Code Sent',
+          `A 6-digit code has been sent to ${maskedEmailValue}. It will expire in 10 minutes.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', result.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error requesting OTP:', error);
+      Alert.alert('Error', 'Network error while requesting verification code');
+    } finally {
+      setRequestingOtp(false);
+    }
+  };
+
   const handleSave = async () => {
+    // Check if user is approved
+    if (userData?.verification_status !== 'approved') {
+      Alert.alert(
+        'Profile Edit Restricted',
+        'You can only edit your profile once your account is approved.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Check if OTP was requested
+    if (!otpRequested) {
+      Alert.alert(
+        'Verification Required',
+        'Please request a verification code first before saving changes.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Request Code', onPress: requestOTP }
+        ]
+      );
+      return;
+    }
+
     // Validation
     if (!firstName || !lastName) {
       Alert.alert('Validation Error', 'First name and last name are required');
@@ -145,49 +360,208 @@ export default function Account() {
       return;
     }
 
-    // For rejected users, require all verification fields
-    if (userData?.verification_status === 'rejected') {
-      if (!birthday) {
-        Alert.alert('Verification Required', 'Please provide your birthday to resubmit verification');
-        return;
-      }
-      if (!gender) {
-        Alert.alert('Verification Required', 'Please select your gender to resubmit verification');
-        return;
-      }
-      if (!validIdUri) {
-        Alert.alert('Verification Required', 'Please upload a valid ID to resubmit verification');
-        return;
-      }
-      if (!profileUri) {
-        Alert.alert('Verification Required', 'Please upload a profile photo to resubmit verification');
-        return;
-      }
+    // Show OTP modal for verification before saving
+    setShowOtpModal(true);
+  };
+
+  const submitProfileUpdate = async () => {
+    // Validate OTP
+    const trimmedOtp = otp.trim();
+    
+    if (!trimmedOtp || trimmedOtp.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit verification code');
+      return;
     }
 
+    // Check if email is being changed
+    const isEmailChanging = email !== originalEmail;
+
+    if (isEmailChanging) {
+      // Start email change flow
+      await handleEmailChangeFlow(trimmedOtp);
+    } else {
+      // Regular profile update
+      await performProfileUpdate(false, trimmedOtp);
+    }
+  };
+
+  const handleEmailChangeFlow = async (otpCode: string) => {
     setSaving(true);
+    setShowOtpModal(false);
 
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         Alert.alert('Error', 'Please login first');
+        setSaving(false);
         return;
       }
 
-      const formData = new FormData();
-      formData.append('first_name', firstName);
-      formData.append('last_name', lastName);
-      formData.append('phone_number', `+63${phone}`);
-      formData.append('user_location', homeAddress);
-      
-      if (gender) {
-        formData.append('gender', gender);
-      }
-      
-      if (birthday) {
-        formData.append('birthday', birthday.toISOString().split('T')[0]);
+      // Step 1: Verify OTP with current email
+      const step1Response = await fetch(`${BACKEND_URL}/auth/verify-email-change-step1?otp=${otpCode}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ new_email: email }),
+      });
+
+      const step1Result = await step1Response.json();
+
+      if (!step1Result.success) {
+        Alert.alert('Error', step1Result.message || 'Failed to verify current email');
+        setShowOtpModal(true);
+        setSaving(false);
+        return;
       }
 
+      // Step 1 successful - now prompt for second OTP
+      setNewEmailForVerification(email);
+      setSecondOtp('');
+      setShowSecondOtpModal(true);
+      setSaving(false);
+
+    } catch (error) {
+      console.error('Error in email change flow:', error);
+      Alert.alert('Error', 'Network error during email verification');
+      setSaving(false);
+    }
+  };
+
+  const verifySecondEmailOtp = async () => {
+    if (!secondOtp || secondOtp.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      return;
+    }
+
+    setSaving(true);
+    setShowSecondOtpModal(false);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Please login first');
+        setSaving(false);
+        return;
+      }
+
+      // Step 2: Verify OTP with new email and complete email change
+      const step2Response = await fetch(`${BACKEND_URL}/auth/verify-email-change-step2?otp=${secondOtp}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ new_email: newEmailForVerification }),
+      });
+
+      const step2Result = await step2Response.json();
+
+      if (step2Result.success) {
+        // Email change successful, now update rest of profile
+        await performProfileUpdate(true);
+      } else {
+        Alert.alert('Error', step2Result.message || 'Failed to verify new email', [
+          { text: 'Try Again', onPress: () => setShowSecondOtpModal(true) },
+          { text: 'Cancel', style: 'cancel', onPress: () => setSaving(false) }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error verifying second email OTP:', error);
+      Alert.alert('Error', 'Network error during new email verification', [
+        { text: 'Try Again', onPress: () => setShowSecondOtpModal(true) },
+        { text: 'Cancel', style: 'cancel', onPress: () => setSaving(false) }
+      ]);
+    }
+  };
+
+  const performProfileUpdate = async (emailAlreadyUpdated: boolean = false, otpCode?: string) => {
+    if (!emailAlreadyUpdated) {
+      setSaving(true);
+      setShowOtpModal(false);
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Please login first');
+        setSaving(false);
+        return;
+      }
+
+      // Use the new OTP-protected endpoint (only if email not already updated)
+      const useOtp = otpCode || otp.trim();
+      const endpoint = emailAlreadyUpdated 
+        ? `${BACKEND_URL}/auth/update-profile`
+        : `${BACKEND_URL}/auth/customer-profile`;
+      
+      const updateData: any = {
+        phone_number: `+63${phone}`,
+        user_location: homeAddress,
+      };
+
+      // Add OTP to the body if not email already updated
+      if (!emailAlreadyUpdated) {
+        updateData.otp = useOtp;
+      }
+
+      if (!emailAlreadyUpdated && email !== originalEmail) {
+        updateData.email = email;
+      }
+
+      // Birthday is read-only, not sent in update
+
+      if (locationCoordinates) {
+        updateData.exact_location = `${locationCoordinates.lat},${locationCoordinates.lng}`;
+      }
+
+      console.log('Sending update with OTP:', { hasOtp: !!updateData.otp, otpLength: updateData.otp?.length });
+
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Profile updated successfully
+        Alert.alert(
+          'Success',
+          emailAlreadyUpdated ? 'Profile and email updated successfully!' : 'Profile updated successfully!',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        
+        // Reset OTP state
+        setOtp('');
+        setOtpRequested(false);
+        setOtpTimer(0);
+      } else {
+        Alert.alert('Error', result.message || 'Failed to update profile');
+        if (!emailAlreadyUpdated) {
+          setShowOtpModal(true); // Show modal again for retry
+        }
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Network error while saving profile');
+      if (!emailAlreadyUpdated) {
+        setShowOtpModal(true); // Show modal again for retry
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadFilesAfterUpdate = async (token: string) => {
+    try {
+      const formData = new FormData();
+      
       // Handle profile photo upload
       if (profileUri && !profileUri.startsWith('http')) {
         const photoExt = profileUri.split('.').pop();
@@ -198,23 +572,8 @@ export default function Account() {
         } as any);
       }
 
-      // Handle valid ID upload
-      if (validIdUri && !validIdUri.startsWith('http')) {
-        const idExt = validIdUri.split('.').pop();
-        formData.append('valid_id', {
-          uri: validIdUri,
-          type: `image/${idExt}`,
-          name: `valid_id.${idExt}`,
-        } as any);
-      }
-
-      // If rejected user is resubmitting, mark as pending
-      if (userData?.verification_status === 'rejected' && validIdUri) {
-        formData.append('resubmit_verification', 'true');
-      }
-
-      const response = await fetch(`${BACKEND_URL}/auth/update-profile`, {
-        method: 'PUT',
+      const response = await fetch(`${BACKEND_URL}/auth/upload-documents`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -222,28 +581,25 @@ export default function Account() {
       });
 
       if (response.ok) {
-        const result = await response.json();
         Alert.alert(
-          'Success', 
-          userData?.verification_status === 'rejected' 
-            ? 'Profile updated and verification resubmitted successfully! Your documents will be reviewed again.'
-            : 'Profile updated successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.back(),
-            }
-          ]
+          'Success',
+          'Profile and documents updated successfully!',
+          [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.error || 'Failed to update profile');
+        Alert.alert(
+          'Partial Success',
+          'Profile updated but document upload failed. Please try uploading documents again.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Network error while saving profile');
-    } finally {
-      setSaving(false);
+      console.error('Error uploading files:', error);
+      Alert.alert(
+        'Partial Success',
+        'Profile updated but document upload failed. Please try uploading documents again.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     }
   };
 
@@ -285,38 +641,6 @@ export default function Account() {
     }
   };
 
-  const pickValidIdImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Gallery permission is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setValidIdUri(result.assets[0].uri);
-    }
-  };
-
-  const showDatePicker = () => {
-    setDatePickerVisible(true);
-  };
-
-  const hideDatePicker = () => {
-    setDatePickerVisible(false);
-  };
-
-  const handleDateConfirm = (date: Date) => {
-    setBirthday(date);
-    hideDatePicker();
-  };
-
   const formatDate = (date: Date | null) => {
     if (!date) return "Select birthday";
     return date.toLocaleDateString("en-US", {
@@ -348,6 +672,116 @@ export default function Account() {
           onSave={handleSave} 
         />
 
+        {/* OTP Request Section - Only for approved users */}
+        {userData?.verification_status === 'approved' && (
+          <View style={{ marginHorizontal: 20, marginTop: 15 }}>
+            {!otpRequested ? (
+              <View style={{
+                backgroundColor: '#e6f7ff',
+                borderRadius: 10,
+                padding: 15,
+                borderWidth: 1,
+                borderColor: '#008080',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                  <Ionicons name="shield-checkmark" size={24} color="#008080" style={{ marginRight: 10 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#008080', flex: 1 }}>
+                    Security Verification Required
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 14, color: '#333', marginBottom: 15 }}>
+                  For your security, we need to verify your identity before making changes to your profile.
+                </Text>
+                <TouchableOpacity
+                  onPress={requestOTP}
+                  disabled={requestingOtp}
+                  style={{
+                    backgroundColor: requestingOtp ? '#ccc' : '#008080',
+                    borderRadius: 10,
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  {requestingOtp ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+                      Request Verification Code
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{
+                backgroundColor: '#e8f5e9',
+                borderRadius: 10,
+                padding: 15,
+                borderWidth: 1,
+                borderColor: '#4caf50',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                  <Ionicons name="checkmark-circle" size={24} color="#4caf50" style={{ marginRight: 10 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#4caf50' }}>
+                    Code Sent
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 14, color: '#333', marginBottom: 5 }}>
+                  Verification code sent to: {maskedEmail}
+                </Text>
+                <Text style={{ fontSize: 13, color: '#666' }}>
+                  {otpTimer > 0 
+                    ? `Code expires in ${Math.floor(otpTimer / 60)}:${(otpTimer % 60).toString().padStart(2, '0')}`
+                    : 'Code expired'}
+                </Text>
+                {otpTimer <= 0 && (
+                  <TouchableOpacity
+                    onPress={requestOTP}
+                    disabled={requestingOtp}
+                    style={{
+                      backgroundColor: '#008080',
+                      borderRadius: 10,
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                      marginTop: 10,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
+                      Resend Code
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Not Approved Warning */}
+        {userData?.verification_status !== 'approved' && (
+          <View style={{
+            marginHorizontal: 20,
+            marginTop: 15,
+            backgroundColor: '#fff3e0',
+            borderRadius: 10,
+            padding: 15,
+            borderWidth: 1,
+            borderColor: '#ff9800',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <Ionicons name="lock-closed" size={24} color="#ff9800" style={{ marginRight: 10 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#ff9800', marginBottom: 5 }}>
+                  Profile Editing Restricted
+                </Text>
+                <Text style={{ fontSize: 14, color: '#333' }}>
+                  You can only edit your profile once your account is approved.
+                  {userData?.verification_status === 'pending' && ' Your verification is currently under review.'}
+                  {userData?.verification_status === 'rejected' && ' Please resubmit your verification documents.'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Rejection Reason Banner */}
         {userData?.verification_status === 'rejected' && userData?.rejection_reason && (
           <View style={{
@@ -376,79 +810,12 @@ export default function Account() {
           </View>
         )}
 
-        {/* Profile Avatar */}
-        <View style={{ alignItems: "center", marginTop: 20 }}>
-          <View style={{ position: "relative", width: 100, height: 100 }}>
-            {profileUri ? (
-              <Image
-                source={{ uri: profileUri }}
-                style={{ width: 100, height: 100, borderRadius: 50 }}
-              />
-            ) : (
-              <Ionicons name="person-circle" size={100} color={"#008080"} />
-            )}
-
-            <TouchableOpacity
-              style={{
-                position: "absolute",
-                right: 0,
-                bottom: 0,
-                backgroundColor: "#008080",
-                borderRadius: 20,
-                padding: 8,
-                borderWidth: 2,
-                borderColor: '#fff',
-              }}
-              onPress={pickProfileImage}
-            >
-              <Ionicons name="camera" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <Text style={{ marginTop: 8, color: '#666', fontSize: 12 }}>
-            Tap camera icon to change photo
-          </Text>
-        </View>
+        {/* Profile Avatar Section Removed */}
 
         {/* Form Inputs */}
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
           
-          {/* First Name */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              First Name *
-            </Text>
-            <TextInput
-              style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                paddingHorizontal: 15,
-                paddingVertical: 12,
-                fontSize: 16,
-              }}
-              placeholder="Enter your first name"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-          </View>
-
-          {/* Last Name */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Last Name *
-            </Text>
-            <TextInput
-              style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                paddingHorizontal: 15,
-                paddingVertical: 12,
-                fontSize: 16,
-              }}
-              placeholder="Enter your last name"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-          </View>
+          {/* Name fields removed */}
 
           {/* Email Address */}
           <View style={{ marginBottom: 20 }}>
@@ -457,21 +824,31 @@ export default function Account() {
             </Text>
             <TextInput
               style={{
-                backgroundColor: "#e9e9e9",
+                backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e9e9e9" : "#e7ecec",
                 borderRadius: 10,
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: '#999',
+                color: (userData?.verification_status === 'approved' && !otpRequested) ? '#999' : '#000',
+                opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
               }}
-              placeholder="Enter your email"
+              placeholder="email@example.com"
               keyboardType="email-address"
               value={email}
-              editable={false}
+              onChangeText={setEmail}
+              editable={userData?.verification_status !== 'approved' || otpRequested}
+              placeholderTextColor="#999"
             />
-            <Text style={{ fontSize: 11, color: '#999', marginTop: 3 }}>
-              Email cannot be changed
-            </Text>
+            {userData?.verification_status === 'approved' && !otpRequested && (
+              <Text style={{ fontSize: 11, color: '#999', marginTop: 3 }}>
+                Request verification code first to edit
+              </Text>
+            )}
+            {email !== originalEmail && otpRequested && (
+              <Text style={{ fontSize: 11, color: '#ff9800', marginTop: 3 }}>
+                ⚠️ Changing email requires additional verification
+              </Text>
+            )}
           </View>
 
           {/* Phone Number */}
@@ -489,44 +866,78 @@ export default function Account() {
                   paddingVertical: 12,
                   fontSize: 16,
                   flex: 1,
+                  opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
                 }}
-                placeholder="9123456789"
+                placeholder="912 345 6789"
                 keyboardType="number-pad"
                 value={phone}
                 onChangeText={(text) => {
                   const cleaned = text.replace(/[^0-9]/g, "").slice(0, 10);
                   setPhone(cleaned);
                 }}
+                editable={userData?.verification_status !== 'approved' || otpRequested}
+                placeholderTextColor="#999"
               />
             </View>
           </View>
 
-          {/* Home Address with Map */}
+          {/* Home Address */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
               Home Address *
             </Text>
             <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
-              Select your city/barangay and pin your exact location on the map
+              Select your Province, Municipality, and Barangay
             </Text>
-            <LocationMapPicker
-              value={homeAddress}
-              coordinates={locationCoordinates}
-              onSelect={(location, coords) => {
-                setHomeAddress(location);
-                setLocationCoordinates(coords);
-              }}
-              placeholder="Select your location"
-            />
-          </View>
-
-          {/* Birthday */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Birthday {userData?.verification_status === 'rejected' && '*'}
-            </Text>
+            
+            {/* Province Picker */}
             <TouchableOpacity
-              onPress={showDatePicker}
+              onPress={() => setShowProvincePicker(true)}
+              disabled={userData?.verification_status === 'approved' && !otpRequested}
+              style={{
+                backgroundColor: "#e7ecec",
+                borderRadius: 10,
+                paddingHorizontal: 15,
+                paddingVertical: 12,
+                marginBottom: 10,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: selectedProvince ? '#000' : '#999' }}>
+                {selectedProvince || 'Choose your Province/District'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#008080" />
+            </TouchableOpacity>
+
+            {/* Municipality Picker */}
+            <TouchableOpacity
+              onPress={() => setShowMunicipalityPicker(true)}
+              disabled={!selectedProvince || (userData?.verification_status === 'approved' && !otpRequested)}
+              style={{
+                backgroundColor: "#e7ecec",
+                borderRadius: 10,
+                paddingHorizontal: 15,
+                paddingVertical: 12,
+                marginBottom: 10,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                opacity: (!selectedProvince || (userData?.verification_status === 'approved' && !otpRequested)) ? 0.5 : 1,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: selectedMunicipality ? '#000' : '#999' }}>
+                {selectedMunicipality || 'Choose your City/Municipality'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#008080" />
+            </TouchableOpacity>
+
+            {/* Barangay Picker */}
+            <TouchableOpacity
+              onPress={() => setShowBarangayPicker(true)}
+              disabled={!selectedMunicipality || (userData?.verification_status === 'approved' && !otpRequested)}
               style={{
                 backgroundColor: "#e7ecec",
                 borderRadius: 10,
@@ -535,114 +946,62 @@ export default function Account() {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                opacity: (!selectedMunicipality || (userData?.verification_status === 'approved' && !otpRequested)) ? 0.5 : 1,
               }}
             >
-              <Text style={{ fontSize: 16, color: birthday ? '#000' : '#999' }}>
-                {formatDate(birthday)}
+              <Text style={{ fontSize: 16, color: selectedBarangay ? '#000' : '#999' }}>
+                {selectedBarangay || 'Choose your Barangay'}
               </Text>
-              <Ionicons name="calendar-outline" size={20} color="#008080" />
+              <Ionicons name="chevron-down" size={20} color="#008080" />
             </TouchableOpacity>
-          </View>
 
-          {/* Gender */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Gender {userData?.verification_status === 'rejected' && '*'}
-            </Text>
-            {Platform.OS === 'ios' ? (
+            {homeAddress && (
+              <Text style={{ fontSize: 12, color: '#008080', marginTop: 5 }}>
+                ✓ {homeAddress}
+              </Text>
+            )}
+            
+            {/* Map Picker Button */}
+            {homeAddress && (
               <TouchableOpacity
-                onPress={() => setShowGenderPicker(true)}
+                onPress={geocodeAddress}
+                disabled={(userData?.verification_status === 'approved' && !otpRequested) || isGeocoding}
                 style={{
-                  backgroundColor: "#e7ecec",
+                  backgroundColor: isGeocoding ? '#ccc' : '#fff',
+                  borderWidth: 2,
+                  borderColor: '#008080',
                   borderRadius: 10,
                   paddingHorizontal: 15,
                   paddingVertical: 12,
+                  marginTop: 10,
                   flexDirection: 'row',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
                 }}
               >
-                <Text style={{ fontSize: 16, color: gender ? '#000' : '#999' }}>
-                  {gender || 'Select gender'}
+                {isGeocoding ? (
+                  <ActivityIndicator size="small" color="#008080" style={{ marginRight: 8 }} />
+                ) : (
+                  <Ionicons name="map" size={20} color="#008080" style={{ marginRight: 8 }} />
+                )}
+                <Text style={{ fontSize: 14, color: '#008080', fontWeight: '600' }}>
+                  {isGeocoding ? 'Finding Location...' : (locationCoordinates ? 'Update Pin Location on Map' : 'Pin Exact Location on Map')}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#008080" />
               </TouchableOpacity>
-            ) : (
-              <View style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                overflow: 'hidden',
-              }}>
-                <Picker
-                  selectedValue={gender}
-                  onValueChange={(itemValue) => setGender(itemValue)}
-                  style={{ height: 50 }}
-                >
-                  <Picker.Item label="Select gender" value="" />
-                  <Picker.Item label="Male" value="Male" />
-                  <Picker.Item label="Female" value="Female" />
-                  <Picker.Item label="Other" value="Other" />
-                  <Picker.Item label="Prefer not to say" value="Prefer not to say" />
-                </Picker>
+            )}
+            
+            {locationCoordinates && (
+              <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="location" size={16} color="#4caf50" />
+                <Text style={{ fontSize: 11, color: '#4caf50', marginLeft: 4 }}>
+                  Exact location pinned: {locationCoordinates.lat.toFixed(6)}, {locationCoordinates.lng.toFixed(6)}
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Valid ID Section */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Valid ID {userData?.verification_status === 'rejected' && '*'}
-            </Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
-              Upload a clear photo of your government-issued ID (National ID, Driver's License, Passport, etc.)
-            </Text>
-            
-            {validIdUri ? (
-              <View>
-                <Image
-                  source={{ uri: validIdUri }}
-                  style={{
-                    width: '100%',
-                    height: 200,
-                    borderRadius: 10,
-                    marginBottom: 10,
-                  }}
-                  resizeMode="contain"
-                />
-                <TouchableOpacity
-                  onPress={pickValidIdImage}
-                  style={{
-                    backgroundColor: '#008080',
-                    borderRadius: 10,
-                    paddingVertical: 12,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
-                    Change Valid ID
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                onPress={pickValidIdImage}
-                style={{
-                  backgroundColor: '#e7ecec',
-                  borderRadius: 10,
-                  paddingVertical: 40,
-                  alignItems: 'center',
-                  borderWidth: 2,
-                  borderColor: '#008080',
-                  borderStyle: 'dashed',
-                }}
-              >
-                <Ionicons name="cloud-upload-outline" size={40} color="#008080" />
-                <Text style={{ color: '#008080', fontWeight: '600', marginTop: 10, fontSize: 14 }}>
-                  Upload Valid ID
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Birthday field removed */}
 
           {/* Save Button */}
           <TouchableOpacity
@@ -668,19 +1027,10 @@ export default function Account() {
         </View>
       </ScrollView>
 
-      {/* Date Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="date"
-        onConfirm={handleDateConfirm}
-        onCancel={hideDatePicker}
-        maximumDate={new Date()}
-      />
-
-      {/* Gender Picker Modal (iOS) */}
+      {/* Province Picker Modal (iOS) */}
       {Platform.OS === 'ios' && (
         <Modal
-          visible={showGenderPicker}
+          visible={showProvincePicker}
           transparent={true}
           animationType="slide"
         >
@@ -703,26 +1053,390 @@ export default function Account() {
                 borderBottomWidth: 1,
                 borderBottomColor: '#e0e0e0',
               }}>
-                <TouchableOpacity onPress={() => setShowGenderPicker(false)}>
+                <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
                   <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Gender</Text>
-                <TouchableOpacity onPress={() => setShowGenderPicker(false)}>
+                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Province</Text>
+                <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
                   <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
                 </TouchableOpacity>
               </View>
               <Picker
-                selectedValue={gender}
-                onValueChange={(itemValue) => setGender(itemValue)}
+                selectedValue={selectedProvince}
+                onValueChange={(itemValue) => setSelectedProvince(itemValue)}
                 style={{ height: 200 }}
               >
-                <Picker.Item label="Select gender" value="" />
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-                <Picker.Item label="Other" value="Other" />
-                <Picker.Item label="Prefer not to say" value="Prefer not to say" />
+                <Picker.Item label="-- Choose Province/District --" value="" />
+                {getProvinces().map((province) => (
+                  <Picker.Item key={province} label={province} value={province} />
+                ))}
               </Picker>
             </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Municipality Picker Modal (iOS) */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showMunicipalityPicker}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingBottom: 30,
+            }}>
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 15,
+                borderBottomWidth: 1,
+                borderBottomColor: '#e0e0e0',
+              }}>
+                <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
+                  <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Municipality/City</Text>
+                <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
+                  <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <Picker
+                selectedValue={selectedMunicipality}
+                onValueChange={(itemValue) => setSelectedMunicipality(itemValue)}
+                style={{ height: 200 }}
+              >
+                <Picker.Item label="-- Choose City/Municipality --" value="" />
+                {getMunicipalities().map((municipality) => (
+                  <Picker.Item key={municipality} label={municipality} value={municipality} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Barangay Picker Modal (iOS) */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showBarangayPicker}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingBottom: 30,
+            }}>
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 15,
+                borderBottomWidth: 1,
+                borderBottomColor: '#e0e0e0',
+              }}>
+                <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
+                  <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Barangay</Text>
+                <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
+                  <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <Picker
+                selectedValue={selectedBarangay}
+                onValueChange={(itemValue) => setSelectedBarangay(itemValue)}
+                style={{ height: 200 }}
+              >
+                <Picker.Item label="-- Choose Barangay --" value="" />
+                {getBarangays().map((barangay: string) => (
+                  <Picker.Item key={barangay} label={barangay} value={barangay} />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* OTP Verification Modal */}
+      <Modal
+        visible={showOtpModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowOtpModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 20,
+            padding: 25,
+            width: '85%',
+            maxWidth: 400,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <Ionicons name="shield-checkmark" size={32} color="#008080" />
+              <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, flex: 1 }}>
+                Verify Identity
+              </Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Ionicons name="close-circle" size={28} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 14, color: '#666', marginBottom: 15 }}>
+              Enter the 6-digit verification code sent to:
+            </Text>
+            <Text style={{ fontSize: 14, color: '#008080', fontWeight: '600', marginBottom: 20 }}>
+              {maskedEmail}
+            </Text>
+
+            <TextInput
+              placeholder="Enter 6-digit code"
+              value={otp}
+              onChangeText={(text) => {
+                // Only allow digits and trim whitespace
+                const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+                setOtp(cleaned);
+              }}
+              keyboardType="number-pad"
+              maxLength={6}
+              style={{
+                borderWidth: 2,
+                borderColor: '#008080',
+                borderRadius: 10,
+                padding: 15,
+                fontSize: 18,
+                textAlign: 'center',
+                letterSpacing: 8,
+                fontWeight: '600',
+                marginBottom: 15,
+              }}
+              placeholderTextColor="#999"
+              autoFocus={true}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, color: '#666' }}>
+                {otpTimer > 0 
+                  ? `Expires in ${Math.floor(otpTimer / 60)}:${(otpTimer % 60).toString().padStart(2, '0')}`
+                  : 'Code expired'}
+              </Text>
+              {otpTimer <= 0 && (
+                <TouchableOpacity onPress={async () => {
+                  setShowOtpModal(false);
+                  await requestOTP();
+                }}>
+                  <Text style={{ fontSize: 13, color: '#008080', fontWeight: '600' }}>
+                    Resend Code
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              onPress={submitProfileUpdate}
+              disabled={saving || !otp || otp.trim().length !== 6}
+              style={{
+                backgroundColor: (saving || !otp || otp.trim().length !== 6) ? '#ccc' : '#008080',
+                borderRadius: 10,
+                paddingVertical: 15,
+                alignItems: 'center',
+                marginBottom: 10,
+              }}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                  Verify & Save Changes
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowOtpModal(false);
+                setOtp('');
+              }}
+              style={{
+                borderRadius: 10,
+                paddingVertical: 12,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#666', fontSize: 14 }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Second OTP Modal for Email Change */}
+      <Modal
+        visible={showSecondOtpModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSecondOtpModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 20,
+            padding: 25,
+            width: '85%',
+            maxWidth: 400,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <Ionicons name="mail" size={32} color="#008080" />
+              <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, flex: 1 }}>
+                Verify New Email
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setShowSecondOtpModal(false);
+                setSaving(false);
+              }}>
+                <Ionicons name="close-circle" size={28} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 14, color: '#666', marginBottom: 10 }}>
+              A verification code has been sent to your new email:
+            </Text>
+            <Text style={{ fontSize: 14, color: '#008080', fontWeight: '600', marginBottom: 20 }}>
+              {newEmailForVerification}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#666', marginBottom: 15 }}>
+              Please check your inbox and enter the 6-digit code below:
+            </Text>
+
+            <TextInput
+              placeholder="Enter 6-digit code"
+              value={secondOtp}
+              onChangeText={(text) => {
+                // Only allow digits and trim whitespace
+                const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+                setSecondOtp(cleaned);
+              }}
+              keyboardType="number-pad"
+              maxLength={6}
+              style={{
+                borderWidth: 2,
+                borderColor: '#008080',
+                borderRadius: 10,
+                padding: 15,
+                fontSize: 18,
+                textAlign: 'center',
+                letterSpacing: 8,
+                fontWeight: '600',
+                marginBottom: 20,
+              }}
+              placeholderTextColor="#999"
+              autoFocus={true}
+            />
+
+            <TouchableOpacity
+              onPress={verifySecondEmailOtp}
+              disabled={saving || !secondOtp || secondOtp.trim().length !== 6}
+              style={{
+                backgroundColor: (saving || !secondOtp || secondOtp.trim().length !== 6) ? '#ccc' : '#008080',
+                borderRadius: 10,
+                paddingVertical: 15,
+                alignItems: 'center',
+                marginBottom: 10,
+              }}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                  Verify New Email
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowSecondOtpModal(false);
+                setSecondOtp('');
+                setSaving(false);
+              }}
+              style={{
+                borderRadius: 10,
+                paddingVertical: 12,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#666', fontSize: 14 }}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <Modal
+          visible={showMapPicker}
+          transparent={false}
+          animationType="slide"
+          onRequestClose={() => setShowMapPicker(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: '#fff' }}>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingVertical: 15,
+              backgroundColor: '#008080',
+            }}>
+              <TouchableOpacity onPress={() => setShowMapPicker(false)}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>
+                Pin Your Exact Location
+              </Text>
+              <View style={{ width: 28 }} />
+            </View>
+            
+            <LocationMapPicker
+              value={homeAddress}
+              coordinates={locationCoordinates}
+              onSelect={(location, coords) => {
+                handleMapLocationSelect(location, coords);
+                setShowMapPicker(false);
+              }}
+              placeholder="Select location"
+              style={{ flex: 1 }}
+            />
           </View>
         </Modal>
       )}

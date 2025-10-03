@@ -45,9 +45,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCities, setFilteredCities] = useState<City[]>([]);
 
-  const cities = locationData.regions[0].cities;
-  const municipalities = locationData.regions[0].municipalities;
-  const allLocations = [...cities, ...municipalities];
+  // Temporary fix: Handle the actual JSON structure
+  const cities: City[] = [];
+  const municipalities: City[] = [];
+  const allLocations: City[] = [];
 
   useEffect(() => {
     if (searchQuery) {

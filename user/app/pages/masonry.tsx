@@ -7,10 +7,26 @@ import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
 
 const MasonryServiceCardDetails = [
-  { title: "Masonry Works",
-    description:
-      "Cracked or damaged walls, uneven block or brick layering, loose or hollow blocks, need for plastering on rough surfaces, chipped or broken bricks, gaps or misaligned masonry joints, damaged partitions or foundations, request for new wall construction, surface finishing for painting, basic structural repairs or reinforcement."
-  },
+      {
+        title: "Block/Brick Layering",
+        description: "Constructing or repairing walls, partitions, fences, and small structures using hollow blocks or bricks."
+      },
+      {
+        title: "Plaster Wall/Surface Finishing",
+        description: "Applying plaster (mortar/cement) over masonry or concrete walls to have a smooth/semi-smooth surface."
+      },
+      {
+        title: "Repair of Cracked Walls and Surfaces",
+        description: "Restoring damaged masonry surfaces, filling gaps, and reinforcing weak areas."
+      },
+      {
+        title: "Stone Works for Landscaping",
+        description: "Installing garden stone pathways, decorative stone walls, or outdoor stone cladding."
+      },
+      {
+        title: "Repair of Defective Concrete",
+        description: "Installing or repairing concrete floors, driveways, walkways, and outdoor pavements."
+      },
 ];
 
 const Masonry = () => {

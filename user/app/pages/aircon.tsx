@@ -7,10 +7,18 @@ import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
 
 const AirconServiceCardDetails = [
-  {
-    title: "AC Repair & Maintenance",
-    description: "Weak or no airflow, foul odor, water leaks, ice on coils, reduced cooling, AC not turning on, sudden shutdowns, faulty thermostat, refrigerant leaks, unusual noises (buzzing, rattling), remote not responding, frozen evaporator coils, dirty filters or clogged drainage, electrical or circuit board issues, need for regular cleaning and preventive servicing."
-  }
+      {
+        title: "Install domestic refrigeration and air-conditioning units",
+        description: "For homeowners who need assistance in installing domestic refrigeration and AC units such as Window-type, Package-type (PACU), and Commercial (CACU)."
+      },
+      {
+        title: "Service & maintain domestic refrigeration and air-conditioning units",
+        description: "A service that covers the maintenance of domestic refrigeration and air-conditioning units, including cleaning, maintaining fan motor assembly, servicing evaporator/condenser, and servicing electrical power/control circuits."
+      },
+      {
+        title: "Troubleshoot & repair domestic refrigeration and air-conditioning systems",
+        description: ""
+      }
 ];
 
 const Aircon = () => {

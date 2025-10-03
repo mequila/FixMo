@@ -165,6 +165,13 @@ export default function profile_serviceprovider() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedStarFilter, setSelectedStarFilter] = useState<number | null>(null);
+  const [bookingAvailability, setBookingAvailability] = useState<{
+    canBook: boolean;
+    scheduledCount: number;
+    maxAllowed: number;
+    availableSlots: number;
+    message: string;
+  } | null>(null);
 
   // Calculate total images for pagination
   const getTotalImages = () => {
@@ -189,6 +196,7 @@ export default function profile_serviceprovider() {
     console.log('🏷️ Category from navigation:', category);
     fetchAllData();
     fetchCustomerProfile();
+    checkBookingAvailability();
   }, [serviceId, providerId, category, availabilityId]);
 
   const fetchCustomerProfile = async () => {
@@ -216,6 +224,49 @@ export default function profile_serviceprovider() {
       }
     } catch (error) {
       console.error('Error fetching customer profile:', error);
+    }
+  };
+
+  const checkBookingAvailability = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.log('❌ No token found for booking availability check');
+        return;
+      }
+
+      console.log('🔍 Checking booking availability...');
+      console.log('🔗 API URL:', `${BACKEND_URL}/auth/customer-booking-availability`);
+
+      const response = await fetch(`${BACKEND_URL}/auth/customer-booking-availability`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📡 Booking availability response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📦 Full booking availability response:', JSON.stringify(result, null, 2));
+        
+        if (result.success && result.data) {
+          setBookingAvailability(result.data);
+          console.log('✅ Booking availability set:', result.data);
+          console.log('📊 Can book:', result.data.canBook);
+          console.log('📊 Scheduled count:', result.data.scheduledCount);
+          console.log('📊 Available slots:', result.data.availableSlots);
+        } else {
+          console.log('⚠️ Booking availability response missing success or data:', result);
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Booking availability API error:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error checking booking availability:', error);
     }
   };
 
@@ -253,7 +304,40 @@ export default function profile_serviceprovider() {
       return;
     }
 
-    // User is verified, proceed with booking
+    // Check booking limit - customer can only have 3 scheduled appointments
+    if (bookingAvailability && !bookingAvailability.canBook) {
+      Alert.alert(
+        'Booking Limit Reached',
+        `You have reached the maximum of ${bookingAvailability.maxAllowed} scheduled appointments. You currently have ${bookingAvailability.scheduledCount} scheduled appointments.\n\nPlease wait for one of your appointments to be completed, cancelled, or in-progress before booking again.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Validate selected date is within 15 days
+    if (selectedDate) {
+      const bookingDate = new Date(selectedDate as string);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 15);
+      
+      if (bookingDate < today) {
+        Alert.alert('Invalid Date', 'Cannot book appointments in the past. Please select a date from today onwards.');
+        return;
+      }
+      
+      if (bookingDate > maxDate) {
+        Alert.alert(
+          'Date Too Far Ahead', 
+          `You can only book appointments up to 15 days in advance. The selected date is beyond this limit.\n\nPlease select a date between ${today.toLocaleDateString()} and ${maxDate.toLocaleDateString()}.`
+        );
+        return;
+      }
+    }
+
+    // User is verified and within booking limits, proceed with booking
     setShowBookingModal(true);
   };
 
@@ -606,6 +690,7 @@ export default function profile_serviceprovider() {
     setRefreshing(true);
     await fetchAllData();
     await fetchCustomerProfile();
+    await checkBookingAvailability();
     setRefreshing(false);
   };
 
@@ -843,6 +928,9 @@ export default function profile_serviceprovider() {
         // Get appointment ID from server response
         const serverAppointmentId = result.data?.appointment_id || result.appointment_id || appointmentId;
         
+        // Refresh booking availability after successful booking
+        await checkBookingAvailability();
+        
         Alert.alert(
           'Booking Confirmed!', 
           `Your appointment has been booked successfully.\nAppointment ID: ${serverAppointmentId}`,
@@ -856,7 +944,32 @@ export default function profile_serviceprovider() {
       } else {
         console.error('Appointment creation failed:', response.status, response.statusText);
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        Alert.alert('Booking Failed', errorData.message || `Failed to create appointment. Server responded with ${response.status}: ${response.statusText}`);
+        
+        // Check if it's a booking limit error
+        if (response.status === 400 && errorData.message?.includes('Booking limit reached')) {
+          Alert.alert(
+            'Booking Limit Reached', 
+            errorData.message || 'You have reached the maximum number of scheduled appointments (3). Please wait for one to be completed or cancelled.',
+            [
+              {
+                text: 'View My Bookings',
+                onPress: () => {
+                  setShowBookingModal(false);
+                  router.push('/(tabs)/bookings');
+                }
+              },
+              {
+                text: 'OK',
+                style: 'cancel',
+                onPress: () => setShowBookingModal(false)
+              }
+            ]
+          );
+          // Refresh availability
+          await checkBookingAvailability();
+        } else {
+          Alert.alert('Booking Failed', errorData.message || `Failed to create appointment. Server responded with ${response.status}: ${response.statusText}`);
+        }
       }
     } catch (error) {
       console.error('Booking error:', error);
@@ -975,6 +1088,38 @@ export default function profile_serviceprovider() {
     
     console.log('ℹ️ Using fallback: General Service');
     return 'General Service';
+  };
+
+  // Helper function to format address - remove "National Capital Region", make camelCase, and shorten
+  const formatAddress = (address: string): string => {
+    if (!address || address === 'Address not set' || address === 'Location not set') {
+      return 'Address not set';
+    }
+
+    // Remove "National Capital Region" and common variations
+    let formatted = address
+      .replace(/,?\s*National Capital Region/gi, '')
+      .replace(/,?\s*NCR/gi, '')
+      .replace(/,?\s*Metro Manila/gi, '')
+      .trim();
+
+    // Remove leading/trailing commas and extra spaces
+    formatted = formatted.replace(/^,\s*|,\s*$/g, '').replace(/\s+/g, ' ');
+
+    // Convert to camelCase-like format (capitalize first letter of each word)
+    formatted = formatted
+      .split(',')
+      .map(part => part.trim())
+      .filter(part => part.length > 0)
+      .map(part => 
+        part.split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+      )
+      .slice(0, 2) // Take only first 2 parts to keep it short
+      .join(', ');
+
+    return formatted || 'Address not set';
   };
 
   if (loading) {
@@ -1158,6 +1303,82 @@ export default function profile_serviceprovider() {
                 <Text style={{marginBottom: 10, fontWeight: "bold", fontSize: 18}}>
                   Booking Summary
                 </Text>
+                
+                {/* Booking Availability Indicator */}
+                {bookingAvailability ? (
+                  <View style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: bookingAvailability.canBook ? "#e8f5e9" : "#ffebee",
+                    padding: 10,
+                    borderRadius: 8,
+                    marginBottom: 10,
+                  }}>
+                    <Ionicons 
+                      name={bookingAvailability.canBook ? "checkmark-circle" : "alert-circle"} 
+                      size={20} 
+                      color={bookingAvailability.canBook ? "#2e7d32" : "#c62828"} 
+                    />
+                    <View style={{ marginLeft: 8, flex: 1 }}>
+                      <Text style={{
+                        fontSize: 12,
+                        color: bookingAvailability.canBook ? "#2e7d32" : "#c62828",
+                        fontWeight: "600"
+                      }}>
+                        {bookingAvailability.canBook 
+                          ? `Available Slots: ${bookingAvailability.availableSlots}/${bookingAvailability.maxAllowed}`
+                          : `Booking Limit Reached (${bookingAvailability.scheduledCount}/${bookingAvailability.maxAllowed})`
+                        }
+                      </Text>
+                      {bookingAvailability.canBook ? (
+                        <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                          You can book {bookingAvailability.availableSlots} more {bookingAvailability.availableSlots === 1 ? 'appointment' : 'appointments'}
+                        </Text>
+                      ) : (
+                        <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                          Complete or cancel an appointment to book more
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity 
+                      onPress={checkBookingAvailability}
+                      style={{ 
+                        padding: 5,
+                        borderRadius: 5,
+                        backgroundColor: 'rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <Ionicons name="refresh" size={16} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#f5f5f5",
+                    padding: 10,
+                    borderRadius: 8,
+                    marginBottom: 10,
+                  }}>
+                    <Ionicons name="time-outline" size={20} color="#999" />
+                    <View style={{ marginLeft: 8, flex: 1 }}>
+                      <Text style={{ fontSize: 12, color: "#999", fontWeight: "600" }}>
+                        Loading booking availability...
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={checkBookingAvailability}
+                      style={{ 
+                        padding: 5,
+                        borderRadius: 5,
+                        backgroundColor: 'rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <Ionicons name="refresh" size={16} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                
                 <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}> 
                   <Text style={{fontWeight: "bold", color: "#333"}}>
                     Service: 
@@ -1172,7 +1393,7 @@ export default function profile_serviceprovider() {
                     Address:
                   </Text>
                   <Text style={{color: "gray", fontWeight: 500}}>
-                    {customerProfile?.user_location || customerProfile?.exact_location || userLocation || 'Address not set'}
+                    {formatAddress(customerProfile?.user_location || customerProfile?.exact_location || userLocation || 'Address not set')}
                   </Text>
                 </View>
 

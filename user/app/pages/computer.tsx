@@ -7,21 +7,30 @@ import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
 
 const ComputerServiceCardDetails = [
-  {
-    title: "Computer Troubleshooting & Data Backup",
-    description:  
-      "Startup failures, frequent crashes, slow or overheating systems, hardware or OS errors, unresponsive peripherals, risk of data loss, file recovery, backup setup, and data migration.",
-  },
-  {
-    title: "Network Setup",
-    description:
-      "Slow or no internet connection, Wi-Fi not detected, router setup issues, weak signal coverage, devices not connecting to network, printer not shared across devices, IP conflicts, network security setup, unstable or intermittent connectivity.",
-  },
-  {
-    title: "Virus Removal",
-    description:
-      "Computer infected with malware, pop-up ads appearing, slow or freezing system, corrupted files, unauthorized programs installed, antivirus not functioning, browser hijacking, phishing or ransomware signs, need for full system scan and cleaning.",
-  },
+{
+        title: "Computer System Assembly/Setup",
+        description: "Assembling desktop PCs from parts, installing operating systems, and setting up basic applications for home use."
+      },
+      {
+        title: "PC Troubleshooting",
+        description: "Diagnosing and fixing hardware issues (e.g., faulty power supply, RAM, hard drives) and basic software errors."
+      },
+      {
+        title: "Network Installation (Wi-Fi, printer sharing)",
+        description: "Setting up home Wi-Fi routers, LAN connections, and small home networks for internet sharing and device connectivity."
+      },
+      {
+        title: "Repair unit/gadget hardware related problem",
+        description: "Installing and configuring printers, scanners, webcams, and external storage devices."
+      },
+      {
+        title: "Backup, Recovery, & Data Protection",
+        description: "Helping homeowners back up important files and recovering data from damaged or formatted drives."
+      },
+      {
+        title: "Virus Removal and System Maintenance",
+        description: "Installing antivirus software, removing malware, optimizing system performance, and performing regular check-ups."
+      },
 ];
 
 const Computer = () => {

@@ -7,11 +7,22 @@ import React from "react";
 import ServiceCard from "../components/services/ServiceCard";
 
 const PaintingServiceCardDetails = [
-  {
-    title: "Surface Painting & Coating",  
-    description:
-      "Uneven or rough wall surfaces, need for surface sanding, peeling or old paint removal, patching cracks or holes before painting, applying primer for better paint adhesion, faded or discolored walls, stains or marks on surfaces, uneven paint application, request for new wall color or repainting, need for protective coatings.",
-  },
+      {
+        title: "Surface Sanding",
+        description: "Preparing walls before painting."
+      },
+      {
+        title: "Retouch/Repaint",
+        description: "Fixing spots, touching up areas with detected defects, and matching colors."
+      },
+      {
+        title: "Wall Painting",
+        description: "Properly applying paint to the wall in any color of preference."
+      },
+      {
+        title: "Mixing/Tinting Paints",
+        description: "Exactly matching color, preparing custom tints, mixing according to preferred color."
+      },
 ];
 
 const Painting = () => {
