@@ -17,7 +17,7 @@ const AppliancesServiceCardDetails = [
       },
       {
         title: "Repair / Maintenance of Domestic Electronic Appliances",
-        description: ""
+        description: "Servicing common household electronic appliances such as rice cookers, electric fans, induction cookers, blenders, and similar devices, including replacing minor components and general maintenance.",
       },
       {
         title: "Mobile and Gadget Repair (Basic)",

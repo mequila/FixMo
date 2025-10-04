@@ -22,6 +22,14 @@ const PlumbingServiceCardDetails = [
     description:
       "Weak or inconsistent water flow, no hot water, faulty water heater connection, fluctuating water temperature, leaking showerheads, improper shower setup, electrical or plumbing issues affecting heaters.",
   },
+  {
+    title: "Leak Detection and Repair",
+    description: "Locating and fixing water leaks in supply lines, drains, or fittings to prevent water damage and wastage.",
+  },
+  {
+      title: "Outdoor and Auxiliary Plumbing Works",
+      description: "Installing garden faucets, irrigation or sprinkler systems, and outdoor kitchen/laundry water connections.",
+  }
 ];
 
 const Plumbing = () => {

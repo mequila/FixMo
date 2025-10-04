@@ -835,7 +835,7 @@ export default function profile_serviceprovider() {
       // Format date as ISO datetime string if it's just a date
       let formattedDate = selectedDate || new Date().toISOString().split('T')[0];
       if (!formattedDate.includes('T')) {
-        formattedDate = `${formattedDate}T10:00:00.000Z`; // Default to 10 AM
+        formattedDate = `${formattedDate}T08:00:00.000Z`; // Default to 8 AM
       }
 
       // Use availability_id from navigation params if available, otherwise use default

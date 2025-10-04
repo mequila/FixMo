@@ -143,7 +143,10 @@ const DirectMessage = () => {
           );
           
           setMessages(sortedMessages);
+          // Multiple scroll attempts to ensure it works after render
           setTimeout(() => scrollToBottom(), 100);
+          setTimeout(() => scrollToBottom(), 300);
+          setTimeout(() => scrollToBottom(), 500);
         } else {
           const sortedOlderMessages = response.messages.sort((a, b) => 
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()

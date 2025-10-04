@@ -17,7 +17,7 @@ const AirconServiceCardDetails = [
       },
       {
         title: "Troubleshoot & repair domestic refrigeration and air-conditioning systems",
-        description: ""
+        description: "Diagnosing and fixing issues such as refrigerant leaks, compressor failures, thermostat malfunctions, electrical faults, or unusual noises in domestic air-conditioning and refrigeration units." 
       }
 ];
 

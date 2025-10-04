@@ -84,10 +84,28 @@ const messages = () => {
       if (result.success) {
         const response = result as ConversationResponse
         
+        // Sort conversations: open/active chats first, then by latest message
+        const sortedConversations = response.conversations.sort((a, b) => {
+          // First, prioritize open/active conversations over closed ones
+          const aIsClosed = a.status === 'closed' || a.status === 'archived' || 
+                           a.appointment_status === 'completed' || a.appointment_status === 'cancelled'
+          const bIsClosed = b.status === 'closed' || b.status === 'archived' || 
+                           b.appointment_status === 'completed' || b.appointment_status === 'cancelled'
+          
+          if (aIsClosed !== bIsClosed) {
+            return aIsClosed ? 1 : -1 // Open chats first
+          }
+          
+          // Then sort by latest message time (most recent first)
+          const aTime = new Date(a.last_message_at || a.updated_at || a.created_at).getTime()
+          const bTime = new Date(b.last_message_at || b.updated_at || b.created_at).getTime()
+          return bTime - aTime
+        })
+        
         if (pageNum === 1) {
-          setConversations(response.conversations)
+          setConversations(sortedConversations)
         } else {
-          setConversations(prev => [...prev, ...response.conversations])
+          setConversations(prev => [...prev, ...sortedConversations])
         }
         setHasMore(response.conversations.length === 20)
       } else {
@@ -160,7 +178,8 @@ const messages = () => {
 
   const updateConversationWithNewMessage = (message: Message) => {
     setConversations(prev => {
-      return prev.map(conv => {
+      // Update the conversation with new message
+      const updated = prev.map(conv => {
         if (conv.conversation_id === message.conversation_id) {
           return {
             ...conv,
@@ -171,19 +190,22 @@ const messages = () => {
         }
         return conv
       })
-    })
-    
-    // Move updated conversation to top
-    setConversations(prev => {
-      const updated = [...prev]
-      const updatedIndex = updated.findIndex(conv => conv.conversation_id === message.conversation_id)
       
-      if (updatedIndex > 0) {
-        const [conversation] = updated.splice(updatedIndex, 1)
-        updated.unshift(conversation)
-      }
-      
-      return updated
+      // Re-sort to maintain: open chats first, then by latest message
+      return updated.sort((a, b) => {
+        const aIsClosed = a.status === 'closed' || a.status === 'archived' || 
+                         a.appointment_status === 'completed' || a.appointment_status === 'cancelled'
+        const bIsClosed = b.status === 'closed' || b.status === 'archived' || 
+                         b.appointment_status === 'completed' || b.appointment_status === 'cancelled'
+        
+        if (aIsClosed !== bIsClosed) {
+          return aIsClosed ? 1 : -1
+        }
+        
+        const aTime = new Date(a.last_message_at || a.updated_at || a.created_at).getTime()
+        const bTime = new Date(b.last_message_at || b.updated_at || b.created_at).getTime()
+        return bTime - aTime
+      })
     })
   }
 
@@ -386,23 +408,6 @@ const messages = () => {
             justifyContent: 'space-between', 
             alignItems: 'center',
           }}>
-            <View style={{
-              backgroundColor: item.is_warranty_active ? '#e8f8f5' : '#ffeaa7',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: item.is_warranty_active ? '#00b894' : '#fdcb6e',
-            }}>
-              <Text style={{
-                fontSize: 10,
-                fontWeight: '600',
-                color: item.is_warranty_active ? '#00b894' : '#e17055'
-              }}>
-                {item.is_warranty_active ? '🛡️ Under Warranty' : '⚠️ Warranty Expired'}
-              </Text>
-            </View>
-            
             {/* Show Completed/Archived status badge */}
             {(item.status === 'closed' || item.status === 'archived' || 
               item.appointment_status === 'completed' || item.appointment_status === 'cancelled') && (
@@ -411,7 +416,6 @@ const messages = () => {
                 paddingHorizontal: 8,
                 paddingVertical: 3,
                 borderRadius: 10,
-                marginLeft: 8,
               }}>
                 <Text style={{
                   fontSize: 9,
@@ -423,7 +427,7 @@ const messages = () => {
               </View>
             )}
             
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' }}>
               {item.last_message && item.last_message.sender_type === userType && (
                 <Text style={{ 
                   color: item.last_message.is_read ? '#00b894' : '#7f8c8d', 
