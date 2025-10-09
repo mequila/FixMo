@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import PageHeader from './components/PageHeader';
 
 export default function IDVerificationScreen() {
     const router = useRouter();
@@ -56,16 +58,16 @@ export default function IDVerificationScreen() {
     };
 
     const idTypes = [
-        'PhilSys (National ID)',
+        'PhilSys ID (PhilID/ePhilID)',
         'Passport',
         'Driver’s License',
         'UMID',
-        'SSS',
-        'GSIS',
-        'NBI',
-        'Postal',
-        'PRC',
-        'Philhealth',
+        'SSS ID',
+        'GSIS ID',
+        'NBI Clearance',
+        'Postal ID',
+        'PRC ID',
+        'PhilHealth ID',
     ];
 
     const handleNext = () => {
@@ -100,12 +102,25 @@ export default function IDVerificationScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <LinearGradient
+            colors={["#b2d7d7", "#ffffff", "#ffffff", "#b2d7d7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1 }}
+        >
+            <View style={styles.container}>
+            <PageHeader title="" backRoute="/LocationScreen"/>
             <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-                <TouchableOpacity onPress={handleBack}>
-                    <Ionicons name="arrow-back" size={30} color="#008080" style={{marginTop: 20}}/>
-                </TouchableOpacity>
-                <Text style={styles.title}>Valid Government ID</Text>
+                <Text style={styles.title}>Verification of Valid Government ID</Text>
+                 <Image
+                    source={require('../assets/images/verify-id.png')}
+                    style={{
+                        width: '100%', 
+                        height: 230,
+                        tintColor: '#008080'
+                        }}
+                    resizeMode="contain"
+                />
                 <Text style={styles.subtitle}>
                     Your full name will help us verify your identity and display it to customers.
                 </Text>
@@ -120,6 +135,8 @@ export default function IDVerificationScreen() {
                         <Text style={styles.dropdownArrow}>▼</Text>
                     </TouchableOpacity>
                 </View>
+
+               
 
                 {/* ID Photo */}
                 <View style={styles.section}>
@@ -222,26 +239,53 @@ export default function IDVerificationScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
+            </View>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {flex: 1, backgroundColor: '#fff'},
-    scrollContainer: {padding: 20, paddingBottom: 120},
-    title: {fontSize: 22, fontWeight: 'bold', marginBottom: 5, marginTop: 15},
-    subtitle: {fontSize: 14, color: '#666', marginBottom: 20},
-    section: {marginBottom: 20},
-    label: {fontSize: 16, marginBottom: 6, fontWeight: '500'},
+    container: {
+        flex: 1,
+        backgroundColor: 'transparent'
+    },
+    scrollContainer: {
+        padding: 20,
+        paddingBottom: 120
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginTop: 15
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 20, 
+        textAlign: 'center'
+    },
+    section: {
+        marginBottom: 20
+    },
+    label: {
+        fontSize: 16,
+        marginBottom: 6,
+        fontWeight: '500'
+    },
     dropdown: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderRadius: 30,
+        borderRadius: 12,
         padding: 12,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#e7ecec',
+        borderWidth: 1,
+        borderColor: '#b2d7d7',
     },
-    dropdownArrow: {fontSize: 18, color: '#008080'},
+    dropdownArrow: {
+        fontSize: 18,
+        color: '#008080'
+    },
     input: {
         borderRadius: 30,
         padding: 12,
@@ -250,16 +294,21 @@ const styles = StyleSheet.create({
     },
     photoUpload: {
         height: 90,
-        borderRadius: 30,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#e7ecec',
+        borderWidth: 1,
+        borderColor: '#b2d7d7',
     },
-    uploadText: {color: '#008080', fontSize: 14},
+    uploadText: {
+        color: '#008080',
+        fontSize: 14
+    },
     photoPreview: {
         width: '100%',
         height: '100%',
-        borderRadius: 30,
+        borderRadius: 11,
         resizeMode: 'cover',
     },
     removeBtn: {
@@ -278,15 +327,19 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         padding: 20,
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
     },
     nextButton: {
         backgroundColor: '#008080',
         paddingVertical: 15,
-        borderRadius: 40,
+        borderRadius: 12,
         alignItems: 'center',
     },
-    nextText: {color: '#fff', fontSize: 16, fontWeight: 'bold'},
+    nextText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: '#00000055',

@@ -2,14 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter, Stack } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
     ActionSheetIOS,
     ActivityIndicator,
     Alert,
     Image,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
@@ -18,8 +19,20 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import PageHeader from "./components/PageHeader";
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://192.168.1.27:3000';
+
+const PHOTO_GUIDELINES = {
+    title: 'Photo Guidelines',
+    bullets: [
+        'Face fully visible',
+        'Use natural lighting and avoid filters',
+        'No sunglasses, hats, or face coverings'
+    ],
+    proceed: 'Proceed',
+    cancel: 'Cancel',
+};
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -101,6 +114,7 @@ export default function ProfileScreen() {
     };
 
     // --- PHOTO SELECTION ---
+    const [showPhotoGuidelines, setShowPhotoGuidelines] = useState(false);
     const selectPhotoOption = () => {
         if (Platform.OS === 'ios') {
             ActionSheetIOS.showActionSheetWithOptions(
@@ -394,25 +408,66 @@ export default function ProfileScreen() {
     return (
         <KeyboardAvoidingView
             style={{flex: 1}}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <View style={styles.container}>
-                <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-                    {/* Back Button */}
-                    <TouchableOpacity 
-                        onPress={() => router.back()} 
-                        style={styles.backButton}
-                    >
-                        <Ionicons name="arrow-back" size={30} color="#008080"/>
-                    </TouchableOpacity>
+                <PageHeader title="" backRoute="/agreement"/>
+                {/* Photo guidelines modal */}
+                <Modal
+                    visible={showPhotoGuidelines}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowPhotoGuidelines(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <Text style={styles.modalTitle}>{PHOTO_GUIDELINES.title}</Text>
+                            <View style={{ marginTop: 8 }} />
+                            {PHOTO_GUIDELINES.bullets.map((b, i) => (
+                                <View key={b} style={styles.bulletRow}>
+                                    <Ionicons
+                                        name={i === 0 ? 'checkmark-circle' : i === 1 ? 'checkmark-circle' : 'close-circle'}
+                                        size={18}
+                                        color={i === 0 ? '#228b22' : i === 1 ? '#228b22' : '#a20021'}
+                                        style={styles.bulletIcon}
+                                    />
+                                    <Text style={styles.bulletText}>{b}</Text>
+                                </View>
+                            ))}
 
-                    <Text style={styles.title}>Basic Information</Text>
-                    <Text style={styles.subtext}>
-                        Your full name will help us verify your identity and display it to customers.
-                    </Text>
+                            <View style={styles.modalButtonsRow}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton]}
+                                    onPress={() => setShowPhotoGuidelines(false)}
+                                >
+                                    <Text style={[styles.modalCancelText]}>{PHOTO_GUIDELINES.cancel}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.modalButton}
+                                    onPress={() => {
+                                        setShowPhotoGuidelines(false);
+                                        // after dismissing, open camera/gallery options
+                                        selectPhotoOption();
+                                    }}
+                                >
+                                    <Text style={styles.modalButtonText}>{PHOTO_GUIDELINES.proceed}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
 
-                    {/* Profile Photo */}
-                    <TouchableOpacity onPress={selectPhotoOption} style={styles.photoContainer}>
+                <ScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled"
+                    scrollEnabled={true}
+                    keyboardDismissMode="interactive"
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                >
+
+                    <TouchableOpacity onPress={() => setShowPhotoGuidelines(true)} style={styles.photoContainer}>
                         {photo ? (
                             <Image source={{uri: photo}} style={styles.photo}/>
                         ) : (
@@ -422,16 +477,16 @@ export default function ProfileScreen() {
                         )}
                         <Text style={styles.addPhotoText}>Add Photo</Text>
                     </TouchableOpacity>
-                    <Text style={styles.instructions}>
-                        *Clearly visible face{"\n"}*Without sunglasses{"\n"}*Good lighting without filters
-                    </Text>
+
+                    <Text style={styles.sectionTitle}>Personal Information</Text>
+
 
                     {/* Name Fields */}
                     {[
-                        {label: "First Name", value: firstName, setter: setFirstName, required: true},
-                        {label: "Middle Name (optional)", value: middleName, setter: setMiddleName},
-                        {label: "Last Name", value: lastName, setter: setLastName, required: true},
-                    ].map(({label, value, setter, required}) => (
+                        {label: "First Name", value: firstName, setter: setFirstName, required: true, placeholder: "Juanito"},
+                        {label: "Middle Name (optional)", value: middleName, setter: setMiddleName, placeholder: "Martinez"},
+                        {label: "Last Name", value: lastName, setter: setLastName, required: true, placeholder: "Dela Cruz"},
+                    ].map(({label, value, setter, required, placeholder}) => (
                         <View key={label}>
                             <View style={styles.labelRow}>
                                 <Text style={styles.labelText}>{label}</Text>
@@ -441,45 +496,10 @@ export default function ProfileScreen() {
                                 style={styles.input}
                                 value={value}
                                 onChangeText={(text) => setter(text.toUpperCase())}
+                                placeholder={placeholder}
                             />
                         </View>
                     ))}
-
-                    {/* Date of Birth */}
-                    <View style={styles.labelRow}>
-                        <Text style={styles.labelText}>Date of Birth</Text>
-                        <Text style={styles.requiredAsterisk}>*</Text>
-                    </View>
-                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
-                        <Text style={{color: dob ? "#000" : "#999"}}>{dob || "Select date"}</Text>
-                        <Text style={styles.dropdownArrow}>▼</Text>
-                    </TouchableOpacity>
-                    {showDatePicker && (
-                        <DateTimePicker
-                            value={dob ? new Date(dob) : getMaxDate()}
-                            mode="date"
-                            display="default"
-                            onChange={handleDateChange}
-                            maximumDate={getMaxDate()}
-                            minimumDate={getMinDate()}
-                        />
-                    )}
-
-                    <Text style={styles.sectionTitle}>Contact Information</Text>
-
-                    {/* Email (Disabled) */}
-                    <View>
-                        <View style={styles.labelRow}>
-                            <Text style={styles.labelText}>Email</Text>
-                            <Text style={styles.requiredAsterisk}>*</Text>
-                        </View>
-                        <TextInput
-                            style={[styles.input, styles.disabledInput]}
-                            value={email}
-                            editable={false}
-                            keyboardType="email-address"
-                        />
-                    </View>
 
                     {/* Username with validation */}
                     <View>
@@ -505,8 +525,7 @@ export default function ProfileScreen() {
                             ]}
                             value={username}
                             onChangeText={setUsername}
-                            placeholder="e.g. john123"
-                            autoCapitalize="none"
+                            placeholder="Juan"
                         />
                         {usernameMessage ? (
                             <Text style={[
@@ -518,6 +537,45 @@ export default function ProfileScreen() {
                             </Text>
                         ) : null}
                     </View>
+
+                    {/* Date of Birth */}
+                    <View style={styles.labelRow}>
+                        <Text style={styles.labelText}>Date of Birth</Text>
+                        <Text style={styles.requiredAsterisk}>*</Text>
+                    </View>
+                    <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
+                        <Text style={{color: dob ? "#000" : "#999"}}>{dob || "Select date"}</Text>
+                        <Text style={styles.dropdownArrow}>▼</Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={dob ? new Date(dob) : getMaxDate()}
+                            mode="date"
+                            display="default"
+                            onChange={handleDateChange}
+                            maximumDate={getMaxDate()}
+                            minimumDate={getMinDate()}
+                        />
+                    )}
+
+                    <Text style={styles.sectionTitle}>Contact Information</Text>
+
+
+                    {/* Email (Disabled) */}
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Email Address</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <TextInput
+                            style={[styles.input, styles.disabledInput]}
+                            value={email}
+                            editable={false}
+                            keyboardType="email-address"
+                        />
+                    </View>
+
+                    
 
                     {/* Phone Number with validation */}
                     <View>
@@ -542,14 +600,13 @@ export default function ProfileScreen() {
                             ]}
                             value={phone}
                             onChangeText={(text) => {
-                                // Limit to 11 digits
                                 const numericText = text.replace(/[^0-9]/g, '');
                                 if (numericText.length <= 11) {
                                     setPhone(numericText);
                                 }
                             }}
                             keyboardType="phone-pad"
-                            placeholder="11-digit phone number"
+                            placeholder="09123456789"
                             maxLength={11}
                         />
                         {phoneMessage ? (
@@ -563,58 +620,106 @@ export default function ProfileScreen() {
                         ) : null}
                     </View>
 
-                    {/* Next Button */}
-                    <View style={styles.fixedButtonContainer}>
+                </ScrollView>
+
+                {/* Sticky footer - stays fixed at bottom */}
+                <View style={styles.stickyFooter} pointerEvents="box-none">
+                    <View style={styles.stickyInner}>
                         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
                             <Text style={styles.nextText}>Next</Text>
                         </TouchableOpacity>
                     </View>
-                </ScrollView>
+                </View>
             </View>
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    scrollContainer: {paddingBottom: 120},
-    container: {flex: 1, backgroundColor: "#fff"},
-    title: {fontSize: 22, fontWeight: "bold", marginBottom: 8, paddingHorizontal: 20, marginTop: 1},
-    subtext: {fontSize: 14, color: "#666", marginBottom: 20, paddingHorizontal: 20},
-    photoContainer: {alignItems: "center", marginBottom: 10},
+    scrollContainer: {
+        paddingBottom: 100
+    },
+    container: {
+        flex: 1, 
+        backgroundColor: "#fff"
+    },
+    title: {
+        fontSize: 22, 
+        fontWeight: "bold", 
+        marginBottom: 8, 
+        paddingHorizontal: 20, 
+        marginTop: 1
+    },
+    subtext: {
+        fontSize: 14, 
+        color: "#666", 
+        marginBottom: 20, 
+        paddingHorizontal: 20
+    },
+    photoContainer: {
+        alignItems: "center", 
+        marginBottom: 10
+    },
     iconCircle: {
         width: 100,
         height: 100,
-        borderRadius: 50,
-        backgroundColor: "#f0f0f0",
+        borderRadius: 60,
+        backgroundColor: "#e7ecec",
         justifyContent: "center",
         alignItems: "center",
+        marginTop: 20,
         marginBottom: 8,
     },
-    addPhotoText: {fontSize: 14, color: "#008080"},
-    photo: {width: 100, height: 100, borderRadius: 50},
-    instructions: {fontSize: 14, color: "#666", textAlign: "justify", marginBottom: 20, paddingHorizontal: 20},
-    labelRow: {flexDirection: "row", alignItems: "center", marginBottom: 4, paddingHorizontal: 20},
-    labelText: {fontSize: 16, color: "#333", fontWeight: "500"},
-    requiredAsterisk: {color: "red", marginLeft: 2, fontSize: 16},
+    addPhotoText: {
+        fontSize: 16, 
+        fontWeight: "500",
+        color: "#008080"
+    },
+    photo: {
+        width: 90, 
+        height: 90, 
+        borderRadius: 60,
+        marginTop: 20,
+        marginBottom: 8,
+
+    },
+    labelRow: {
+        flexDirection: "row", 
+        alignItems: "center", 
+        marginBottom: 4, 
+        paddingHorizontal: 20
+    },
+    labelText: {
+        fontSize: 16, 
+        color: "#333", 
+        fontWeight: "500"
+    },
+    requiredAsterisk: {
+        color: "red", 
+        marginLeft: 2, 
+        fontSize: 16
+    },
     input: {
         padding: 14,
         marginBottom: 12,
-        backgroundColor: "#f9f9f9",
+        backgroundColor: "#e7ecec",
+        borderWidth: 1,
+        borderColor: "#b2d7d7",
         marginHorizontal: 20,
-        borderRadius: 30,
+        borderRadius: 12,
     },
     disabledInput: {
-        backgroundColor: "#e0e0e0",
-        color: "#666",
+        backgroundColor: "#e7ecec",
+        color: "#444",
     },
     inputValid: {
         borderWidth: 2,
-        borderColor: "#4CAF50",
+        borderColor: "#228b22",
         backgroundColor: "#E8F5E9",
     },
     inputInvalid: {
         borderWidth: 2,
-        borderColor: "#F44336",
+        borderColor: "#a20021",
         backgroundColor: "#FFEBEE",
     },
     validationMessage: {
@@ -624,20 +729,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     validMessage: {
-        color: "#4CAF50",
+        color: "#228b22",
     },
     invalidMessage: {
-        color: "#F44336",
+        color: "#a20021",
     },
     dateInput: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         padding: 12,
-        backgroundColor: "#f9f9f9",
+        backgroundColor: "#e7ecec",
         marginBottom: 12,
         marginHorizontal: 20,
-        borderRadius: 30,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#b2d7d7",
     },
     sectionTitle: {
         fontSize: 22,
@@ -647,16 +754,107 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         paddingHorizontal: 20,
     },
-    dropdownArrow: {fontSize: 15, color: "#008080"},
-    fixedButtonContainer: {paddingHorizontal: 20, alignItems: "center", marginTop: 20},
+    dropdownArrow: {
+        fontSize: 15, 
+        color: "#008080"
+    },
+    fixedButtonContainer: {
+        paddingHorizontal: 20, 
+        alignItems: "center", 
+        marginTop: 20, 
+    },
     nextButton: {
         backgroundColor: "#008080",
         paddingVertical: 15,
-        borderRadius: 40,
+        borderRadius: 12,
         alignItems: "center",
         marginBottom: 10,
         width: "100%",
     },
-    nextText: {color: "#fff", fontSize: 16, fontWeight: "bold"},
-    backButton: {marginBottom: 30, marginLeft: 10, marginTop: Platform.OS === "ios" ? 60 : 40},
+    nextText: {
+        color: "#fff", 
+        fontSize: 16, 
+        fontWeight: "bold"
+    },
+    backButton: {
+        marginBottom: 30, 
+        marginLeft: 10, 
+        marginTop: Platform.OS === "ios" ? 60 : 40
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    modalContainer: {
+        width: '90%',
+        maxWidth: 420,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        alignItems: 'stretch',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
+    },
+    modalButtonsRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: 16,
+        width: '100%'
+    },
+    modalButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        marginLeft: 8,
+    },
+    modalCancelText: {
+        color: '#555',
+        fontWeight: '600'
+    },
+    modalButtonText: {
+        color: '#008080',
+        fontWeight: '600'
+    },
+    bulletRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    bulletIcon: {
+        marginRight: 12,
+        alignSelf: 'center',
+    },
+    bulletText: {
+        fontSize: 16,
+        color: '#333',
+        marginTop: 0,
+        flex: 1,
+        flexWrap: 'wrap',
+    },
+    photoHint: {
+        textAlign: 'center',
+        color: '#666',
+        fontSize: 13,
+        marginBottom: 12,
+    },
+    stickyFooter: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 20,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+        backgroundColor: '#fff' ,
+        zIndex: 20,
+    },
+    stickyInner: {
+        backgroundColor: '#fff',
+        paddingTop: 10,
+    },
 });

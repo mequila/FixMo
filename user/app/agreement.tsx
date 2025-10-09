@@ -1,13 +1,14 @@
-import { useRouter, Stack } from 'expo-router';
-import React from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack, useRouter } from 'expo-router';
 import {
     Image,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function AgreementScreen() {
     const router = useRouter();
@@ -19,28 +20,35 @@ export default function AgreementScreen() {
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
-            <SafeAreaView style={styles.wrapper}>
-                <View style={styles.content}>
-                    <Image
-                        source={require('../assets/images/fixmo-logo.png')}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
+            <LinearGradient
+                colors={["#b2d7d7", "#ffffff", "#ffffff", "#b2d7d7"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1 }}
+            >
+                <SafeAreaView style={styles.wrapper}>
+                    <View style={styles.content}>
+                        <Image
+                            source={require('../assets/images/FixMo User.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
 
-                <Text style={styles.title}>We’ve updated FixMo' Terms and Privacy Policy.</Text>
-                <Text style={styles.text}>
-                    To keep using our app, please review the updated{' '}
-                    <Text style={styles.link}>Terms of Use and Privacy Policy</Text>. Tap ‘I Agree’ to accept
-                    the changes and continue.
-                </Text>
-            </View>
+                    <Text style={styles.title}>Terms of Use and Privacy Policy Update</Text>
+                    <Text style={styles.text}>
+                        Please read the updated{' '}
+                        <Text style={styles.link}>Terms of Use and Privacy Policy</Text> to keep using FixMo.
+                    </Text>
+                </View>
 
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.button} onPress={handleAgree}>
-                    <Text style={styles.buttonText}>I Agree</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                <View style={styles.footer}>
+                    <Text style={styles.text}>Tap <Text style={styles.link}>I Agree</Text> to accept the changes and continue.</Text>
+                    <TouchableOpacity style={styles.button} onPress={handleAgree}>
+                        <Text style={styles.buttonText}>I Agree</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+            </LinearGradient>
         </>
     );
 }
@@ -48,9 +56,9 @@ export default function AgreementScreen() {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        backgroundColor: '#fff',
         justifyContent: 'space-between',
-        paddingHorizontal: 24,
+        paddingHorizontal: 18,
+        
     },
     content: {
         alignItems: 'center',
@@ -66,13 +74,15 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '600',
         marginBottom: 20,
-        textAlign: 'justify',
+        color: '#333',
+        textAlign: 'center',
     },
     text: {
         fontSize: 16,
         marginBottom: 20,
-        textAlign: 'justify',
+        textAlign: 'center',
         color: '#555',
+        marginHorizontal: 10,
     },
     link: {
         color: '#008080',
@@ -84,11 +94,12 @@ const styles = StyleSheet.create({
     button: {
         backgroundColor: '#008080',
         paddingVertical: 14,
-        borderRadius: 30,
+        borderRadius: 12,
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         textAlign: 'center',
+        fontWeight: 'bold',
     },
 });

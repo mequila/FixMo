@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -18,6 +18,7 @@ import {
     useBlurOnFulfill,
     useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
+import PageHeader from './components/PageHeader';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://192.168.1.27:3000';
 const CELL_COUNT = 6; // OTP length
@@ -168,74 +169,79 @@ export default function OTPScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.wrapper}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <LinearGradient
+            colors={["#b2d7d7", "#ffffff", "#ffffff", "#b2d7d7" ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1 }}
         >
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.container}>
-                    <Text style={styles.title}>Enter One-Time Pin</Text>
-                    <Text style={styles.subtitle}>
-                        A One-Time Pin was sent to <Text style={styles.email}>{email}</Text>
-                    </Text>
+            <KeyboardAvoidingView
+                style={styles.wrapper}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                    <PageHeader title="" backRoute="/register-email" />
+                    <View style={styles.container}>
+                        <Text style={styles.title}>OTP Verification</Text>
+                        <Text style={styles.subtitle}>
+                            We have sent a One-Time Pin to {"\n"}<Text style={styles.email}>{email}</Text>
+                        </Text>
 
-                    <CodeField
-                        ref={ref}
-                        {...props}
-                        value={value}
-                        onChangeText={(text) => {
-                            setValue(text);
-                            setValidationStatus('none');
-                            setErrorMessage('');
-                        }}
-                        cellCount={CELL_COUNT}
-                        rootStyle={styles.codeFieldRoot}
-                        keyboardType="number-pad"
-                        textContentType="oneTimeCode"
-                        editable={!isVerifying && validationStatus === 'none'}
-                        renderCell={({index, symbol, isFocused}) => (
-                            <Text
-                                key={index}
-                                style={[
-                                    styles.cell,
-                                    isFocused && validationStatus === 'none' && styles.focusCell,
-                                    validationStatus === 'valid' && styles.validCell,
-                                    validationStatus === 'invalid' && styles.invalidCell,
-                                ]}
-                                onLayout={getCellOnLayoutHandler(index)}
-                            >
-                                {symbol || (isFocused ? <Cursor/> : null)}
+                        <CodeField
+                            ref={ref}
+                            {...props}
+                            value={value}
+                            onChangeText={(text) => {
+                                setValue(text);
+                                setValidationStatus('none');
+                                setErrorMessage('');
+                            }}
+                            cellCount={CELL_COUNT}
+                            rootStyle={styles.codeFieldRoot}
+                            keyboardType="number-pad"
+                            textContentType="oneTimeCode"
+                            editable={!isVerifying && validationStatus === 'none'}
+                            renderCell={({index, symbol, isFocused}) => (
+                                <Text
+                                    key={index}
+                                    style={[
+                                        styles.cell,
+                                        isFocused && validationStatus === 'none' && styles.focusCell,
+                                        validationStatus === 'valid' && styles.validCell,
+                                        validationStatus === 'invalid' && styles.invalidCell,
+                                    ]}
+                                    onLayout={getCellOnLayoutHandler(index)}
+                                >
+                                    {symbol || (isFocused ? <Cursor/> : null)}
+                                </Text>
+                            )}
+                        />
+
+                        {errorMessage ? (
+                            <Text style={styles.errorText}>{errorMessage}</Text>
+                        ) : null}
+
+                        {isVerifying && (
+                            <ActivityIndicator size="small" color="#008080" style={styles.loader} />
+                        )}
+
+                        {isResendVisible ? (
+                            <TouchableOpacity onPress={handleResend}>
+                                <Text style={styles.resendButton}>Resend Code</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <Text style={styles.resend}>
+                                Didn’t receive the code? Request again in {formatTime()}
                             </Text>
                         )}
-                    />
-
-                    {errorMessage ? (
-                        <Text style={styles.errorText}>{errorMessage}</Text>
-                    ) : null}
-
-                    {isVerifying && (
-                        <ActivityIndicator size="small" color="#008080" style={styles.loader} />
-                    )}
-
-                    {isResendVisible ? (
-                        <TouchableOpacity onPress={handleResend}>
-                            <Text style={styles.resendButton}>Resend Code</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <Text style={styles.resend}>
-                            Didn’t receive the code? Request again in {formatTime()}
-                        </Text>
-                    )}
-                </View>
-            </SafeAreaView>
-        </KeyboardAvoidingView>
+                    </View>
+            </KeyboardAvoidingView>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     safeArea: {
         flex: 1,
@@ -243,24 +249,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
+        
     },
     title: {
-        fontSize: 20,
+        fontSize: 35,
         fontWeight: '600',
+        color: "#333",
         marginBottom: 10,
-        textAlign: 'center',
     },
     subtitle: {
         fontSize: 16,
         marginBottom: 30,
-        textAlign: 'center',
         color: '#555',
     },
     email: {
         fontWeight: 'bold',
-        color: '#000',
+        color: '#333',
     },
     codeFieldRoot: {
         marginBottom: 20,
@@ -273,9 +277,11 @@ const styles = StyleSheet.create({
         height: 50,
         lineHeight: 48,
         fontSize: 24,
+        fontWeight: '600',
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#b2d7d7',
         textAlign: 'center',
+        textAlignVertical: 'center',
         marginHorizontal: 4,
         borderRadius: 15,
     },
@@ -283,17 +289,17 @@ const styles = StyleSheet.create({
         borderColor: '#008080',
     },
     validCell: {
-        borderColor: '#4CAF50',
+        borderColor: '#228b22',
         borderWidth: 2,
         backgroundColor: '#E8F5E9',
     },
     invalidCell: {
-        borderColor: '#F44336',
+        borderColor: '#a20021',
         borderWidth: 2,
         backgroundColor: '#FFEBEE',
     },
     errorText: {
-        color: '#F44336',
+        color: '#a20021',
         fontSize: 14,
         textAlign: 'center',
         marginTop: 10,
@@ -303,12 +309,12 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     resend: {
-        marginTop: 20,
+        marginTop: 10,
         textAlign: 'center',
         color: '#888',
     },
     resendButton: {
-        marginTop: 20,
+        marginTop: 15,
         textAlign: 'center',
         color: '#008080',
         fontWeight: 'bold',

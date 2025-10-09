@@ -51,7 +51,8 @@
           "microphonePermission": "Allow FixMo to access your microphone",
           "recordAudioAndroid": true
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

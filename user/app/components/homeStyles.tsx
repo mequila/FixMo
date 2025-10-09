@@ -25,7 +25,7 @@ export const homeStyles = StyleSheet.create({
   },
   safeAreaHeader: { // ibang routing header safe area 
     backgroundColor: "#e7ecec",
-    paddingTop: 28,
+    paddingTop: 25,
     paddingBottom: 20,
     paddingLeft: 20,
     borderWidth: 0.5,
@@ -222,6 +222,11 @@ export const homeStyles = StyleSheet.create({
     marginVertical: 16,
     alignSelf: "center",
     width: "90%",
+  },
+  requiredAsterisk: {
+    color: "red", 
+    marginLeft: 2, 
+    fontSize: 16
   },
 });
 

@@ -1,23 +1,23 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack, useRouter } from "expo-router";
+import { useState } from "react";
 import {
-    View,
-    StyleSheet,
+    ActivityIndicator,
+    Alert,
     Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    Alert,
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Modal,
+    View,
 } from "react-native";
-import { useRouter, Stack } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiErrorHandler } from "../utils/apiErrorHandler";
 import { AuthService } from "../utils/authService";
-import { Ionicons } from "@expo/vector-icons";
 
 // Get backend URL from environment variables
 const BACKEND_URL =
@@ -141,11 +141,9 @@ export default function Splash() {
                     {/* Logo Section */}
                     <View style={styles.logoContainer}>
                         <Image
-                            source={require("../assets/images/fixmo-logo.png")}
+                            source={require("../assets/images/FixMo-User-Logo.png")}
                             style={styles.logo}
-                            resizeMode="contain"
                         />
-                        <Text style={styles.appName}>FixMo</Text>
                         <Text style={styles.tagline}>
                             Your trusted home service partner
                         </Text>
@@ -314,33 +312,31 @@ export default function Splash() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#399d9d",
+        backgroundColor: "#008080",
     },
     scrollContainer: {
         flexGrow: 1,
         justifyContent: "center",
         paddingHorizontal: 20,
-        paddingVertical: 40,
     },
     logoContainer: {
         alignItems: "center",
-        marginBottom: 40,
+        position: 'relative',
     },
     logo: {
-        width: 120,
-        height: 120,
-        marginBottom: 15,
-    },
-    appName: {
-        fontSize: 32,
-        fontWeight: "bold",
-        color: "#fff",
-        marginBottom: 5,
+        width: 210,
+        height: 210,
+        marginBottom: 8,
     },
     tagline: {
+        position: 'absolute',
+        bottom: 20,
+        alignSelf: 'center',
         fontSize: 14,
-        color: "#e0f2f2",
-        fontStyle: "italic",
+        color: '#fff',
+        fontStyle: 'italic',
+        backgroundColor: 'transparent',
+        textAlign: 'center',
     },
     formContainer: {
         backgroundColor: "#fff",
@@ -358,15 +354,17 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontSize: 24,
         fontWeight: "bold",
+        fontFamily: "Poppins",
         color: "#333",
         textAlign: "center",
         marginBottom: 5,
     },
     subtitle: {
         fontSize: 14,
+        fontFamily: "Poppins",
         color: "#666",
         textAlign: "center",
-        marginBottom: 25,
+        marginBottom: 20,
     },
     inputContainer: {
         marginBottom: 15,
@@ -374,10 +372,10 @@ const styles = StyleSheet.create({
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "#e7ecec",
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "#e0e0e0",
+        borderColor: "#b2d7d7",
         paddingHorizontal: 15,
     },
     inputIcon: {
@@ -404,16 +402,16 @@ const styles = StyleSheet.create({
     },
     forgotPasswordText: {
         fontSize: 14,
-        color: "#399d9d",
+        color: "#008080",
         fontWeight: "600",
     },
     loginButton: {
-        backgroundColor: "#399d9d",
+        backgroundColor: "#008080",
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",
         marginTop: 10,
-        shadowColor: "#399d9d",
+        shadowColor: "#008080",
         shadowOffset: {
             width: 0,
             height: 2,
@@ -442,10 +440,9 @@ const styles = StyleSheet.create({
     },
     registerLink: {
         fontSize: 14,
-        color: "#399d9d",
+        color: "#008080",
         fontWeight: "bold",
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0, 0, 0, 0.8)",
