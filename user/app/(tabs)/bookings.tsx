@@ -1,16 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Image, Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert, RefreshControl, TextInput, Modal, Animated, Easing, useWindowDimensions, KeyboardAvoidingView, Platform } from "react-native";
-import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
-import homeStyles from "../components/homeStyles";
-import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { MessageService } from '../../utils/messageAPI';
-import AuthService from '../../utils/authService';
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { syncAuthWithExistingStorage } from '../../utils/appInitializer';
+import AuthService from '../../utils/authService';
+import { MessageService } from '../../utils/messageAPI';
+import homeStyles from "../components/homeStyles";
 
 
 // Get backend URL from environment variables
@@ -2365,6 +2365,41 @@ export default function Bookings() {
                     Your warranty request is approved. Provider will reschedule or you can cancel.
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {/* Rebook button for Completed bookings (modal) */}
+            {selectedBooking.status === 'Completed' && (
+              <View style={{ marginTop: 16 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    // navigate to booking start and close modal
+                    try {
+                      router.push({
+                        pathname: '/bookingmaps',
+                        params: {
+                          providerId: selectedBooking.provider_id ? selectedBooking.provider_id.toString() : '',
+                          serviceTitle: selectedBooking.service_title || selectedBooking.type || ''
+                        }
+                      });
+                    } catch (e) {
+                      console.error('Rebook navigation error:', e);
+                    }
+                    // close modal
+                    if (!cancelLoading && !backjobLoading) {
+                      setIsModalVisible(false);
+                      setSelectedBooking(null);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#008080',
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>Rebook</Text>
+                </TouchableOpacity>
               </View>
             )}
             

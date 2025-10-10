@@ -156,7 +156,7 @@ export default function Index() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push('/components/notification')}>
+            <TouchableOpacity onPress={() => router.push('/notification')}>
               <Ionicons name="notifications" size={28} color={"#008080"} />
             </TouchableOpacity>
           </View>
