@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     loginButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: "#b2d7d7",
     },
     loginButtonText: {
         color: "#fff",

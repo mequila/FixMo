@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, ActivityIndicator, Alert } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { homeStyles } from "../components/homeStyles";
-import SearchBar from "../components/searchbar";
-import ServiceIcon from "../components/index/ServiceIcon";
+import { useEffect, useState } from "react";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ApiErrorHandler } from "../../utils/apiErrorHandler";
 import { AuthService } from "../../utils/authService";
-import { NetworkHelper } from "../../utils/networkHelper";
+import { homeStyles } from "../components/homeStyles";
+import ServiceIcon from "../components/index/ServiceIcon";
+import SearchBar from "../components/searchbar";
+// PageHeader not used here; we'll use the tabs-style safe area header instead
 
 interface CustomerData {
   id: number;
@@ -116,54 +117,50 @@ export default function Index() {
   
   return (
     <View>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
-        style={{marginTop: 35}}>
+        style={{ backgroundColor: "#fff"}}>
 
-      <SafeAreaView style={[homeStyles.safeArea]}>
+  {/* Tabs-style header: profile + greeting on left, notifications on right */}
+  <SafeAreaView style={[homeStyles.safeAreaTabs]} >
+          <View style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            width: '100%', 
+            paddingHorizontal: 20,
+            }}>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/profile')}
+              style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {customerData?.profile_photo && !imageError ? (
+                <Image
+                  source={{
+                    uri: customerData.profile_photo.startsWith('http')
+                      ? customerData.profile_photo
+                      : `${BACKEND_URL}/${customerData.profile_photo}`,
+                  }}
+                  style={{ width: 60, height: 60, borderRadius: 30 }}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <Ionicons name="person-circle" size={56} color={"#008080"} />
+              )}
 
-        <View style={homeStyles.header}>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={{ fontSize: 16, color: '#666' }}>{loading ? 'Loading...' : getGreeting()}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600' }}>
+                  {loading ? '' : customerData?.first_name ? customerData.first_name : 'User'}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/profile")}
-             style={{flexDirection: "row", alignItems: "center"}}>
-          
-            {customerData?.profile_photo && !imageError ? (
-              <Image 
-                source={{ 
-                  uri: customerData.profile_photo.startsWith('http') 
-                    ? customerData.profile_photo 
-                    : `${BACKEND_URL}/${customerData.profile_photo}` 
-                }} 
-                style={{ width: 70, height: 70, borderRadius: 35 }}
-                onError={(error) => {
-                  console.log('Image failed to load:', customerData.profile_photo);
-                  setImageError(true);
-                }}
-              />
-            ) : (
-              <Ionicons name="person-circle" size={70} color={"#399d9d"}/>
-            )}
-                    
-            <Text style={{fontSize: 18, marginLeft: 10}}>
-              {loading ? "Loading..." : 
-               customerData?.first_name ? 
-               `${getGreeting()}, ${customerData.first_name}!` : 
-               "Good day, User!"}
-            </Text>
-              
-          </TouchableOpacity>
-          
-          <View style={{flexDirection: "row", alignItems: "center"}}>
-            
-          <TouchableOpacity onPress={() => router.push ("/components/notification")}>
-              <Ionicons name="notifications" size={30} color={"#399d9d"} />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/components/notification')}>
+              <Ionicons name="notifications" size={28} color={"#008080"} />
+            </TouchableOpacity>
           </View>
-
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
 
 
 
@@ -181,7 +178,7 @@ export default function Index() {
 
       <View>
         <LinearGradient
-          colors={["#126363", "#8cc6c6"]}
+          colors={["#008080", "#b2d7d7"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[homeStyles.gradientBox, { flexDirection: "row", alignItems: "center", height: 180 }]}

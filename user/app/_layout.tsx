@@ -52,7 +52,7 @@ export default function RootLayout() {
         options={{ 
           headerShown: false
         }} 
-      />
+      />z
       <Stack.Screen 
         name="login" 
         options={{ 

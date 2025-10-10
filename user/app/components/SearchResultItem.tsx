@@ -74,7 +74,9 @@ const SearchResultItem: React.FC<SearchResultItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fff",
-    marginHorizontal: 16,
+    borderWidth: 0.5,
+    borderColor: "#b2d7d7",
+    marginHorizontal: 8,
     marginVertical: 6,
     borderRadius: 12,
     shadowColor: "#000",
