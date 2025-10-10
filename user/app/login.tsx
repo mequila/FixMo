@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiErrorHandler } from '../utils/apiErrorHandler';
 import { AuthService } from '../utils/authService';
 import { Ionicons } from '@expo/vector-icons';
+import { initializePushNotifications } from '../utils/pushNotifications';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -100,6 +101,15 @@ export default function Login() {
         } catch (profileError) {
           console.error('Error checking profile:', profileError);
           // Continue with normal login flow if profile check fails
+        }
+        
+        // Initialize push notifications after successful login
+        try {
+          await initializePushNotifications(data.userId, 'customer');
+          console.log('✅ Push notifications initialized after login');
+        } catch (pushError) {
+          console.error('Error initializing push notifications:', pushError);
+          // Don't block login if push notifications fail
         }
         
         Alert.alert(

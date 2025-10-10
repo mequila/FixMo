@@ -248,6 +248,11 @@ const Profile = () => {
         onPress={() => router.push("/editprofile")}
       />
 
+      <ProfileCard
+        label="🧪 Test Push Notifications"
+        iconName="notifications-outline"
+        onPress={() => router.push("/test-push-notifications")}
+      />
 
       <View style={homeStyles.profilePartition} />
 
