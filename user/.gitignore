@@ -8,8 +8,8 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
-user/fixmo-9fbb3-firebase-adminsdk-fbsvc-9233434868.json
-user/google-services.json
+/fixmo-9fbb3-firebase-adminsdk-fbsvc-9233434868.json
+/google-services.json
 
 # Native
 .kotlin/
