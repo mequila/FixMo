@@ -249,6 +249,12 @@ const Profile = () => {
       />
 
       <ProfileCard
+        label="Report an Issue"
+        iconName="flag-outline"
+        onPress={() => router.push("/report")}
+      />
+
+      <ProfileCard
         label="🧪 Test Push Notifications"
         iconName="notifications-outline"
         onPress={() => router.push("/test-push-notifications")}

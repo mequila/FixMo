@@ -27,6 +27,7 @@ export default function UserInfoScreen() {
     const [profilePhoto, setProfilePhoto] = useState<any>(null);
     const [validId, setValidId] = useState<any>(null);
     const [firstName, setFirstName] = useState("");
+    const [middleName, setMiddleName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
@@ -41,6 +42,10 @@ export default function UserInfoScreen() {
     const [loading, setLoading] = useState(false);
 
     // --- CAMERA/Gallery ---
+    const openCamera = async () => {
+        await pickImage('profile');
+    };
+
     const pickImage = async (type: 'profile' | 'id') => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -184,8 +189,8 @@ export default function UserInfoScreen() {
 
                     {/* Profile Photo */}
                     <TouchableOpacity onPress={openCamera} style={styles.photoContainer}>
-                        {photo ? (
-                            <Image source={{uri: photo}} style={styles.photo}/>
+                        {profilePhoto ? (
+                            <Image source={{uri: profilePhoto.uri}} style={styles.photo}/>
                         ) : (
                             <View style={styles.iconCircle}>
                                 <Ionicons name="camera" size={60} color="#008080"/>
@@ -222,12 +227,12 @@ export default function UserInfoScreen() {
                         <Text style={styles.requiredAsterisk}>*</Text>
                     </View>
                     <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
-                        <Text style={{color: dob ? "#000" : "#999"}}>{dob || "Select date"}</Text>
+                        <Text style={{color: birthday ? "#000" : "#999"}}>{birthday || "Select date"}</Text>
                         <Text style={styles.dropdownArrow}>▼</Text>
                     </TouchableOpacity>
                     {showDatePicker && (
                         <DateTimePicker
-                            value={dob ? new Date(dob) : new Date()}
+                            value={birthday ? new Date(birthday) : new Date()}
                             mode="date"
                             display="default"
                             onChange={handleDateChange}
@@ -238,29 +243,113 @@ export default function UserInfoScreen() {
                     <Text style={styles.sectionTitle}>Contact Information</Text>
 
                     {/* Contact Info */}
-                    {[
-                        {label: "Email", value: email, setter: setEmail, keyboardType: "email-address"},
-                        {label: "Username", value: username, setter: setUsername, keyboardType: "default"},
-                        {label: "Phone Number", value: phone, setter: setPhone, keyboardType: "phone-pad"},
-                    ].map(({label, value, setter, keyboardType}) => (
-                        <View key={label}>
-                            <View style={styles.labelRow}>
-                                <Text style={styles.labelText}>{label}</Text>
-                                <Text style={styles.requiredAsterisk}>*</Text>
-                            </View>
-                            <TextInput
-                                style={styles.input}
-                                value={value}
-                                onChangeText={setter}
-                                keyboardType={keyboardType as any}
-                            />
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Email</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
                         </View>
-                    ))}
+                        <TextInput
+                            style={[styles.input, {backgroundColor: '#f0f0f0'}]}
+                            value={email || ''}
+                            editable={false}
+                            keyboardType="email-address"
+                        />
+                    </View>
 
-                    {/* Next Button */}
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Username</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            value={userName}
+                            onChangeText={setUserName}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Phone Number</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <TextInput
+                            style={styles.input}
+                            value={phoneNumber}
+                            onChangeText={setPhoneNumber}
+                            keyboardType="phone-pad"
+                            placeholder="+63"
+                        />
+                    </View>
+
+                    {/* Password Fields */}
+                    <Text style={styles.sectionTitle}>Create Password</Text>
+
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Password</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.input, {flex: 1, marginHorizontal: 0}]}
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                placeholder="Minimum 6 characters"
+                            />
+                            <TouchableOpacity 
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={styles.eyeIcon}
+                            >
+                                <Ionicons 
+                                    name={showPassword ? "eye-off" : "eye"} 
+                                    size={24} 
+                                    color="#666" 
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Confirm Password</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={[styles.input, {flex: 1, marginHorizontal: 0}]}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry={!showConfirmPassword}
+                                placeholder="Re-enter password"
+                            />
+                            <TouchableOpacity 
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={styles.eyeIcon}
+                            >
+                                <Ionicons 
+                                    name={showConfirmPassword ? "eye-off" : "eye"} 
+                                    size={24} 
+                                    color="#666" 
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Register Button */}
                     <View style={styles.fixedButtonContainer}>
-                        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-                            <Text style={styles.nextText}>Next</Text>
+                        <TouchableOpacity 
+                            style={[styles.nextButton, loading && {opacity: 0.6}]} 
+                            onPress={handleRegister}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.nextText}>Create Account</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -297,11 +386,22 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         borderRadius: 30,
     },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 20,
+        marginBottom: 12,
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 15,
+        padding: 10,
+    },
     dateInput: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: 12,
+        padding: 14,
         backgroundColor: "#f9f9f9",
         marginBottom: 12,
         marginHorizontal: 20,
