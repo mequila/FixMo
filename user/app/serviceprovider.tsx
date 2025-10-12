@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { homeStyles } from "./components/homeStyles";
 import { calculateDistance, formatDistance, parseCoordinates, sortProvidersByDistance } from "../utils/distanceCalculator";
+import PageHeader from './components/PageHeader';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -288,6 +289,7 @@ const ServiceProvider = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#e7ecec" />
       <SafeAreaView style={{ flex: 0, backgroundColor: '#e7ecec' }} />
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <PageHeader title={serviceTitle ? `${serviceTitle} Providers` : "Service Providers"} backRoute="/" />
         {/* Header with back button and title */}
         <View style={{ 
           flexDirection: 'row', 

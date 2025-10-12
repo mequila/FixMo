@@ -1,24 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  Image,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Alert,
-  ActivityIndicator,
-  Modal,
-  Platform,
+  View
 } from "react-native";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Picker } from "@react-native-picker/picker";
-import PageHeader from "./components/PageHeader";
-import LocationMapPicker from "./components/LocationMapPicker";
 import MapView from 'react-native-maps';
+import LocationMapPicker from "./components/LocationMapPicker";
+import PageHeader from "./components/PageHeader";
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
@@ -661,14 +660,14 @@ export default function Account() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <PageHeader 
+        title="Edit Profile" 
+        backRoute="/(tabs)/profile" 
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        <PageHeader 
-          title="Edit Profile" 
-          backRoute="/(tabs)/profile" 
-        />
 
         {/* OTP Request Section - Only for approved users */}
         {userData?.verification_status === 'approved' && (
@@ -808,12 +807,39 @@ export default function Account() {
           </View>
         )}
 
-        {/* Profile Avatar Section Removed */}
-
         {/* Form Inputs */}
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
           
-          {/* Name fields removed */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
+              Phone Number
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={{ fontSize: 16, marginRight: 10 }}>🇵🇭 +63</Text>
+              <TextInput
+                style={{
+                  backgroundColor: "#e7ecec",
+                  borderWidth: 1,
+                  borderColor: "#b2d7d7",
+                  borderRadius: 12,
+                  paddingHorizontal: 15,
+                  paddingVertical: 12,
+                  fontSize: 16,
+                  flex: 1,
+                  opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
+                }}
+                placeholder="912 345 6789"
+                keyboardType="number-pad"
+                value={phone}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, "").slice(0, 10);
+                  setPhone(cleaned);
+                }}
+                editable={userData?.verification_status !== 'approved' || otpRequested}
+                placeholderTextColor="#999"
+              />
+            </View>
+          </View>
 
           {/* Email Address */}
           <View style={{ marginBottom: 20 }}>
@@ -823,11 +849,13 @@ export default function Account() {
             <TextInput
               style={{
                 backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e9e9e9" : "#e7ecec",
-                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#b2d7d7",
+                borderRadius: 12,
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: (userData?.verification_status === 'approved' && !otpRequested) ? '#999' : '#000',
+                color: (userData?.verification_status === 'approved' && !otpRequested) ? '#777' : '#000',
                 opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
               }}
               placeholder="email@example.com"
@@ -850,42 +878,11 @@ export default function Account() {
           </View>
 
           {/* Phone Number */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Phone Number *
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={{ fontSize: 16, marginRight: 10 }}>🇵🇭 +63</Text>
-              <TextInput
-                style={{
-                  backgroundColor: "#e7ecec",
-                  borderRadius: 10,
-                  paddingHorizontal: 15,
-                  paddingVertical: 12,
-                  fontSize: 16,
-                  flex: 1,
-                  opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
-                }}
-                placeholder="912 345 6789"
-                keyboardType="number-pad"
-                value={phone}
-                onChangeText={(text) => {
-                  const cleaned = text.replace(/[^0-9]/g, "").slice(0, 10);
-                  setPhone(cleaned);
-                }}
-                editable={userData?.verification_status !== 'approved' || otpRequested}
-                placeholderTextColor="#999"
-              />
-            </View>
-          </View>
 
           {/* Home Address */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Home Address *
-            </Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
-              Select your Province, Municipality, and Barangay
+              Home Address
             </Text>
             
             {/* Province Picker */}
@@ -894,7 +891,9 @@ export default function Account() {
               disabled={userData?.verification_status === 'approved' && !otpRequested}
               style={{
                 backgroundColor: "#e7ecec",
-                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#b2d7d7",
+                borderRadius: 12,
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 marginBottom: 10,
@@ -905,7 +904,7 @@ export default function Account() {
               }}
             >
               <Text style={{ fontSize: 16, color: selectedProvince ? '#000' : '#999' }}>
-                {selectedProvince || 'Choose your Province/District'}
+                {selectedProvince || 'District'}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#008080" />
             </TouchableOpacity>
@@ -916,7 +915,9 @@ export default function Account() {
               disabled={!selectedProvince || (userData?.verification_status === 'approved' && !otpRequested)}
               style={{
                 backgroundColor: "#e7ecec",
-                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#b2d7d7",
+                borderRadius: 12,
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 marginBottom: 10,
@@ -927,7 +928,7 @@ export default function Account() {
               }}
             >
               <Text style={{ fontSize: 16, color: selectedMunicipality ? '#000' : '#999' }}>
-                {selectedMunicipality || 'Choose your City/Municipality'}
+                {selectedMunicipality || 'City/Municipality'}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#008080" />
             </TouchableOpacity>
@@ -938,7 +939,9 @@ export default function Account() {
               disabled={!selectedMunicipality || (userData?.verification_status === 'approved' && !otpRequested)}
               style={{
                 backgroundColor: "#e7ecec",
-                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#b2d7d7",
+                borderRadius: 12,
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 flexDirection: 'row',
@@ -948,7 +951,7 @@ export default function Account() {
               }}
             >
               <Text style={{ fontSize: 16, color: selectedBarangay ? '#000' : '#999' }}>
-                {selectedBarangay || 'Choose your Barangay'}
+                {selectedBarangay || 'Barangay'}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#008080" />
             </TouchableOpacity>
@@ -999,31 +1002,31 @@ export default function Account() {
             )}
           </View>
 
-          {/* Birthday field removed */}
-
-          {/* Save Button */}
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving || (userData?.verification_status === 'approved' && !otpRequested)}
-            style={{
-              backgroundColor: (saving || (userData?.verification_status === 'approved' && !otpRequested)) ? '#ccc' : '#008080',
-              borderRadius: 10,
-              paddingVertical: 15,
-              alignItems: 'center',
-              marginTop: 10,
-              marginBottom: 20,
-            }}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
-                {userData?.verification_status === 'rejected' ? 'Resubmit for Verification' : 'Save Changes'}
-              </Text>
-            )}
-          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Sticky Save Footer */}
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, backgroundColor: '#fff' }}>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving || (userData?.verification_status === 'approved' && !otpRequested)}
+          style={{
+            backgroundColor: (saving || (userData?.verification_status === 'approved' && !otpRequested)) ? '#b2d7d7' : '#008080',
+            borderRadius: 12,
+            paddingVertical: 15,
+            marginBottom: 8,
+            alignItems: 'center',
+          }}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+              {userData?.verification_status === 'rejected' ? 'Resubmit for Verification' : 'Save Changes'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Province Picker Modal (iOS) */}
       {Platform.OS === 'ios' && (

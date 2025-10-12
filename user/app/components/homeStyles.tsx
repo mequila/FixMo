@@ -88,14 +88,6 @@ export const homeStyles = StyleSheet.create({
     marginHorizontal: 16,
     flexDirection: "row",
   },
-  serviceBorder: { // most popular services border
-    borderWidth: 1,
-    borderColor: "#008080",
-    borderRadius: 20,
-    paddingLeft: 20,
-    paddingRight: 20,
-    padding: 10,
-  },
   calendar: {
     justifyContent: "center",
     alignItems: "center",
@@ -223,7 +215,7 @@ export const homeStyles = StyleSheet.create({
   profilePartition: { // profile tab partition
     height: 1,
     backgroundColor: "lightgray",
-    marginVertical: 16,
+    marginVertical: 5,
     alignSelf: "center",
     width: "90%",
   },

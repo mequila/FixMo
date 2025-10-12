@@ -1,22 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
-import { 
-  Text, 
-  View, 
+import { useEffect, useState } from 'react';
+import {
   ActivityIndicator,
-  Image,
   Alert,
+  Image,
   Modal,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import ProfileCard from '../components/ProfileCard';
-import homeStyles from '../components/homeStyles';
 import { ApiErrorHandler } from '../../utils/apiErrorHandler';
 import { AuthService } from '../../utils/authService';
+import ProfileCard from '../components/ProfileCard';
 import VerificationModal from '../components/VerificationModal';
+import homeStyles from '../components/homeStyles';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -157,7 +157,7 @@ const Profile = () => {
           </Text>
         </SafeAreaView>
 
-        <View style={{ flexDirection: "row", marginLeft: 20, alignItems: "center", marginTop: 8}}>
+        <View style={{ flexDirection: "column", justifyContent: "center", alignItems: "center", marginTop: 20}}>
             {customerData?.profile_photo && !imageError ? (
               <Image 
                 source={{ 
@@ -165,7 +165,7 @@ const Profile = () => {
                     ? customerData.profile_photo 
                     : `${BACKEND_URL}/${customerData.profile_photo}` 
                 }} 
-                style={{ width: 100, height: 100, borderRadius: 50 }}
+                style={{ width: 75, height: 75, borderRadius: 40, alignSelf: 'center' }}
                 onError={(error) => {
                   console.log('Image failed to load:', customerData.profile_photo);
                   setImageError(true);
@@ -176,7 +176,7 @@ const Profile = () => {
                   style={{ alignSelf: "center", marginTop: 10 }} />
             )}
                 
-            <View style={{ flexDirection: "column", marginLeft: 18, alignItems: "flex-start" }}>
+            <View style={{ flexDirection: "column", alignItems: "center" }}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>
                         {customerData ? `${customerData.first_name} ${customerData.last_name}` : 'User'}
@@ -186,7 +186,7 @@ const Profile = () => {
                             name="checkmark-circle" 
                             size={20} 
                             color="#1DA1F2" 
-                            style={{ marginLeft: 8, marginTop: 10 }} 
+                            style={{ marginLeft: 5, marginTop: 10 }} 
                         />
                     )}
                 </View>
@@ -244,7 +244,7 @@ const Profile = () => {
 
       <ProfileCard
         label="Edit Profile"
-        iconName="create-outline"
+        iconName="create"
         onPress={() => router.push("/editprofile")}
       />
 
@@ -254,21 +254,21 @@ const Profile = () => {
 
       <ProfileCard
         label="FAQ"
-        iconName="help-circle-outline"
+        iconName="help-circle"
         onPress={() => router.push("/faq")}
       />
 
 
       <ProfileCard
         label="Contact Us"
-        iconName="mail-outline"
+        iconName="mail"
         onPress={() => router.push("/contactUs")}
       />
 
 
       <ProfileCard
         label="Terms and Conditions"
-        iconName="book-outline"
+        iconName="book"
         onPress={() => router.push("/termsConditions")}
       />
 
@@ -278,8 +278,9 @@ const Profile = () => {
 
       <ProfileCard
         label="Logout"
-        iconName="log-out-outline"
+        iconName="log-out"
         onPress={handleLogout}
+        textStyle={{ color: '#a20021' }}
       />
 
       {/* Deactivated Account Modal */}

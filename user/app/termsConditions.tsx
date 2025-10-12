@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, Text, View } from 'react-native';
 import PageHeader from './components/PageHeader';
 const termsList = [
@@ -45,9 +46,10 @@ const termsList = [
 
 const termsConditions = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <PageHeader title="Terms and Conditions" backRoute="/profile" />
-      <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1 }}>
+      <LinearGradient colors={["#b2d7d7","#ffffff","#ffffff","#b2d7d7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+        <PageHeader title="Terms and Conditions" backRoute="/profile" />
+        <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
         {termsList.map((item, idx) => (
           <View key={idx} style={{ marginBottom: 18 }}>
             <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#008080', marginBottom: 4 }}>
@@ -56,7 +58,8 @@ const termsConditions = () => {
             <Text style={{ color: '#333', fontSize: 15, lineHeight: 24 }}>{item.description}</Text>
           </View>
         ))}
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </View>
   );
 }

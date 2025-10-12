@@ -1,8 +1,9 @@
 
-import { Ionicons } from '@expo/vector-icons'
-import { useState } from 'react'
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import PageHeader from './components/PageHeader'
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import PageHeader from './components/PageHeader';
 
 const faqCardDetails = [
   {
@@ -47,9 +48,10 @@ const FAQ = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <PageHeader title="FAQ" backRoute="/(tabs)/profile" />
-      <ScrollView>
+    <View style={{ flex: 1 }}>
+      <LinearGradient colors={["#b2d7d7","#ffffff","#ffffff","#b2d7d7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+        <PageHeader title="FAQ" backRoute="/(tabs)/profile" />
+        <ScrollView>
         {faqCardDetails.map((item, idx) => {
           const isOpen = expanded.includes(idx);
           return (
@@ -64,7 +66,7 @@ const FAQ = () => {
                 borderWidth: isOpen ? 1 : 0,
                 borderColor: isOpen ? '#b2d7d7' : 'transparent',
                 elevation: isOpen ? 4 : 5,
-                shadowColor: '#008080',
+                shadowColor: '#555',
                 shadowOpacity: isOpen ? 0.12 : 0.06,
                 shadowRadius: isOpen ? 8 : 3,
               }}
@@ -85,7 +87,7 @@ const FAQ = () => {
                 <TouchableOpacity
                   style={{
                     padding: 5,
-                    backgroundColor: '#008080',
+                    backgroundColor: 'transparent',
                     borderRadius: 5,
                   }}
                   onPress={() => toggleExpand(idx)}
@@ -93,7 +95,7 @@ const FAQ = () => {
                   <Ionicons
                     name={isOpen ? 'chevron-up' : 'chevron-down'}
                     size={24}
-                    color='#fff'
+                    color='#008080'
                   />
                 </TouchableOpacity>
               </View>
@@ -115,7 +117,8 @@ const FAQ = () => {
             </View>
           );
         })}
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </View>
     
   )
