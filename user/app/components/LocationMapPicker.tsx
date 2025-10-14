@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 import LocationPicker from './LocationPicker';
 
 interface LocationMapPickerProps {
@@ -33,7 +33,23 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
   const [tempCoordinates, setTempCoordinates] = useState(coordinates || { lat: 14.5995, lng: 120.9842 }); // Default: Manila
   const [markerCoordinates, setMarkerCoordinates] = useState(tempCoordinates);
   const [loading, setLoading] = useState(false);
+  const [mapError, setMapError] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const mapRef = useRef<MapView>(null);
+
+  // Safety check - if map doesn't initialize within 3 seconds, show error
+  useEffect(() => {
+    if (mapModalVisible && !mapError) {
+      const timer = setTimeout(() => {
+        if (!mapInitialized) {
+          console.warn('Map failed to initialize within 3 seconds');
+          setMapError(true);
+        }
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [mapModalVisible, mapInitialized, mapError]);
 
   const handleLocationSelect = (location: string, coords?: { lat: number; lng: number }) => {
     setTempLocation(location);
@@ -76,6 +92,10 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
       );
       return;
     }
+    
+    // Reset states when opening
+    setMapError(false);
+    setMapInitialized(false);
     setMapModalVisible(true);
   };
 
@@ -158,49 +178,90 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
 
           {/* Map */}
           <View style={styles.mapContainer}>
-            <MapView
-              ref={mapRef}
-              provider={PROVIDER_DEFAULT}
-              style={styles.map}
-              initialRegion={{
-                latitude: tempCoordinates.lat,
-                longitude: tempCoordinates.lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              onPress={handleMapPress}
-              showsUserLocation={true}
-              showsMyLocationButton={false}
-            >
-              <Marker
-                coordinate={{
-                  latitude: markerCoordinates.lat,
-                  longitude: markerCoordinates.lng,
-                }}
-                title="Your Location"
-                description={tempLocation}
-                pinColor="#008080"
-              />
-            </MapView>
+            {mapError ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={60} color="#ff6b6b" />
+                <Text style={styles.errorTitle}>Map Unavailable</Text>
+                <Text style={styles.errorText}>
+                  {Platform.OS === 'android' 
+                    ? 'Map service is currently unavailable. This may be due to:\n\n• Missing Google Maps configuration\n• Network connection issues\n• Device compatibility\n\nYou can still use the app by selecting your city and barangay from the dropdowns. Coordinates will be automatically calculated.'
+                    : 'Unable to load map. Please check your internet connection and try again.'}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => {
+                    setMapError(false);
+                    setMapModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.retryButtonText}>Close & Continue</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {!mapInitialized && (
+                  <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#008080" />
+                    <Text style={styles.loadingText}>Loading map...</Text>
+                  </View>
+                )}
+                <MapView
+                  ref={mapRef}
+                  provider={PROVIDER_DEFAULT}
+                  style={styles.map}
+                  initialRegion={{
+                    latitude: tempCoordinates.lat,
+                    longitude: tempCoordinates.lng,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  onPress={handleMapPress}
+                  showsUserLocation={true}
+                  showsMyLocationButton={false}
+                  onMapReady={() => {
+                    console.log('Map is ready');
+                    setMapInitialized(true);
+                  }}
+                  onLayout={() => {
+                    // Additional safety - sometimes onMapReady doesn't fire
+                    setTimeout(() => {
+                      if (!mapInitialized) {
+                        setMapInitialized(true);
+                      }
+                    }, 1000);
+                  }}
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: markerCoordinates.lat,
+                      longitude: markerCoordinates.lng,
+                    }}
+                    title="Your Location"
+                    description={tempLocation}
+                    pinColor="#008080"
+                  />
+                </MapView>
 
-            {/* Center Crosshair (optional visual aid) */}
-            <View style={styles.crosshair} pointerEvents="none">
-              <View style={styles.crosshairVertical} />
-              <View style={styles.crosshairHorizontal} />
-            </View>
+                {/* Center Crosshair (optional visual aid) */}
+                <View style={styles.crosshair} pointerEvents="none">
+                  <View style={styles.crosshairVertical} />
+                  <View style={styles.crosshairHorizontal} />
+                </View>
 
-            {/* Current Location Button */}
-            <TouchableOpacity
-              onPress={getCurrentLocation}
-              style={styles.currentLocationButton}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#008080" />
-              ) : (
-                <Ionicons name="locate" size={24} color="#008080" />
-              )}
-            </TouchableOpacity>
+                {/* Current Location Button */}
+                <TouchableOpacity
+                  onPress={getCurrentLocation}
+                  style={styles.currentLocationButton}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#008080" />
+                  ) : (
+                    <Ionicons name="locate" size={24} color="#008080" />
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* Coordinates Display */}
@@ -369,6 +430,54 @@ const styles = StyleSheet.create({
     color: '#008080',
     fontWeight: '600',
     ...(Platform.OS === 'ios' ? { fontFamily: 'Courier' } : { fontFamily: 'monospace' }),
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ff6b6b',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#008080',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
   },
 });
 

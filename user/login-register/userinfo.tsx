@@ -19,6 +19,15 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
+// Helper function to convert text to proper case (capitalize first letter of each word)
+const toProperCase = (text: string): string => {
+    return text
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
 export default function UserInfoScreen() {
     const router = useRouter();
     const {email} = useLocalSearchParams<{ email: string }>();
@@ -216,7 +225,7 @@ export default function UserInfoScreen() {
                             <TextInput
                                 style={styles.input}
                                 value={value}
-                                onChangeText={(text) => setter(text.toUpperCase())}
+                                onChangeText={(text) => setter(toProperCase(text))}
                             />
                         </View>
                     ))}
