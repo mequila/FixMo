@@ -217,8 +217,39 @@ const ReportForm = () => {
         } as any);
       });
 
+      console.log('=== REPORT SUBMISSION DEBUG ===');
+      console.log('Backend URL:', BACKEND_URL);
+      console.log('Full API endpoint:', `${BACKEND_URL}/api/reports`);
       console.log('Submitting report with appointment_id:', appointmentId);
+      console.log('Reporter Name:', reporterName);
+      console.log('Reporter Email:', reporterEmail);
+      console.log('Reporter Phone:', reporterPhone);
+      console.log('Report Type:', reportType);
+      console.log('Subject:', subject);
+      console.log('Description length:', description.length);
+      console.log('Priority:', priority);
+      console.log('Provider ID:', providerId);
+      console.log('Number of images:', images.length);
+      console.log('Images details:', images.map(img => ({
+        uri: img.uri,
+        type: img.type,
+        fileName: img.fileName
+      })));
+      console.log('==============================');
 
+      // Test endpoint availability first
+      console.log('Testing endpoint availability...');
+      try {
+        const testResponse = await fetch(`${BACKEND_URL}/api/reports`, {
+          method: 'OPTIONS',
+          headers: { 'Accept': 'application/json' }
+        });
+        console.log('OPTIONS request status:', testResponse.status);
+      } catch (testError: any) {
+        console.error('OPTIONS request failed - endpoint may not exist:', testError?.message);
+      }
+
+      console.log('Attempting POST request...');
       const response = await fetch(`${BACKEND_URL}/api/reports`, {
         method: 'POST',
         body: formData,
@@ -227,7 +258,16 @@ const ReportForm = () => {
         },
       });
 
+      console.log('=== RESPONSE DEBUG ===');
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Response headers:', JSON.stringify([...response.headers.entries()]));
+      console.log('=====================');
+
       const result = await response.json();
+      console.log('=== RESPONSE BODY ===');
+      console.log('Result:', JSON.stringify(result, null, 2));
+      console.log('====================');
 
       if (response.ok && result.success) {
         const appointmentInfo = appointmentId 
@@ -251,7 +291,21 @@ const ReportForm = () => {
         );
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
+      
+      
+      // Check if it's a network error
+      if (error instanceof Error && error.message?.includes('Network request failed')) {
+        console.error('NETWORK ERROR DETECTED:');
+        console.error('- Check if backend server is running');
+        console.error('- Check if BACKEND_URL is correct:', BACKEND_URL);
+        console.error('- Check if device/emulator can reach the backend');
+        console.error('- For localhost, use appropriate IP:');
+        console.error('  * Android Emulator: 10.0.2.2');
+        console.error('  * iOS Simulator: localhost');
+        console.error('  * Physical Device: Computer IP address');
+      }
+      console.error('==================');
+      
       Alert.alert(
         "Error",
         "Network error. Please check your connection and try again."
@@ -346,10 +400,8 @@ const ReportForm = () => {
             >
               <Picker.Item label="Select report type..." value="" />
               <Picker.Item label="🐛 Bug Report" value="bug" />
-              <Picker.Item label="😠 Complaint" value="complaint" />
               <Picker.Item label="💭 Feedback / Suggestion" value="feedback" />
               <Picker.Item label="👤 Account Issue" value="account_issue" />
-              <Picker.Item label="💳 Payment Issue" value="payment_issue" />
               <Picker.Item label="🔧 Service Provider Issue" value="provider_issue" />
               <Picker.Item label="⚠️ Safety Concern" value="safety_concern" />
               <Picker.Item label="📋 Other" value="other" />

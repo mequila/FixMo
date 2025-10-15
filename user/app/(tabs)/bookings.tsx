@@ -34,6 +34,8 @@ interface Appointment {
   repairDescription?: string;
   provider_profile_photo?: string;
   provider_phone_number?: string;
+  warranty_days?: number; // Warranty period in days
+  warranty_end_date?: string; // Calculated warranty end date
   backjob_id?: number; // Keep for backward compatibility
   current_backjob?: {
     backjob_id: number;
@@ -166,8 +168,10 @@ export default function Bookings() {
       // Get appointment status (might be in different fields depending on API structure)
       const appointmentStatus = appointment.appointment_status || appointment.status || 'scheduled';
       
-      // Check if appointment is cancelled
-      if (appointmentStatus === 'cancelled') {
+      // Check if appointment is cancelled or no-show
+      if (appointmentStatus.toLowerCase() === 'cancelled' || 
+          appointmentStatus.toLowerCase() === 'no-show' || 
+          appointmentStatus.toLowerCase() === 'no_show') {
         return {
           success: false,
           message: 'Cannot message for cancelled appointments.'
@@ -824,6 +828,16 @@ export default function Bookings() {
             const finalServiceTitle = appointment.service.service_title || appointment.service?.title || serviceType;
             console.log('Final service title:', finalServiceTitle);
 
+            // Calculate warranty end date if warranty_days is available
+            let warrantyEndDate = null;
+            const warrantyDays = appointment.warranty_days || appointment.service?.warranty_days || 7;
+            if (appointment.scheduled_date) {
+              const schedDate = new Date(appointment.scheduled_date);
+              const endDate = new Date(schedDate);
+              endDate.setDate(endDate.getDate() + warrantyDays);
+              warrantyEndDate = endDate.toISOString();
+            }
+
             const transformedAppointment = {
               id: appointment.appointment_id,
               appointment_id: appointment.appointment_id,
@@ -842,6 +856,8 @@ export default function Bookings() {
               repairDescription: appointment.repairDescription,
               provider_profile_photo: appointment.serviceProvider?.provider_profile_photo || appointment.serviceProvider?.profilePhoto,
               provider_phone_number: appointment.serviceProvider?.provider_phone_number || appointment.provider_phone_number,
+              warranty_days: warrantyDays, // Include warranty days
+              warranty_end_date: warrantyEndDate, // Include calculated warranty end date
               current_backjob: appointment.current_backjob, // Include backjob data from API
               backjob_id: appointment.current_backjob?.backjob_id, // Legacy compatibility
             };
@@ -883,13 +899,16 @@ export default function Bookings() {
     fetchAppointments(true);
   };
 
-  const mapAppointmentStatus = (status: string) => {
+  const 
+  mapAppointmentStatus = (status: string) => {
     switch (status.toLowerCase()) {
       case 'scheduled': return 'Scheduled';
       case 'in_progress': return 'Ongoing';
       case 'in-progress': return 'Ongoing';
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
+      case 'no-show': return 'Cancelled'; // Treat no-show as cancelled
+      case 'no_show': return 'Cancelled'; // Handle underscore variant
       case 'pending': return 'Pending';
       case 'in-warranty': return 'In Warranty';
       case 'backjob': return 'Backjob';
@@ -902,6 +921,8 @@ export default function Bookings() {
     switch (status.toLowerCase()) {
       case 'completed': return '#228b22';
       case 'cancelled': return '#a20021';
+      case 'no-show': return '#a20021'; // Same color as cancelled
+      case 'no_show': return '#a20021'; // Handle underscore variant
       case 'in_progress': 
       case 'in-progress': 
       case 'ongoing': return '#ff8c00';
@@ -910,6 +931,28 @@ export default function Bookings() {
       case 'in-warranty': return '#4caf50';
       case 'backjob': return '#ff6b35';
     }
+  };
+
+  // Calculate remaining warranty days
+  const getRemainingWarrantyDays = (appointment: Appointment): number | null => {
+    if (!appointment.warranty_end_date) return null;
+    
+    const now = new Date();
+    const endDate = new Date(appointment.warranty_end_date);
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  // Format warranty text for display
+  const formatWarrantyText = (appointment: Appointment): string => {
+    const remainingDays = getRemainingWarrantyDays(appointment);
+    
+    if (remainingDays === null) return '';
+    if (remainingDays === 0) return 'Warranty expires today';
+    if (remainingDays === 1) return '1 day left';
+    return `${remainingDays} days left`;
   };
 
   // Enhanced filtering function with search and tab filtering
@@ -1750,6 +1793,28 @@ export default function Bookings() {
                           </Text>
                         ) : null}
 
+                        {/* Show remaining warranty days for In Warranty status */}
+                        {b.status === "In Warranty" && formatWarrantyText(b) && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginBottom: 8,
+                            }}
+                          >
+                            <Text style={{ fontSize: 16, marginRight: 4 }}>⏰</Text>
+                            <Text
+                              style={{
+                                color: "#4caf50",
+                                fontSize: 13,
+                                fontWeight: "500",
+                              }}
+                            >
+                              {formatWarrantyText(b)}
+                            </Text>
+                          </View>
+                        )}
+
                         <View
                           style={{
                             flexDirection: "row",
@@ -1776,8 +1841,8 @@ export default function Bookings() {
                             </Text>
                           </View>
 
-                          {/* Hide chat icon if status is Completed */}
-                          {b.status !== "Completed" && (
+                          {/* Hide chat icon if status is Completed or Cancelled */}
+                          {b.status !== "Completed" && b.status !== "Cancelled" && (
                             <TouchableOpacity onPress={() => handleChatPress(b)}>
                               <Ionicons
                                 name="chatbox-ellipses"
@@ -1785,6 +1850,17 @@ export default function Bookings() {
                                 color="#008080"
                               />
                             </TouchableOpacity>
+                          )}
+
+                          {/* Show disabled chat icon for Completed or Cancelled */}
+                          {(b.status === "Completed" || b.status === "Cancelled") && (
+                            <View style={{ opacity: 0.3 }}>
+                              <Ionicons
+                                name="chatbox-ellipses"
+                                size={25}
+                                color="#999"
+                              />
+                            </View>
                           )}
                         </View>
                       </View>

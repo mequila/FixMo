@@ -34,10 +34,15 @@ function toRadians(degrees: number): number {
 
 /**
  * Format distance for display
- * @param distanceKm - Distance in kilometers
- * @returns Formatted string like "2.5 km" or "850 m"
+ * @param distanceKm - Distance in kilometers (can be undefined/null)
+ * @returns Formatted string like "2.5 km" or "850 m", or "Distance N/A" if invalid
  */
-export function formatDistance(distanceKm: number): string {
+export function formatDistance(distanceKm: number | undefined | null): string {
+  // Handle invalid or missing distance
+  if (distanceKm === undefined || distanceKm === null || isNaN(distanceKm)) {
+    return 'Distance N/A';
+  }
+  
   if (distanceKm < 1) {
     // Show in meters if less than 1 km
     const meters = Math.round(distanceKm * 1000);

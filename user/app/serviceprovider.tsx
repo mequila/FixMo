@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { homeStyles } from "./components/homeStyles";
 import { calculateDistance, formatDistance, parseCoordinates, sortProvidersByDistance } from "../utils/distanceCalculator";
+import { getCustomerBookedDates, formatDateForComparison, shouldDisableDate, getDisabledDateMessage } from "../utils/bookingDateHelper";
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -39,6 +40,7 @@ interface ServiceProvider {
     provider_phone_number: string;
     provider_location?: string;
     provider_exact_location?: string;
+    exact_location?: string; // Backend sends this field
     provider_rating: number;
     provider_isVerified: boolean;
     provider_profile_photo?: string;
@@ -67,6 +69,10 @@ const ServiceProvider = () => {
   // Date picker state
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  
+  // Booked dates state
+  const [bookedDates, setBookedDates] = useState<string[]>([]);
+  const [customerId, setCustomerId] = useState<number | null>(null);
 
   // Initialize default date based on current time
   const getDefaultDate = () => {
@@ -85,8 +91,23 @@ const ServiceProvider = () => {
   };
 
   useEffect(() => {
-    // Set default date on component mount
-    setSelectedDate(getDefaultDate());
+    // Set default date on component mount and load customer ID and booked dates
+    const init = async () => {
+      setSelectedDate(getDefaultDate());
+      
+      // Get customer ID from AsyncStorage
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId) {
+        const id = parseInt(userId);
+        setCustomerId(id);
+        
+        // Fetch booked dates for this customer
+        const dates = await getCustomerBookedDates(id);
+        setBookedDates(dates);
+      }
+    };
+    
+    init();
   }, []);
 
   useEffect(() => {
@@ -106,6 +127,11 @@ const ServiceProvider = () => {
   const fetchServiceProviders = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
+      
+      console.log('🔍 Fetching service providers...');
+      console.log('🔑 Token exists:', !!token);
+      console.log('🔑 Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
+      
       if (!token) {
         Alert.alert('Error', 'Please login first');
         return;
@@ -130,6 +156,9 @@ const ServiceProvider = () => {
       params.append('limit', '50');
 
       const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
+      
+      console.log('📡 API URL:', apiUrl);
+      console.log('📤 Sending request with Authorization header');
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -172,9 +201,9 @@ const ServiceProvider = () => {
                 try {
                   console.log(`\n🏪 Provider ${index + 1}/${serviceListings.length}:`, provider.provider?.provider_name || 'Unknown');
                   console.log('� Full provider object:', JSON.stringify(provider.provider, null, 2));
-                  console.log('�📍 Provider exact_location raw:', provider.provider?.provider_exact_location);
+                  console.log('📍 Provider exact_location raw:', provider.provider?.exact_location);
                   
-                  const providerLocation = parseCoordinates(provider.provider?.provider_exact_location);
+                  const providerLocation = parseCoordinates(provider.provider?.exact_location);
                   console.log('📍 Provider location parsed:', providerLocation);
                   
                   if (providerLocation) {
@@ -184,9 +213,15 @@ const ServiceProvider = () => {
                       providerLocation.lat,
                       providerLocation.lng
                     );
-                    console.log('📏 Distance calculated:', distance, 'km');
-                    console.log('📏 Distance formatted:', formatDistance(distance));
-                    return { ...provider, distance };
+                    
+                    // Validate distance is a valid number
+                    if (typeof distance === 'number' && !isNaN(distance) && isFinite(distance)) {
+                      console.log('📏 Distance calculated:', distance, 'km');
+                      console.log('📏 Distance formatted:', formatDistance(distance));
+                      return { ...provider, distance };
+                    } else {
+                      console.log('⚠️ Distance calculation returned invalid value:', distance);
+                    }
                   } else {
                     console.log('⚠️ Provider location could not be parsed');
                   }
@@ -248,7 +283,14 @@ const ServiceProvider = () => {
     setDatePickerVisible(false);
   };
 
-  const handleDateConfirm = (date: Date) => {
+  const handleDateConfirm = async (date: Date) => {
+    // Check if the selected date is already booked
+    if (shouldDisableDate(date, bookedDates)) {
+      const message = getDisabledDateMessage(date, bookedDates);
+      Alert.alert('Date Unavailable', message);
+      return;
+    }
+    
     setSelectedDate(date);
     hideDatePicker();
   };
@@ -332,6 +374,11 @@ const ServiceProvider = () => {
               <Text style={{ fontSize: 11, color: "#666", fontStyle: "italic" }}>
                 📅 You can book appointments up to 15 days in advance
               </Text>
+              {bookedDates.length > 0 && (
+                <Text style={{ fontSize: 11, color: "#ff6b6b", fontStyle: "italic", marginTop: 4 }}>
+                  🚫 You have {bookedDates.length} date(s) already booked and unavailable
+                </Text>
+              )}
             </View>
           </View>
 
@@ -475,7 +522,7 @@ const ServiceProvider = () => {
                 </Text>
                 
                 {/* Distance indicator */}
-                {provider.distance !== undefined && (
+                {provider.distance !== undefined && provider.distance !== null && !isNaN(provider.distance) && (
                   <View style={styles.distanceContainer}>
                     <Ionicons name="location" size={14} color="#399d9d" />
                     <Text style={styles.distanceText}>
