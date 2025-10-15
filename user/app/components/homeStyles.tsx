@@ -35,7 +35,7 @@ export const homeStyles = StyleSheet.create({
     elevation: 5,
   },
   headerText: { // ibang routing header text
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#333",
   },

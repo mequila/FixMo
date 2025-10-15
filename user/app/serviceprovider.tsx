@@ -290,28 +290,6 @@ const ServiceProvider = () => {
       <SafeAreaView style={{ flex: 0, backgroundColor: '#e7ecec' }} />
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <PageHeader title={serviceTitle ? `${serviceTitle} Providers` : "Service Providers"} backRoute="/" />
-        {/* Header with back button and title */}
-        <View style={{ 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          paddingHorizontal: 20, 
-          paddingVertical: 15,
-          backgroundColor: '#e7ecec',
-          borderBottomWidth: 1,
-          borderBottomColor: '#ddd'
-        }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 15 }}>
-            <Ionicons name="arrow-back" size={24} color="#399d9d" />
-          </TouchableOpacity>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: 'bold', 
-            color: 'black',
-            flex: 1
-          }}>
-            {serviceTitle ? `${serviceTitle} Providers` : "Service Providers"}
-          </Text>
-        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
