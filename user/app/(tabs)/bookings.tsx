@@ -901,20 +901,30 @@ export default function Bookings() {
 
   const 
   mapAppointmentStatus = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'scheduled': return 'Scheduled';
-      case 'in_progress': return 'Ongoing';
-      case 'in-progress': return 'Ongoing';
-      case 'completed': return 'Completed';
-      case 'cancelled': return 'Cancelled';
-      case 'no-show': return 'Cancelled'; // Treat no-show as cancelled
-      case 'no_show': return 'Cancelled'; // Handle underscore variant
-      case 'pending': return 'Pending';
-      case 'in-warranty': return 'In Warranty';
-      case 'backjob': return 'Backjob';
+    const mapped = (() => {
+      switch (status.toLowerCase()) {
+        case 'scheduled': return 'Scheduled';
+        case 'in_progress': return 'Ongoing';
+        case 'in-progress': return 'Ongoing';
+        case 'ongoing': return 'Ongoing'; // Added explicit 'ongoing' mapping
+        case 'completed': return 'Completed';
+        case 'cancelled': return 'Cancelled';
+        case 'no-show': return 'Cancelled'; // Treat no-show as cancelled
+        case 'no_show': return 'Cancelled'; // Handle underscore variant
+        case 'pending': return 'Pending';
+        case 'in-warranty': return 'In Warranty';
+        case 'backjob': return 'Backjob';
 
-      default: return status;
+        default: return status;
+      }
+    })();
+    
+    // Debug log
+    if (status.toLowerCase().includes('progress') || status.toLowerCase() === 'ongoing') {
+      console.log(`📊 Status Mapping: "${status}" → "${mapped}"`);
     }
+    
+    return mapped;
   };
 
   const getStatusColor = (status: string) => {

@@ -137,7 +137,47 @@ const ReportForm = () => {
       });
 
       if (!result.canceled && result.assets) {
-        setImages([...images, ...result.assets]);
+        // Add mime type based on file extension if not provided
+        const processedImages = result.assets.map(asset => {
+          let mimeType = asset.mimeType || asset.type;
+          
+          // If no mime type, infer from URI
+          if (!mimeType && asset.uri) {
+            const extension = asset.uri.split('.').pop()?.toLowerCase();
+            switch (extension) {
+              case 'jpg':
+              case 'jpeg':
+                mimeType = 'image/jpeg';
+                break;
+              case 'png':
+                mimeType = 'image/png';
+                break;
+              case 'gif':
+                mimeType = 'image/gif';
+                break;
+              case 'webp':
+                mimeType = 'image/webp';
+                break;
+              default:
+                mimeType = 'image/jpeg'; // Default fallback
+            }
+          }
+          
+          return {
+            ...asset,
+            mimeType,
+            type: mimeType,
+          };
+        });
+        
+        console.log('📸 Picked images:', processedImages.map(img => ({
+          uri: img.uri,
+          type: img.type,
+          mimeType: img.mimeType,
+          fileName: img.fileName,
+        })));
+        
+        setImages([...images, ...processedImages]);
       }
     } catch (error) {
       console.error('Error picking images:', error);
@@ -209,13 +249,28 @@ const ReportForm = () => {
       }
 
       // Add images (up to 5)
-      images.forEach((image, index) => {
-        formData.append('images', {
-          uri: image.uri,
-          type: image.type || 'image/jpeg',
-          name: image.fileName || `image_${index}.jpg`,
-        } as any);
-      });
+      if (images.length > 0) {
+        console.log('📸 Processing images for upload...');
+        images.forEach((image, index) => {
+          // React Native requires this specific structure for file uploads
+          const imageFile: any = {
+            uri: Platform.OS === 'ios' ? image.uri.replace('file://', '') : image.uri,
+            type: image.type || image.mimeType || 'image/jpeg',
+            name: image.fileName || image.filename || `report_image_${Date.now()}_${index}.jpg`,
+          };
+          
+          console.log(`Adding image ${index + 1}:`, {
+            uri: imageFile.uri,
+            type: imageFile.type,
+            name: imageFile.name,
+          });
+          
+          formData.append('images', imageFile);
+        });
+        console.log(`✅ Total images added: ${images.length}`);
+      } else {
+        console.log('ℹ️ No images to upload');
+      }
 
       console.log('=== REPORT SUBMISSION DEBUG ===');
       console.log('Backend URL:', BACKEND_URL);
