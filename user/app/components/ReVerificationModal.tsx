@@ -186,8 +186,16 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       quality: 0.8,
     });
 
-    if (!result.canceled) {
-      setProfilePhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      console.log('📸 Profile photo selected:', uri);
+      console.log('📸 Photo details:', {
+        width: result.assets[0].width,
+        height: result.assets[0].height,
+        type: result.assets[0].type,
+        fileSize: result.assets[0].fileSize,
+      });
+      setProfilePhotoUri(uri);
     }
   };
 
@@ -205,8 +213,16 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       quality: 0.8,
     });
 
-    if (!result.canceled) {
-      setValidIdUri(result.assets[0].uri);
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      console.log('🆔 Valid ID selected:', uri);
+      console.log('🆔 ID details:', {
+        width: result.assets[0].width,
+        height: result.assets[0].height,
+        type: result.assets[0].type,
+        fileSize: result.assets[0].fileSize,
+      });
+      setValidIdUri(uri);
     }
   };
 
@@ -311,15 +327,29 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       // NEW METHOD: Direct file upload to backend (backend handles Cloudinary)
       console.log('📤 Submitting verification with files...');
       console.log('Backend URL:', BACKEND_URL);
+      console.log('Profile Photo URI:', profilePhotoUri);
+      console.log('Valid ID URI:', validIdUri);
       
       const formData = new FormData();
       
-      // Add files
+      // Add files with proper formatting for React Native
       const photoExt = profilePhotoUri.split('.').pop()?.toLowerCase() || 'jpg';
       const photoType = photoExt === 'png' ? 'image/png' : 'image/jpeg';
       
+      // Ensure URI is properly formatted (React Native on Android needs proper file:// prefix)
+      const profilePhotoUriFormatted = profilePhotoUri.startsWith('file://') 
+        ? profilePhotoUri 
+        : `file://${profilePhotoUri}`;
+      
+      const validIdUriFormatted = validIdUri.startsWith('file://') 
+        ? validIdUri 
+        : `file://${validIdUri}`;
+      
+      console.log('Formatted Profile Photo URI:', profilePhotoUriFormatted);
+      console.log('Formatted Valid ID URI:', validIdUriFormatted);
+      
       formData.append('profile_photo', {
-        uri: profilePhotoUri,
+        uri: Platform.OS === 'android' ? profilePhotoUri : profilePhotoUriFormatted,
         type: photoType,
         name: `profile_photo_${Date.now()}.${photoExt}`,
       } as any);
@@ -328,7 +358,7 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       const idType = idExt === 'png' ? 'image/png' : 'image/jpeg';
       
       formData.append('valid_id', {
-        uri: validIdUri,
+        uri: Platform.OS === 'android' ? validIdUri : validIdUriFormatted,
         type: idType,
         name: `valid_id_${Date.now()}.${idExt}`,
       } as any);
@@ -341,6 +371,17 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       formData.append('exact_location', `${latitude},${longitude}`);
 
       console.log('Submitting to backend...');
+      console.log('Request URL:', `${BACKEND_URL}/api/verification/customer/resubmit`);
+      console.log('FormData fields:', {
+        first_name: firstName,
+        last_name: lastName,
+        birthday: birthday.toISOString().split('T')[0],
+        user_location: `${selectedBarangay}, ${selectedMunicipality}, ${selectedProvince}`,
+        exact_location: `${latitude},${longitude}`,
+        has_profile_photo: !!profilePhotoUri,
+        has_valid_id: !!validIdUri,
+      });
+      
       const response = await fetch(`${BACKEND_URL}/api/verification/customer/resubmit`, {
         method: 'POST',
         headers: {
@@ -351,6 +392,8 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       });
 
       console.log('Response status:', response.status);
+      console.log('Response headers:', JSON.stringify(response.headers));
+      
       const responseText = await response.text();
       console.log('Response body:', responseText);
 
@@ -358,7 +401,9 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       try {
         responseData = JSON.parse(responseText);
       } catch (e) {
-        throw new Error('Invalid response from server');
+        console.error('Failed to parse response:', e);
+        console.error('Raw response:', responseText);
+        throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`);
       }
 
       if (response.ok && responseData.success) {
@@ -378,10 +423,12 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       } else {
         const errorMsg = responseData.message || responseData.error || 'Failed to submit verification';
         console.error('Verification submission failed:', errorMsg);
+        console.error('Full error response:', responseData);
         Alert.alert('Submission Failed', errorMsg);
       }
     } catch (error) {
       console.error('Error submitting verification:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       let errorMessage = 'An unexpected error occurred';
       if (error instanceof Error) {
@@ -389,8 +436,16 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
       }
       
       // Check if it's a network error
-      if (errorMessage.includes('Network request failed') || errorMessage.includes('fetch')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
+      if (errorMessage.includes('Network request failed') || 
+          errorMessage.includes('fetch') || 
+          errorMessage.includes('Failed to connect') ||
+          errorMessage.includes('timeout')) {
+        errorMessage = 'Network error. Please check your internet connection and try again. If the problem persists, the image files may be too large.';
+      }
+      
+      // Check for file-related errors
+      if (errorMessage.includes('file') || errorMessage.includes('uri')) {
+        errorMessage = 'Error accessing image files. Please try selecting the images again.';
       }
       
       Alert.alert(

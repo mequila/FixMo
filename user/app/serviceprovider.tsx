@@ -31,6 +31,7 @@ interface ServiceProvider {
   startingPrice: number;
   service_picture?: string;
   distance?: number; // Distance in kilometers
+  servicelisting_isactive?: boolean; // Add this field to track active status
   provider: {
     provider_id: number;
     provider_name: string;
@@ -173,6 +174,18 @@ const ServiceProvider = () => {
         let serviceListings: ServiceProvider[] = result.listings || [];
         
         console.log('📊 Total providers fetched:', serviceListings.length);
+        
+        // Filter out inactive service listings
+        serviceListings = serviceListings.filter((provider) => {
+          // Check if servicelisting_isactive is true
+          const isActive = provider.servicelisting_isactive !== false;
+          if (!isActive) {
+            console.log('🚫 Filtered out inactive provider:', provider.provider?.provider_name || 'Unknown');
+          }
+          return isActive;
+        });
+        
+        console.log('✅ Active providers after filtering:', serviceListings.length);
         
         // Get user's location from profile
         try {
