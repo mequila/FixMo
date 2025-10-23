@@ -1,4 +1,3 @@
-
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
@@ -11,7 +10,7 @@ const faqCardDetails = [
   },
   {
     question: "What services can I book?",
-    answer: "Plumbing, electrical work, carpentry, air conditioning and refrigeration, masonry, painting, welding, appliance repair, and computer servicing"
+    answer: "Plumbing, electrical work, carpentry, air conditioning and refrigeration, masonry, painting, welding, appliance repair, and computer servicing."
   },
   {
     question: "How do I know providers are qualified?",
@@ -28,7 +27,7 @@ const faqCardDetails = [
   {
     question: "Can I rate and review a provider?",
     answer: "Yes, after each service you can provide ratings and feedback."
-  }, 
+  },
   {
     question: "What if I encounter issues with a provider?",
     answer: "You can report the issue through the in-app messaging or contact support."
@@ -48,76 +47,98 @@ const FAQ = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      {/* Header */}
       <PageHeader title="FAQ" backRoute="/(tabs)/profile" />
-      <ScrollView>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: 20,
+          paddingTop: 15 
+        }}
+      >
         {faqCardDetails.map((item, idx) => {
           const isOpen = expanded.includes(idx);
           return (
-            <View
-              key={idx}
-              style={{
-                marginTop: isOpen ? 8 : 15,
-                borderRadius: 8,
-                overflow: 'hidden',
-                marginHorizontal: 16,
-                backgroundColor: isOpen ? '#e7ecec' : 'transparent',
-                borderWidth: isOpen ? 1 : 0,
-                borderColor: isOpen ? '#b2d7d7' : 'transparent',
-                elevation: isOpen ? 4 : 5,
-                shadowColor: '#008080',
-                shadowOpacity: isOpen ? 0.12 : 0.06,
-                shadowRadius: isOpen ? 8 : 3,
-              }}
-            >
+            <View key={idx}>
+              {/* FAQ Card */}
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  backgroundColor: '#fff',
-                  borderTopLeftRadius: 8,
-                  borderTopRightRadius: 8,
+                  marginHorizontal: 20,
+                  borderRadius: 8,
+                  backgroundColor: isOpen ? '#cceded' : '#fff',
                 }}
               >
-                <Text style={{ fontWeight: 'bold', fontSize: 16, }}>{item.question}</Text>
+                {/* Question Section */}
                 <TouchableOpacity
-                  style={{
-                    padding: 5,
-                    backgroundColor: '#008080',
-                    borderRadius: 5,
-                  }}
                   onPress={() => toggleExpand(idx)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 16,
+                    paddingVertical: 15,
+                  }}
                 >
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      color: '#008080',
+                      fontWeight: '500',
+                      flex: 1,
+                      paddingRight: 10,
+                    }}
+                  >
+                    {item.question}
+                  </Text>
+
                   <Ionicons
                     name={isOpen ? 'chevron-up' : 'chevron-down'}
-                    size={24}
-                    color='#fff'
+                    size={22}
+                    color="#008080"
                   />
                 </TouchableOpacity>
+
+                {/* Answer Section */}
+                {isOpen && (
+                  <View
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingBottom: 15,
+                      backgroundColor: '#cceded',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: '#333',
+                        fontSize: 15,
+                        lineHeight: 22,
+                      }}
+                    >
+                      {item.answer}
+                    </Text>
+                  </View>
+                )}
               </View>
-              {isOpen && (
+
+              {/* Partition Divider (Not after last item) */}
+              {idx !== faqCardDetails.length - 1 && (
                 <View
                   style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    backgroundColor: '#fff',
-                    borderBottomLeftRadius: 8,
-                    borderBottomRightRadius: 8,
-                    borderTopWidth: 1,
-                    borderColor: '#e7ecec',
+                    height: 1,
+                    backgroundColor: 'lightgray',
+                    marginVertical: 16,
+                    alignSelf: 'center',
+                    width: '90%',
                   }}
-                >
-                  <Text style={{ color: '#333', fontSize: 15, lineHeight: 25 }}>{item.answer}</Text>
-                </View>
+                />
               )}
             </View>
           );
         })}
       </ScrollView>
     </View>
-    
   )
 }
 

@@ -341,7 +341,6 @@ const ServiceProvider = () => {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#e7ecec" />
-      <SafeAreaView style={{ flex: 0, backgroundColor: '#e7ecec' }} />
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         {/* Header with back button and title */}
         <View style={{ 

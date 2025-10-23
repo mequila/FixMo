@@ -27,14 +27,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             <Ionicons
               name={iconName}
               size={24}
-              color={iconName === "log-out-outline" ? "#a20021" : "#008080"}
+              color={iconName === "log-out" ? "#a20021" : "#008080"}
               style={{ marginRight: 8 }}
             />
           )}
           <Text style={[{ fontSize: 18 }, textStyle]}>{label}</Text>
         </View>
         {rightIconName && (
-          <Ionicons name={rightIconName} size={24} color={"#008080"} style={{ alignSelf: "center"}} />
+          <Ionicons name={rightIconName} size={24} color={iconName === 'log-out' ? '#a20021' : '#008080'} style={{ alignSelf: "center"}} />
         )}
       </View>
     </TouchableOpacity>

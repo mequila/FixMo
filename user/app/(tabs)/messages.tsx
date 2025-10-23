@@ -292,6 +292,8 @@ const messages = () => {
         marginHorizontal: 16,
         marginVertical: 4,
         borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#b2d7d7",
         shadowColor: '#000',
         shadowOffset: {
           width: 0,
@@ -306,7 +308,7 @@ const messages = () => {
         paddingVertical: 16, 
         paddingHorizontal: 16,
         borderRadius: 12,
-        backgroundColor: 'transparent'
+        backgroundColor: 'transparent',
       }]}>
         <View style={{ position: 'relative' }}>
           <Image

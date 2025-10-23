@@ -2,15 +2,16 @@ import { StyleSheet } from "react-native";
 
 export const homeStyles = StyleSheet.create({
   safeArea: {
-    marginBottom: 20,
     backgroundColor: "#e7ecec",
+    paddingBottom: 8,
+    paddingLeft: 20,
     borderWidth: 0.5,
     borderColor: "#b2d7d7",
     elevation: 5,
   },
   safeAreaTabs: { //tabs header safe area 
     backgroundColor: "#e7ecec",
-    paddingTop: 28,
+    paddingTop: 18,
     paddingBottom: 20,
     justifyContent: "center",
     alignItems: "center",
@@ -25,8 +26,8 @@ export const homeStyles = StyleSheet.create({
   },
   safeAreaHeader: { // ibang routing header safe area 
     backgroundColor: "#e7ecec",
-    paddingTop: 25,
-    paddingBottom: 20,
+    paddingBottom: 8,
+    paddingTop: 10,
     paddingLeft: 20,
     borderWidth: 0.5,
     borderColor: "#b2d7d7",

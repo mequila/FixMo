@@ -131,12 +131,14 @@ export default function Splash() {
         <>
             <Stack.Screen options={{ headerShown: false }} />
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
                 style={styles.container}
             >
                 <ScrollView
+                    style={{ flex: 1 }}
                     contentContainerStyle={styles.scrollContainer}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
                 >
                     {/* Logo Section */}
                     <View style={styles.logoContainer}>
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     loginButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: "#b2d7d7",
     },
     loginButtonText: {
         color: "#fff",
