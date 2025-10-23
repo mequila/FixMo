@@ -33,19 +33,33 @@ interface ServiceProvider {
   distance?: number; // Distance in kilometers
   servicelisting_isactive?: boolean; // Add this field to track active status
   provider: {
-    provider_id: number;
-    provider_name: string;
-    provider_first_name: string;
-    provider_last_name: string;
-    provider_email: string;
-    provider_phone_number: string;
+    id?: number; // Backend uses 'id' in service-listings-for-customer
+    provider_id?: number; // Legacy field name
+    name?: string; // Backend uses 'name'
+    provider_name?: string; // Legacy field name
+    provider_first_name?: string;
+    provider_last_name?: string;
+    provider_email?: string;
+    provider_phone_number?: string;
     provider_location?: string;
+    location?: string; // Backend uses 'location'
     provider_exact_location?: string;
     exact_location?: string; // Backend sends this field
-    provider_rating: number;
-    provider_isVerified: boolean;
+    rating?: number; // Backend uses 'rating'
+    provider_rating?: number; // Legacy field name
+    provider_isVerified?: boolean;
     provider_profile_photo?: string;
-    provider_member_since: string;
+    provider_member_since?: string;
+    available_time_slots?: Array<{
+      availability_id: number;
+      dayOfWeek: string;
+      startTime: string;
+      endTime: string;
+      isActive: boolean;
+      totalBookings: number;
+      estimatedAvailableSlots: number;
+      isFullyBooked: boolean;
+    }>;
   };
   categories: Array<{
     category_id: number;
@@ -430,15 +444,33 @@ const ServiceProvider = () => {
           providers.map((provider) => (
             <TouchableOpacity 
               key={provider.id} 
-              onPress={() => router.push({
-                pathname: '/profile_serviceprovider',
-                params: {
+              onPress={() => {
+                // Try both possible field names from backend
+                const providerIdToPass = provider.provider?.id || provider.provider?.provider_id;
+                console.log('🔍 Navigation Debug:', {
                   serviceId: provider.id,
-                  providerId: provider.provider?.provider_id,
+                  providerId: providerIdToPass,
+                  'provider.id': provider.provider?.id,
+                  'provider.provider_id': provider.provider?.provider_id,
+                  providerObject: provider.provider,
                   selectedDate: selectedDate ? formatDateForAPI(selectedDate) : '',
-                  category: category // Pass the category parameter
+                });
+                
+                if (!providerIdToPass) {
+                  Alert.alert('Error', 'Provider ID not found. Cannot view profile.\n\nProvider data: ' + JSON.stringify(provider.provider));
+                  return;
                 }
-              })}
+                
+                router.push({
+                  pathname: '/profile_serviceprovider',
+                  params: {
+                    serviceId: provider.id,
+                    providerId: providerIdToPass.toString(),
+                    selectedDate: selectedDate ? formatDateForAPI(selectedDate) : '',
+                    category: category // Pass the category parameter
+                  }
+                });
+              }}
               style={styles.providerCard}
             >
               {(() => {

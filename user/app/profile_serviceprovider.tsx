@@ -18,6 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReVerificationModal from './components/ReVerificationModal';
+import SlotSelector from './components/SlotSelector';
+import { TimeSlot } from '../utils/slotService';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -172,6 +174,8 @@ export default function profile_serviceprovider() {
     availableSlots: number;
     message: string;
   } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [showSlotSelector, setShowSlotSelector] = useState(false);
 
   // Calculate total images for pagination
   const getTotalImages = () => {
@@ -318,8 +322,8 @@ export default function profile_serviceprovider() {
       }
     }
 
-    // User is verified and within booking limits, proceed with booking
-    setShowBookingModal(true);
+    // User is verified and within booking limits, show slot selector
+    setShowSlotSelector(true);
   };
 
   const fetchAllData = async () => {
@@ -782,6 +786,21 @@ export default function profile_serviceprovider() {
     setShowImageModal(true);
   };
 
+  const handleSlotSelect = (slot: TimeSlot) => {
+    setSelectedSlot(slot);
+    console.log('🕐 Slot selected:', slot);
+  };
+
+  const handleContinueToBooking = () => {
+    if (!selectedSlot) {
+      Alert.alert('No Slot Selected', 'Please select a time slot to continue.');
+      return;
+    }
+    // Close slot selector and open booking confirmation modal
+    setShowSlotSelector(false);
+    setShowBookingModal(true);
+  };
+
   const handleBookingConfirmation = async () => {
     try {
       setBookingLoading(true);
@@ -838,12 +857,18 @@ export default function profile_serviceprovider() {
         formattedDate = `${formattedDate}T08:00:00.000Z`; // Default to 8 AM
       }
 
-      // Use availability_id from navigation params if available, otherwise use default
-      const finalAvailabilityId = availabilityId ? parseInt(availabilityId as string) : 1;
+      // Use availability_id from selected slot, falling back to navigation params or default
+      const finalAvailabilityId = selectedSlot?.availability_id || 
+        (availabilityId ? parseInt(availabilityId as string) : 1);
       const finalServiceId = serviceId ? parseInt(serviceId as string) : null;
       
       if (!finalServiceId) {
         Alert.alert('Error', 'Service ID not found. Please try again.');
+        return;
+      }
+
+      if (!selectedSlot) {
+        Alert.alert('Error', 'Please select a time slot before booking.');
         return;
       }
       
@@ -879,8 +904,13 @@ export default function profile_serviceprovider() {
       console.log('Provider Data:', providerData);
       console.log('========================');
       
+      console.log('=== SLOT-BASED BOOKING DEBUG ===');
+      console.log('Selected Slot:', selectedSlot);
+      console.log('Slot Time:', selectedSlot?.displayTime);
+      console.log('================================');
+      
       console.log('Creating appointment with data:', appointmentData);
-      console.log('Using availability_id:', finalAvailabilityId, '(from navigation:', availabilityId, ')');
+      console.log('Using availability_id:', finalAvailabilityId, '(from selected slot:', selectedSlot?.availability_id, ', navigation:', availabilityId, ')');
       console.log('Using service_id:', finalServiceId, '(from navigation:', serviceId, ')');
       console.log('Backend URL:', BACKEND_URL);
       console.log('User ID:', userId, 'Provider ID:', providerId, 'Provider ID Number:', providerIdNumber);
@@ -1648,9 +1678,32 @@ export default function profile_serviceprovider() {
                   <Text style={{
                     fontSize: 14,
                     color: '#666',
+                    marginBottom: 3,
                   }}>
-                    Date: {selectedDate}
+                    Date: {new Date(selectedDate as string).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </Text>
+                )}
+                {selectedSlot && (
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 3,
+                  }}>
+                    <Ionicons name="time-outline" size={16} color="#399d9d" />
+                    <Text style={{
+                      fontSize: 14,
+                      color: '#399d9d',
+                      fontWeight: '600',
+                      marginLeft: 5,
+                    }}>
+                      Time: {selectedSlot.displayTime}
+                    </Text>
+                  </View>
                 )}
                 {serviceData?.startingPrice && (
                   <Text style={{
@@ -2127,6 +2180,141 @@ export default function profile_serviceprovider() {
               }}
             />
           )}
+        </View>
+      </Modal>
+
+      {/* Slot Selector Modal */}
+      <Modal
+        visible={showSlotSelector}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSlotSelector(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'flex-end',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: '80%',
+            paddingBottom: 20,
+          }}>
+            {/* Header */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingVertical: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#f0f0f0',
+            }}>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: '#333',
+              }}>
+                Select Time Slot
+              </Text>
+              <TouchableOpacity onPress={() => setShowSlotSelector(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Date info */}
+            <View style={{
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              backgroundColor: '#f8f8f8',
+              borderBottomWidth: 1,
+              borderBottomColor: '#f0f0f0',
+            }}>
+              <Text style={{ fontSize: 14, color: '#666' }}>
+                Booking Date: <Text style={{ fontWeight: '600', color: '#333' }}>
+                  {selectedDate ? new Date(selectedDate as string).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 'Not selected'}
+                </Text>
+              </Text>
+            </View>
+
+            {/* Slot Selector Component */}
+            {(() => {
+              console.log('🔍 SlotSelector render check:', {
+                hasProviderId: !!providerId,
+                providerId: providerId,
+                hasSelectedDate: !!selectedDate,
+                selectedDate: selectedDate,
+                willRender: !!(providerId && selectedDate)
+              });
+              
+              if (!providerId) {
+                console.error('❌ No providerId available for SlotSelector');
+                return (
+                  <View style={{ padding: 20 }}>
+                    <Text style={{ color: 'red', textAlign: 'center' }}>
+                      Error: Provider ID not found
+                    </Text>
+                  </View>
+                );
+              }
+              
+              if (!selectedDate) {
+                console.error('❌ No selectedDate available for SlotSelector');
+                return (
+                  <View style={{ padding: 20 }}>
+                    <Text style={{ color: 'red', textAlign: 'center' }}>
+                      Error: Date not selected
+                    </Text>
+                  </View>
+                );
+              }
+              
+              return (
+                <SlotSelector
+                  providerId={parseInt(providerId as string)}
+                  selectedDate={selectedDate as string}
+                  onSlotSelect={handleSlotSelect}
+                  selectedSlotId={selectedSlot?.availability_id}
+                />
+              );
+            })()}
+
+            {/* Continue Button */}
+            <View style={{
+              paddingHorizontal: 20,
+              paddingTop: 15,
+              borderTopWidth: 1,
+              borderTopColor: '#f0f0f0',
+            }}>
+              <TouchableOpacity
+                onPress={handleContinueToBooking}
+                style={{
+                  backgroundColor: selectedSlot ? '#399d9d' : '#ccc',
+                  paddingVertical: 15,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                }}
+                disabled={!selectedSlot}
+              >
+                <Text style={{
+                  color: 'white',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}>
+                  {selectedSlot 
+                    ? `Continue with ${selectedSlot.displayTime}` 
+                    : 'Select a time slot to continue'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
