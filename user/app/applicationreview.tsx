@@ -120,6 +120,7 @@ export default function ApplicationReview() {
         'basicinfo_dob',
         'basicinfo_phone',
         'basicinfo_username',
+        'basicinfo_password',
         'location_district',
         'location_city',
         'location_barangay',
@@ -151,6 +152,15 @@ export default function ApplicationReview() {
     setSubmitting(true);
 
     try {
+      // Retrieve the password from AsyncStorage
+      const savedPassword = await AsyncStorage.getItem('basicinfo_password');
+      
+      if (!savedPassword) {
+        Alert.alert('Error', 'Password not found. Please go back and set your password.');
+        setSubmitting(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append('email', data.email);
       formData.append('first_name', data.firstName);
@@ -158,7 +168,7 @@ export default function ApplicationReview() {
       formData.append('userName', data.username);
       formData.append('phone_number', data.phone);
       formData.append('birthday', data.dob);
-      formData.append('password', 'TempPassword123!'); // Temporary
+      formData.append('password', savedPassword);
 
       const user_location = userLocation || `${data.barangay}, ${data.city}, ${data.district}`;
       const exact_location = coordinates ? `${coordinates.lat},${coordinates.lng}` : '';

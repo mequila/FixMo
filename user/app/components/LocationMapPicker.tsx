@@ -35,6 +35,7 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
   const [loading, setLoading] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   // Safety check - if map doesn't initialize within 3 seconds, show error
@@ -51,6 +52,162 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
     }
   }, [mapModalVisible, mapInitialized, mapError]);
 
+  // Geocode address to get coordinates and center map
+  const geocodeAddress = async (locationString: string) => {
+    if (!locationString) {
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      // Parse the location string (format: "Barangay, Municipality, Province" or "Municipality, Province")
+      const parts = locationString.split(',').map(p => p.trim());
+      
+      let barangay = '';
+      let municipality = '';
+      let province = '';
+      
+      if (parts.length === 3) {
+        barangay = parts[0];
+        municipality = parts[1];
+        province = parts[2];
+      } else if (parts.length === 2) {
+        municipality = parts[0];
+        province = parts[1];
+      } else if (parts.length === 1) {
+        municipality = parts[0];
+      }
+
+      let newLat: number | null = null;
+      let newLng: number | null = null;
+
+      // Try 1: Full address with barangay (if available)
+      if (barangay && municipality && province) {
+        const fullAddress = `${barangay}, ${municipality}, ${province}, Philippines`;
+        console.log('Geocoding attempt 1:', fullAddress);
+        
+        let response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1&countrycodes=ph`,
+          {
+            headers: {
+              'User-Agent': 'FixMoApp/1.0',
+            },
+          }
+        );
+
+        let data = await response.json();
+        
+        if (data && data.length > 0) {
+          newLat = parseFloat(data[0].lat);
+          newLng = parseFloat(data[0].lon);
+          console.log('Found with full address:', newLat, newLng);
+        }
+      }
+
+      // Try 2: Municipality + Province (if still no result)
+      if (!newLat && !newLng && municipality && province) {
+        const cityAddress = `${municipality}, ${province}, Philippines`;
+        console.log('Geocoding attempt 2:', cityAddress);
+        
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityAddress)}&limit=1&countrycodes=ph`,
+          {
+            headers: {
+              'User-Agent': 'FixMoApp/1.0',
+            },
+          }
+        );
+
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          newLat = parseFloat(data[0].lat);
+          newLng = parseFloat(data[0].lon);
+          console.log('Found with city address:', newLat, newLng);
+        }
+      }
+
+      // Try 3: Just municipality name
+      if (!newLat && !newLng && municipality) {
+        const cityOnly = `${municipality}, Philippines`;
+        console.log('Geocoding attempt 3:', cityOnly);
+        
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityOnly)}&limit=1&countrycodes=ph`,
+          {
+            headers: {
+              'User-Agent': 'FixMoApp/1.0',
+            },
+          }
+        );
+
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          newLat = parseFloat(data[0].lat);
+          newLng = parseFloat(data[0].lon);
+          console.log('Found with city only:', newLat, newLng);
+        }
+      }
+
+      if (newLat && newLng) {
+        // Update marker coordinates
+        setMarkerCoordinates({ lat: newLat, lng: newLng });
+        
+        // Update map via WebView - center and add/update marker
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            if (window.map) {
+              // Center the map
+              window.map.setView([${newLat}, ${newLng}], 16);
+              
+              // Remove old marker if exists
+              if (window.marker) {
+                window.map.removeLayer(window.marker);
+              }
+              
+              // Add new marker
+              window.marker = L.marker([${newLat}, ${newLng}]).addTo(window.map);
+            }
+            true;
+          `);
+        }
+        
+        console.log('✓ Location centered on map:', locationString);
+      } else {
+        // Fallback to Manila if geocoding fails
+        console.log('Geocoding failed, using Manila as fallback');
+        const manilaLat = 14.5995;
+        const manilaLng = 120.9842;
+        
+        setMarkerCoordinates({ lat: manilaLat, lng: manilaLng });
+        
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            if (window.map) {
+              window.map.setView([${manilaLat}, ${manilaLng}], 12);
+            }
+            true;
+          `);
+        }
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  // Auto-geocode when map opens
+  useEffect(() => {
+    if (mapModalVisible && mapInitialized && tempLocation) {
+      // Delay slightly to ensure map is fully ready
+      setTimeout(() => {
+        geocodeAddress(tempLocation);
+      }, 300);
+    }
+  }, [mapModalVisible, mapInitialized]);
+
   const handleLocationSelect = (location: string, coords?: { lat: number; lng: number }) => {
     setTempLocation(location);
     if (coords) {
@@ -58,7 +215,7 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
       setMarkerCoordinates(coords);
       
       // Update map to new coordinates via WebView
-      if (webViewRef.current) {
+      if (webViewRef.current && mapModalVisible) {
         webViewRef.current.injectJavaScript(`
           if (window.map && window.marker) {
             window.map.setView([${coords.lat}, ${coords.lng}], 16);
@@ -67,6 +224,9 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
           true;
         `);
       }
+    } else if (mapModalVisible && mapInitialized) {
+      // If no coordinates provided but map is open, geocode the location
+      geocodeAddress(location);
     }
   };
 
@@ -199,10 +359,12 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
               </View>
             ) : (
               <>
-                {!mapInitialized && (
+                {(!mapInitialized || isGeocoding) && (
                   <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color="#008080" />
-                    <Text style={styles.loadingText}>Loading OpenStreetMap...</Text>
+                    <Text style={styles.loadingText}>
+                      {isGeocoding ? 'Finding location...' : 'Loading OpenStreetMap...'}
+                    </Text>
                   </View>
                 )}
                 <WebView

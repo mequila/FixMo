@@ -52,12 +52,23 @@ export default function ProfileScreen() {
     // --- Contact Info ---
     const [phone, setPhone] = useState("");
     const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // --- Validation States ---
     const [usernameStatus, setUsernameStatus] = useState<'none' | 'checking' | 'available' | 'taken'>('none');
     const [phoneStatus, setPhoneStatus] = useState<'none' | 'checking' | 'available' | 'taken'>('none');
     const [usernameMessage, setUsernameMessage] = useState('');
     const [phoneMessage, setPhoneMessage] = useState('');
+    const [passwordValidation, setPasswordValidation] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false,
+    });
 
     // Debounce timers
     const usernameTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,7 +82,31 @@ export default function ProfileScreen() {
     // Save data to AsyncStorage whenever it changes
     useEffect(() => {
         saveData();
-    }, [photo, firstName, middleName, lastName, dob, phone, username]);
+    }, [photo, firstName, middleName, lastName, dob, phone, username, password]);
+
+    // --- Real-time Password Validation ---
+    useEffect(() => {
+        if (!password) {
+            setPasswordValidation({
+                length: false,
+                uppercase: false,
+                lowercase: false,
+                number: false,
+                special: false,
+            });
+            return;
+        }
+
+        const validation = {
+            length: password.length >= 8 && password.length <= 16,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        };
+
+        setPasswordValidation(validation);
+    }, [password]);
 
     const loadSavedData = async () => {
         try {
@@ -108,6 +143,7 @@ export default function ProfileScreen() {
             if (dob) await AsyncStorage.setItem('basicinfo_dob', dob);
             if (phone) await AsyncStorage.setItem('basicinfo_phone', phone);
             if (username) await AsyncStorage.setItem('basicinfo_username', username);
+            if (password) await AsyncStorage.setItem('basicinfo_password', password);
         } catch (error) {
             console.log('Error saving basic info:', error);
         }
@@ -334,6 +370,8 @@ export default function ProfileScreen() {
             {label: "Email", value: email},
             {label: "Username", value: username},
             {label: "Phone Number", value: phone},
+            {label: "Password", value: password},
+            {label: "Confirm Password", value: confirmPassword},
         ];
 
         for (const field of required) {
@@ -382,6 +420,34 @@ export default function ProfileScreen() {
         }
         if (phoneStatus !== 'available') {
             Alert.alert('Phone Not Verified', 'Please wait for phone number availability check.');
+            return false;
+        }
+
+        // Validate password
+        if (!passwordValidation.length) {
+            Alert.alert('Invalid Password', 'Password must be 8-16 characters long.');
+            return false;
+        }
+        if (!passwordValidation.uppercase) {
+            Alert.alert('Invalid Password', 'Password must contain at least one uppercase letter.');
+            return false;
+        }
+        if (!passwordValidation.lowercase) {
+            Alert.alert('Invalid Password', 'Password must contain at least one lowercase letter.');
+            return false;
+        }
+        if (!passwordValidation.number) {
+            Alert.alert('Invalid Password', 'Password must contain at least one number.');
+            return false;
+        }
+        if (!passwordValidation.special) {
+            Alert.alert('Invalid Password', 'Password must contain at least one special character.');
+            return false;
+        }
+
+        // Check if passwords match
+        if (password !== confirmPassword) {
+            Alert.alert('Passwords Do Not Match', 'Please make sure both passwords are the same.');
             return false;
         }
 
@@ -620,6 +686,147 @@ export default function ProfileScreen() {
                         ) : null}
                     </View>
 
+                    <Text style={styles.sectionTitle}>Security</Text>
+
+                    {/* Password Field */}
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Password</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                        </View>
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                value={password}
+                                onChangeText={setPassword}
+                                placeholder="Enter your password"
+                                secureTextEntry={!showPassword}
+                                autoCapitalize="none"
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={styles.eyeIcon}
+                            >
+                                <Ionicons
+                                    name={showPassword ? "eye-off" : "eye"}
+                                    size={24}
+                                    color="#666"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {/* Password Strength Indicators */}
+                        {password.length > 0 && (
+                            <View style={styles.passwordRequirements}>
+                                <Text style={styles.requirementsTitle}>Password must contain:</Text>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={passwordValidation.length ? "checkmark-circle" : "close-circle"}
+                                        size={16}
+                                        color={passwordValidation.length ? "#4CAF50" : "#F44336"}
+                                    />
+                                    <Text style={[
+                                        styles.requirementText,
+                                        passwordValidation.length && styles.requirementMet
+                                    ]}>
+                                        8-16 characters
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={passwordValidation.uppercase ? "checkmark-circle" : "close-circle"}
+                                        size={16}
+                                        color={passwordValidation.uppercase ? "#4CAF50" : "#F44336"}
+                                    />
+                                    <Text style={[
+                                        styles.requirementText,
+                                        passwordValidation.uppercase && styles.requirementMet
+                                    ]}>
+                                        At least one uppercase letter (A-Z)
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={passwordValidation.lowercase ? "checkmark-circle" : "close-circle"}
+                                        size={16}
+                                        color={passwordValidation.lowercase ? "#4CAF50" : "#F44336"}
+                                    />
+                                    <Text style={[
+                                        styles.requirementText,
+                                        passwordValidation.lowercase && styles.requirementMet
+                                    ]}>
+                                        At least one lowercase letter (a-z)
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={passwordValidation.number ? "checkmark-circle" : "close-circle"}
+                                        size={16}
+                                        color={passwordValidation.number ? "#4CAF50" : "#F44336"}
+                                    />
+                                    <Text style={[
+                                        styles.requirementText,
+                                        passwordValidation.number && styles.requirementMet
+                                    ]}>
+                                        At least one number (0-9)
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={passwordValidation.special ? "checkmark-circle" : "close-circle"}
+                                        size={16}
+                                        color={passwordValidation.special ? "#4CAF50" : "#F44336"}
+                                    />
+                                    <Text style={[
+                                        styles.requirementText,
+                                        passwordValidation.special && styles.requirementMet
+                                    ]}>
+                                        At least one special character (!@#$%^&*...)
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Confirm Password Field */}
+                    <View>
+                        <View style={styles.labelRow}>
+                            <Text style={styles.labelText}>Confirm Password</Text>
+                            <Text style={styles.requiredAsterisk}>*</Text>
+                            {confirmPassword && password === confirmPassword && (
+                                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={{marginLeft: 8}} />
+                            )}
+                            {confirmPassword && password !== confirmPassword && (
+                                <Ionicons name="close-circle" size={20} color="#F44336" style={{marginLeft: 8}} />
+                            )}
+                        </View>
+                        <View style={styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                placeholder="Re-enter your password"
+                                secureTextEntry={!showConfirmPassword}
+                                autoCapitalize="none"
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={styles.eyeIcon}
+                            >
+                                <Ionicons
+                                    name={showConfirmPassword ? "eye-off" : "eye"}
+                                    size={24}
+                                    color="#666"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        {confirmPassword && password !== confirmPassword && (
+                            <Text style={styles.invalidMessage}>
+                                Passwords do not match
+                            </Text>
+                        )}
+                    </View>
+
                 </ScrollView>
 
                 {/* Sticky footer - stays fixed at bottom */}
@@ -856,5 +1063,51 @@ const styles = StyleSheet.create({
     stickyInner: {
         backgroundColor: '#fff',
         paddingTop: 10,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#e7ecec',
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        marginHorizontal: 20,
+        marginBottom: 8,
+    },
+    passwordInput: {
+        flex: 1,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#000',
+    },
+    eyeIcon: {
+        padding: 8,
+    },
+    passwordRequirements: {
+        backgroundColor: '#f9f9f9',
+        borderRadius: 8,
+        padding: 12,
+        marginHorizontal: 20,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+    requirementsTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+    },
+    requirementItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    requirementText: {
+        fontSize: 13,
+        color: '#666',
+        marginLeft: 6,
+    },
+    requirementMet: {
+        color: '#4CAF50',
     },
 });

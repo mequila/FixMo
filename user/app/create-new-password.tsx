@@ -23,11 +23,31 @@ export default function CreateNewPassword() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
+    
+    // Password validation state
+    const [passwordValidation, setPasswordValidation] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+        special: false,
+    });
 
     // Load email from AsyncStorage
     useEffect(() => {
         loadEmail();
     }, []);
+
+    // Real-time password validation
+    useEffect(() => {
+        setPasswordValidation({
+            length: password.length >= 8 && password.length <= 16,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        });
+    }, [password]);
 
     const loadEmail = async () => {
         try {
@@ -74,8 +94,10 @@ export default function CreateNewPassword() {
             return;
         }
 
-        if (password.length < 8) {
-            Alert.alert("Weak Password", "Password must be at least 8 characters.");
+        // Validate all password requirements
+        const allRequirementsMet = Object.values(passwordValidation).every(val => val === true);
+        if (!allRequirementsMet) {
+            Alert.alert("Invalid Password", "Please ensure your password meets all requirements.");
             return;
         }
 
@@ -165,6 +187,63 @@ export default function CreateNewPassword() {
                 </TouchableOpacity>
             </View>
 
+            {/* Password Requirements */}
+            {password.length > 0 && (
+                <View style={styles.passwordRequirements}>
+                    <Text style={styles.requirementsTitle}>Password must contain:</Text>
+                    <View style={styles.requirementItem}>
+                        <Ionicons 
+                            name={passwordValidation.length ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color={passwordValidation.length ? "#4CAF50" : "#F44336"} 
+                        />
+                        <Text style={[styles.requirementText, passwordValidation.length && styles.requirementMet]}>
+                            8-16 characters
+                        </Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                        <Ionicons 
+                            name={passwordValidation.uppercase ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color={passwordValidation.uppercase ? "#4CAF50" : "#F44336"} 
+                        />
+                        <Text style={[styles.requirementText, passwordValidation.uppercase && styles.requirementMet]}>
+                            At least one uppercase letter
+                        </Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                        <Ionicons 
+                            name={passwordValidation.lowercase ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color={passwordValidation.lowercase ? "#4CAF50" : "#F44336"} 
+                        />
+                        <Text style={[styles.requirementText, passwordValidation.lowercase && styles.requirementMet]}>
+                            At least one lowercase letter
+                        </Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                        <Ionicons 
+                            name={passwordValidation.number ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color={passwordValidation.number ? "#4CAF50" : "#F44336"} 
+                        />
+                        <Text style={[styles.requirementText, passwordValidation.number && styles.requirementMet]}>
+                            At least one number
+                        </Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                        <Ionicons 
+                            name={passwordValidation.special ? "checkmark-circle" : "close-circle"} 
+                            size={16} 
+                            color={passwordValidation.special ? "#4CAF50" : "#F44336"} 
+                        />
+                        <Text style={[styles.requirementText, passwordValidation.special && styles.requirementMet]}>
+                            At least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)
+                        </Text>
+                    </View>
+                </View>
+            )}
+
             {/* Confirm Password */}
             <View style={styles.inputContainer}>
                 <TextInput
@@ -237,6 +316,31 @@ const styles = StyleSheet.create({
     },
     icon: {
         padding: 5,
+    },
+    passwordRequirements: {
+        backgroundColor: "#f5f5f5",
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 20,
+    },
+    requirementsTitle: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#666",
+        marginBottom: 8,
+    },
+    requirementItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    requirementText: {
+        fontSize: 12,
+        color: "#999",
+        marginLeft: 6,
+    },
+    requirementMet: {
+        color: "#4CAF50",
     },
     button: {
         backgroundColor: "#008080",
