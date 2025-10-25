@@ -462,18 +462,18 @@ export default function Bookings() {
         return;
       }
 
+      // Check for both userId and token
+      const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token available for rating check');
+      
+      if (!userId || !token) {
+        console.log('No userId or token available for rating check - user not logged in');
         return;
       }
 
+      console.log('Rating detection - User ID:', userId);
       console.log('Rating detection - Using token:', token ? 'Token available' : 'No token');
       console.log('Rating detection - API URL:', `${BACKEND_URL}/api/appointments/can-rate?userType=customer&limit=1`);
-
-      // First, let's get the user ID to debug
-      const userId = await AsyncStorage.getItem('userId');
-      console.log('Rating detection - User ID:', userId);
 
       // SEPARATE API CALL for rating detection only
       const response = await fetch(`${BACKEND_URL}/api/appointments/can-rate?userType=customer&limit=10`, {
