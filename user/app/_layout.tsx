@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { Stack, useRouter } from "expo-router";
-import { ActivityIndicator, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Text, TextInput, View, BackHandler, Platform } from "react-native";
 import { useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -86,6 +86,22 @@ export default function RootLayout() {
       }
     };
   }, []);
+
+  // Handle Android hardware back button
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Let expo-router handle the back navigation
+      if (router.canGoBack()) {
+        router.back();
+        return true; // Prevent default behavior
+      }
+      return false; // Allow default behavior (exit app)
+    });
+
+    return () => backHandler.remove();
+  }, [router]);
 
   if (!fontsLoaded) {
     return (

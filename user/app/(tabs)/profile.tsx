@@ -16,7 +16,7 @@ import ProfileCard from '../components/ProfileCard';
 import homeStyles from '../components/homeStyles';
 import { ApiErrorHandler } from '../../utils/apiErrorHandler';
 import { AuthService } from '../../utils/authService';
-import VerificationModal from '../components/VerificationModal';
+import ReVerificationModal from '../components/ReVerificationModal';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -553,7 +553,7 @@ const Profile = () => {
       </Modal>
 
       {/* Verification Submission Modal */}
-      <VerificationModal
+      <ReVerificationModal
         visible={showVerificationModal && customerData?.verification_status !== 'pending'}
         onClose={() => setShowVerificationModal(false)}
         onSuccess={() => {

@@ -54,7 +54,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.3,
     });
 
     if (!result.canceled) {
@@ -73,7 +73,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.8,
+      quality: 0.3,
     });
 
     if (!result.canceled) {
@@ -123,10 +123,29 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         Alert.alert('Error', 'Please login first');
+        setSubmitting(false);
+        return;
+      }
+
+      // Get user data to retrieve user_id
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (!userDataString) {
+        Alert.alert('Error', 'User data not found. Please login again.');
+        setSubmitting(false);
+        return;
+      }
+
+      const userData = JSON.parse(userDataString);
+      const userId = userData.user_id;
+
+      if (!userId) {
+        Alert.alert('Error', 'User ID not found. Please login again.');
+        setSubmitting(false);
         return;
       }
 
       const formData = new FormData();
+      formData.append('user_id', userId.toString());
       formData.append('first_name', firstName);
       formData.append('last_name', lastName);
       formData.append('birthday', birthday.toISOString().split('T')[0]);
@@ -151,7 +170,18 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
       // Mark as verification submission
       formData.append('submit_verification', 'true');
 
-      const response = await fetch(`${BACKEND_URL}/auth/submit-verification`, {
+      console.log('Submitting verification to:', `${BACKEND_URL}/auth/update-verification-documents`);
+      console.log('Form data fields:', {
+        user_id: userId,
+        first_name: firstName,
+        last_name: lastName,
+        birthday: birthday.toISOString().split('T')[0],
+        gender: gender,
+        has_profile_photo: !!profilePhotoUri,
+        has_valid_id: !!validIdUri,
+      });
+
+      const response = await fetch(`${BACKEND_URL}/auth/update-verification-documents`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -177,11 +207,19 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
         );
       } else {
         const errorData = await response.json();
-        Alert.alert('Error', errorData.error || 'Failed to submit verification');
+        console.error('Verification submission failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        Alert.alert(
+          'Error', 
+          errorData.error || errorData.message || `Failed to submit verification (Status: ${response.status})`
+        );
       }
     } catch (error) {
       console.error('Error submitting verification:', error);
-      Alert.alert('Error', 'Network error while submitting verification');
+      Alert.alert('Error', 'Network error while submitting verification. Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }

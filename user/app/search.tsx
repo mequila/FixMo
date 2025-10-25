@@ -63,6 +63,17 @@ const Search = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header with Back Button */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#008080" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Search Services</Text>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchBar}>
         <TextInput
@@ -179,6 +190,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 16,
     paddingTop: 70,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
   },
   searchBar: {
     flexDirection: "row",

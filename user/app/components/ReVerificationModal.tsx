@@ -19,7 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 const { width: screenWidth } = Dimensions.get('window');
@@ -59,7 +59,8 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const mapRef = useRef<MapView>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const webViewRef = useRef<WebView>(null);
 
   // Location cascading states
   const [selectedProvince, setSelectedProvince] = useState('');
@@ -107,54 +108,129 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
 
     setIsGeocoding(true);
     try {
-      // Construct address string
-      const address = `${selectedBarangay}, ${selectedMunicipality}, ${selectedProvince}, Philippines`;
+      let newLat: number | null = null;
+      let newLng: number | null = null;
+
+      // Try 1: Full address with barangay
+      const fullAddress = `${selectedBarangay}, ${selectedMunicipality}, ${selectedProvince}, Philippines`;
+      console.log('Geocoding attempt 1:', fullAddress);
       
-      // Use Nominatim OpenStreetMap geocoding API (free, no key required)
-      const encodedAddress = encodeURIComponent(address);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
+      let response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1&countrycodes=ph`,
         {
           headers: {
-            'User-Agent': 'FixMoApp/1.0', // Required by Nominatim
+            'User-Agent': 'FixMoApp/1.0',
           },
         }
       );
 
-      const data = await response.json();
-
+      let data = await response.json();
+      
       if (data && data.length > 0) {
-        const { lat, lon } = data[0];
-        const newLat = parseFloat(lat);
-        const newLng = parseFloat(lon);
+        newLat = parseFloat(data[0].lat);
+        newLng = parseFloat(data[0].lon);
+        console.log('Found with full address:', newLat, newLng);
+      } else {
+        // Try 2: Without barangay (city level)
+        const cityAddress = `${selectedMunicipality}, ${selectedProvince}, Philippines`;
+        console.log('Geocoding attempt 2:', cityAddress);
         
-        // Animate map to the location
-        if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            latitude: newLat,
-            longitude: newLng,
-            latitudeDelta: 0.01, // Zoom in closer
-            longitudeDelta: 0.01,
-          }, 1000);
+        response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityAddress)}&limit=1&countrycodes=ph`,
+          {
+            headers: {
+              'User-Agent': 'FixMoApp/1.0',
+            },
+          }
+        );
+
+        data = await response.json();
+        
+        if (data && data.length > 0) {
+          newLat = parseFloat(data[0].lat);
+          newLng = parseFloat(data[0].lon);
+          console.log('Found with city address:', newLat, newLng);
+        } else {
+          // Try 3: Just the city name
+          const cityOnly = `${selectedMunicipality}, Philippines`;
+          console.log('Geocoding attempt 3:', cityOnly);
+          
+          response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityOnly)}&limit=1&countrycodes=ph`,
+            {
+              headers: {
+                'User-Agent': 'FixMoApp/1.0',
+              },
+            }
+          );
+
+          data = await response.json();
+          
+          if (data && data.length > 0) {
+            newLat = parseFloat(data[0].lat);
+            newLng = parseFloat(data[0].lon);
+            console.log('Found with city only:', newLat, newLng);
+          }
+        }
+      }
+
+      if (newLat && newLng) {
+        // Update map via WebView - center and add/update marker
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            if (window.map) {
+              // Center the map
+              window.map.setView([${newLat}, ${newLng}], 16);
+              
+              // Remove old marker if exists
+              if (window.marker) {
+                window.map.removeLayer(window.marker);
+              }
+              
+              // Add new marker
+              window.marker = L.marker([${newLat}, ${newLng}]).addTo(window.map);
+              
+              // Also update React Native state
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'mapClick',
+                latitude: ${newLat},
+                longitude: ${newLng}
+              }));
+            }
+            true;
+          `);
         }
         
         Alert.alert(
-          'Location Found',
-          'Map centered on your area. Tap on the map to pin your exact location.',
+          'Location Found! 📍',
+          'Map centered on your area. You can adjust the pin by tapping elsewhere on the map.',
           [{ text: 'OK' }]
         );
       } else {
+        // Center on Metro Manila as fallback
+        const manilaLat = 14.5995;
+        const manilaLng = 120.9842;
+        
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`
+            if (window.map) {
+              window.map.setView([${manilaLat}, ${manilaLng}], 12);
+            }
+            true;
+          `);
+        }
+        
         Alert.alert(
-          'Location Not Found',
-          'Could not find exact coordinates. Please manually navigate and pin your location on the map.',
+          'Approximate Location',
+          `Could not find exact coordinates for ${selectedBarangay}. Map centered on Metro Manila area. Please zoom in and manually pin your exact location.`,
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
       console.error('Geocoding error:', error);
       Alert.alert(
-        'Geocoding Error',
-        'Failed to locate address. Please manually navigate and pin your location on the map.',
+        'Map Ready',
+        'Map is now open. Please navigate and pin your location manually.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -794,21 +870,112 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
             </View>
 
             {/* Map View */}
-            <MapView
-              ref={mapRef}
+            {!mapReady && (
+              <View style={styles.mapLoadingOverlay}>
+                <ActivityIndicator size="large" color="#008080" />
+                <Text style={styles.mapLoadingText}>Loading OpenStreetMap...</Text>
+              </View>
+            )}
+            <WebView
+              ref={webViewRef}
+              source={{
+                html: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                    <style>
+                      body { margin: 0; padding: 0; }
+                      #map { height: 100vh; width: 100vw; }
+                    </style>
+                  </head>
+                  <body>
+                    <div id="map"></div>
+                    <script>
+                      // Initialize map
+                      window.map = L.map('map').setView([${mapRegion.latitude}, ${mapRegion.longitude}], 13);
+                      
+                      // Add OpenStreetMap tiles
+                      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                      }).addTo(window.map);
+                      
+                      // Add marker (initially hidden)
+                      window.marker = null;
+                      
+                      // Handle map clicks
+                      window.map.on('click', function(e) {
+                        const lat = e.latlng.lat;
+                        const lng = e.latlng.lng;
+                        
+                        // Remove old marker if exists
+                        if (window.marker) {
+                          window.map.removeLayer(window.marker);
+                        }
+                        
+                        // Add new marker
+                        window.marker = L.marker([lat, lng]).addTo(window.map);
+                        
+                        // Send coordinates to React Native
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                          type: 'mapClick',
+                          latitude: lat,
+                          longitude: lng
+                        }));
+                      });
+                      
+                      // Notify that map is ready
+                      setTimeout(() => {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                          type: 'mapReady'
+                        }));
+                      }, 500);
+                    </script>
+                  </body>
+                  </html>
+                `
+              }}
               style={styles.map}
-              provider={PROVIDER_DEFAULT}
-              initialRegion={mapRegion}
-              onPress={handleMapPress}
-            >
-              {latitude && longitude && (
-                <Marker
-                  coordinate={{ latitude, longitude }}
-                  title="Your Location"
-                  description="Pinned location"
-                />
-              )}
-            </MapView>
+              onMessage={(event) => {
+                try {
+                  const data = JSON.parse(event.nativeEvent.data);
+                  if (data.type === 'mapReady') {
+                    console.log('OpenStreetMap is ready');
+                    setMapReady(true);
+                    
+                    // If we have coordinates, add marker
+                    if (latitude && longitude && webViewRef.current) {
+                      webViewRef.current.injectJavaScript(`
+                        if (window.map) {
+                          if (window.marker) {
+                            window.map.removeLayer(window.marker);
+                          }
+                          window.marker = L.marker([${latitude}, ${longitude}]).addTo(window.map);
+                          window.map.setView([${latitude}, ${longitude}], 16);
+                        }
+                        true;
+                      `);
+                    }
+                  } else if (data.type === 'mapClick') {
+                    setLatitude(data.latitude);
+                    setLongitude(data.longitude);
+                  }
+                } catch (error) {
+                  console.error('Error parsing WebView message:', error);
+                }
+              }}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('WebView error:', nativeEvent);
+                Alert.alert('Map Error', 'Failed to load map. Please check your internet connection.');
+              }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={false}
+            />
 
             {/* Coordinates Display */}
             {latitude && longitude && (
@@ -1179,6 +1346,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 8,
     overflow: 'hidden',
+  },
+  mapLoadingOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 20,
+    borderRadius: 10,
+  },
+  mapLoadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
   },
   coordinatesContainer: {
     backgroundColor: '#f0f8ff',

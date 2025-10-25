@@ -44,6 +44,10 @@ interface Appointment {
     created_at: string;
     customer_cancellation_reason?: string;
   };
+  // Availability slot information
+  availability_id?: number;
+  slot_start_time?: string;
+  slot_end_time?: string;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -793,6 +797,14 @@ export default function Bookings() {
         if (result.success && result.data) {
           console.log('=== BOOKINGS API DEBUG ===');
           console.log('Raw API Response:', JSON.stringify(result.data, null, 2));
+          console.log('=== CHECKING FIRST APPOINTMENT FOR AVAILABILITY DATA ===');
+          if (result.data[0]) {
+            console.log('First appointment object keys:', Object.keys(result.data[0]));
+            console.log('First appointment availability_id:', result.data[0].availability_id);
+            console.log('First appointment availability object:', result.data[0].availability);
+            console.log('First appointment ALL data:', JSON.stringify(result.data[0], null, 2));
+          }
+          console.log('=== END AVAILABILITY CHECK ===');
           
           const transformedBookings = result.data.map((appointment: any, index: number) => {
             console.log(`\n--- Appointment ${index + 1} Debug ---`);
@@ -803,6 +815,21 @@ export default function Bookings() {
             console.log('Provider profile photo:', appointment.serviceProvider?.provider_profile_photo);
             console.log('Current backjob from API:', appointment.current_backjob);
             console.log('Appointment status:', appointment.appointment_status);
+            console.log('Availability ID:', appointment.availability_id);
+            console.log('Availability object:', appointment.availability);
+            console.log('Available fields in appointment:', Object.keys(appointment));
+            console.log('Checking all possible slot time fields:', {
+              'availability.startTime': appointment.availability?.startTime,
+              'availability.endTime': appointment.availability?.endTime,
+              'availability.time_start': appointment.availability?.time_start,
+              'availability.time_end': appointment.availability?.time_end,
+              'slot_start_time': appointment.slot_start_time,
+              'slot_end_time': appointment.slot_end_time,
+              'startTime': appointment.startTime,
+              'endTime': appointment.endTime,
+              'time_start': appointment.time_start,
+              'time_end': appointment.time_end,
+            });
             
             // Try to determine service type from available data
             let serviceType = 'Service';
@@ -860,7 +887,27 @@ export default function Bookings() {
               warranty_end_date: warrantyEndDate, // Include calculated warranty end date
               current_backjob: appointment.current_backjob, // Include backjob data from API
               backjob_id: appointment.current_backjob?.backjob_id, // Legacy compatibility
+              // Include time slot information from availability (backend returns at root level)
+              availability_id: appointment.availability_id,
+              slot_start_time: appointment.slot_start_time || 
+                               appointment.availability?.startTime || 
+                               appointment.availability?.time_start || 
+                               appointment.startTime ||
+                               appointment.time_start,
+              slot_end_time: appointment.slot_end_time || 
+                            appointment.availability?.endTime || 
+                            appointment.availability?.time_end || 
+                            appointment.endTime ||
+                            appointment.time_end,
+              slot_day_of_week: appointment.slot_day_of_week || appointment.availability?.dayOfWeek,
             };
+            
+            console.log('🔍 SLOT TIME EXTRACTION:', {
+              availability_id: transformedAppointment.availability_id,
+              slot_start_time: transformedAppointment.slot_start_time,
+              slot_end_time: transformedAppointment.slot_end_time,
+              hasSlotTimes: !!(transformedAppointment.slot_start_time && transformedAppointment.slot_end_time)
+            });
             
             console.log('Transformed appointment:', transformedAppointment);
             console.log('--- End Appointment Debug ---\n');
@@ -1803,6 +1850,28 @@ export default function Bookings() {
                           </Text>
                         ) : null}
 
+                        {/* Show time slot if available */}
+                        {b.slot_start_time && b.slot_end_time && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginBottom: 8,
+                            }}
+                          >
+                            <Ionicons name="time-outline" size={14} color="#008080" style={{ marginRight: 4 }} />
+                            <Text
+                              style={{
+                                color: "#666",
+                                fontSize: 13,
+                                fontWeight: "500",
+                              }}
+                            >
+                              {b.slot_start_time} - {b.slot_end_time}
+                            </Text>
+                          </View>
+                        )}
+
                         {/* Show remaining warranty days for In Warranty status */}
                         {b.status === "In Warranty" && formatWarrantyText(b) && (
                           <View
@@ -1985,6 +2054,20 @@ export default function Bookings() {
                   }) : 'Not set'}
                 </Text>
               </View>
+
+              {selectedBooking.slot_start_time && selectedBooking.slot_end_time && (
+                <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}>
+                  <Text style={{fontWeight: "bold", color: "#333"}}>
+                    Time Slot:
+                  </Text>
+                  <View style={{flexDirection: "row", alignItems: "center"}}>
+                    <Ionicons name="time-outline" size={14} color="#008080" style={{ marginRight: 4 }} />
+                    <Text style={{color: "#008080", fontWeight: "600"}}>
+                      {selectedBooking.slot_start_time} - {selectedBooking.slot_end_time}
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between"}}>
                 <Text style={{fontWeight: "bold", color: "#333"}}>

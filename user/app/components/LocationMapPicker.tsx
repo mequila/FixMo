@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import LocationPicker from './LocationPicker';
 
 interface LocationMapPickerProps {
@@ -35,7 +35,7 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
   const [loading, setLoading] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const mapRef = useRef<MapView>(null);
+  const webViewRef = useRef<WebView>(null);
 
   // Safety check - if map doesn't initialize within 3 seconds, show error
   useEffect(() => {
@@ -57,14 +57,15 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
       setTempCoordinates(coords);
       setMarkerCoordinates(coords);
       
-      // Animate map to new coordinates
-      if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: coords.lat,
-          longitude: coords.lng,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }, 500);
+      // Update map to new coordinates via WebView
+      if (webViewRef.current) {
+        webViewRef.current.injectJavaScript(`
+          if (window.map && window.marker) {
+            window.map.setView([${coords.lat}, ${coords.lng}], 16);
+            window.marker.setLatLng([${coords.lat}, ${coords.lng}]);
+          }
+          true;
+        `);
       }
     }
   };
@@ -183,9 +184,8 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
                 <Ionicons name="alert-circle" size={60} color="#ff6b6b" />
                 <Text style={styles.errorTitle}>Map Unavailable</Text>
                 <Text style={styles.errorText}>
-                  {Platform.OS === 'android' 
-                    ? 'Map service is currently unavailable. This may be due to:\n\n• Missing Google Maps configuration\n• Network connection issues\n• Device compatibility\n\nYou can still use the app by selecting your city and barangay from the dropdowns. Coordinates will be automatically calculated.'
-                    : 'Unable to load map. Please check your internet connection and try again.'}
+                  Unable to load map. Please check your internet connection and try again.
+                  You can still use the app by selecting your city and barangay from the dropdowns.
                 </Text>
                 <TouchableOpacity 
                   style={styles.retryButton}
@@ -202,51 +202,90 @@ const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
                 {!mapInitialized && (
                   <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color="#008080" />
-                    <Text style={styles.loadingText}>Loading map...</Text>
+                    <Text style={styles.loadingText}>Loading OpenStreetMap...</Text>
                   </View>
                 )}
-                <MapView
-                  ref={mapRef}
-                  provider={PROVIDER_DEFAULT}
+                <WebView
+                  ref={webViewRef}
+                  source={{
+                    html: `
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                        <style>
+                          body { margin: 0; padding: 0; }
+                          #map { height: 100vh; width: 100vw; }
+                        </style>
+                      </head>
+                      <body>
+                        <div id="map"></div>
+                        <script>
+                          // Initialize map
+                          window.map = L.map('map').setView([${markerCoordinates.lat}, ${markerCoordinates.lng}], 16);
+                          
+                          // Add OpenStreetMap tiles
+                          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 19
+                          }).addTo(window.map);
+                          
+                          // Add marker
+                          window.marker = L.marker([${markerCoordinates.lat}, ${markerCoordinates.lng}], {
+                            draggable: false
+                          }).addTo(window.map);
+                          
+                          // Handle map clicks
+                          window.map.on('click', function(e) {
+                            const lat = e.latlng.lat;
+                            const lng = e.latlng.lng;
+                            window.marker.setLatLng([lat, lng]);
+                            window.ReactNativeWebView.postMessage(JSON.stringify({
+                              type: 'mapClick',
+                              latitude: lat,
+                              longitude: lng
+                            }));
+                          });
+                          
+                          // Notify that map is ready
+                          setTimeout(() => {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({
+                              type: 'mapReady'
+                            }));
+                          }, 500);
+                        </script>
+                      </body>
+                      </html>
+                    `
+                  }}
                   style={styles.map}
-                  initialRegion={{
-                    latitude: tempCoordinates.lat,
-                    longitude: tempCoordinates.lng,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  onPress={handleMapPress}
-                  showsUserLocation={true}
-                  showsMyLocationButton={false}
-                  onMapReady={() => {
-                    console.log('Map is ready');
-                    setMapInitialized(true);
-                  }}
-                  onLayout={() => {
-                    // Additional safety - sometimes onMapReady doesn't fire
-                    setTimeout(() => {
-                      if (!mapInitialized) {
+                  onMessage={(event) => {
+                    try {
+                      const data = JSON.parse(event.nativeEvent.data);
+                      if (data.type === 'mapReady') {
+                        console.log('OpenStreetMap is ready');
                         setMapInitialized(true);
+                      } else if (data.type === 'mapClick') {
+                        setMarkerCoordinates({ 
+                          lat: data.latitude, 
+                          lng: data.longitude 
+                        });
                       }
-                    }, 1000);
+                    } catch (error) {
+                      console.error('Error parsing WebView message:', error);
+                    }
                   }}
-                >
-                  <Marker
-                    coordinate={{
-                      latitude: markerCoordinates.lat,
-                      longitude: markerCoordinates.lng,
-                    }}
-                    title="Your Location"
-                    description={tempLocation}
-                    pinColor="#008080"
-                  />
-                </MapView>
-
-                {/* Center Crosshair (optional visual aid) */}
-                <View style={styles.crosshair} pointerEvents="none">
-                  <View style={styles.crosshairVertical} />
-                  <View style={styles.crosshairHorizontal} />
-                </View>
+                  onError={(syntheticEvent) => {
+                    const { nativeEvent } = syntheticEvent;
+                    console.error('WebView error:', nativeEvent);
+                    setMapError(true);
+                  }}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  startInLoadingState={false}
+                />
 
                 {/* Current Location Button */}
                 <TouchableOpacity

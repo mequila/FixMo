@@ -1,41 +1,48 @@
 /**
  * Slot Service - Manages time slot booking functionality
  * 
- * This service handles fetching and managing provider availability slots.
+ * IMPORTANT: Each availability_id represents ONE bookable slot
+ * - isBooked: true = Slot has an appointment (CANNOT book)
+ * - isBooked: false = Slot is available (CAN book)
+ * 
+ * If provider wants multiple bookings for same time range, they create
+ * multiple availability records (each with unique availability_id).
  * 
  * REQUIRED BACKEND API ENDPOINTS:
  * 
- * 1. GET /api/provider-availability/:providerId?date=YYYY-MM-DD
- *    - Fetches all time slots for a provider on a specific date
+ * 1. GET /auth/service-listings
+ *    - Fetches service listings with provider availability
+ *    - Returns available_time_slots for each provider
+ * 
+ * 2. GET /api/availability/provider/:providerId/booked-slots?dayOfWeek=Monday&date=YYYY-MM-DD
+ *    - Fetches real-time booking status for provider's slots
+ *    - Public endpoint (no auth required)
  *    - Response format:
  *      {
  *        success: boolean,
  *        data: {
  *          providerId: number,
+ *          dayOfWeek: string,
  *          date: string,
+ *          summary: {
+ *            totalSlots: number,
+ *            activeSlots: number,
+ *            bookedSlots: number,
+ *            availableSlots: number
+ *          },
  *          slots: [
  *            {
  *              availability_id: number,
- *              time_start: string (HH:MM format),
- *              time_end: string (HH:MM format),
- *              slot_duration: number (in minutes),
+ *              startTime: string (HH:MM),
+ *              endTime: string (HH:MM),
+ *              isActive: boolean,
  *              isBooked: boolean,
- *              isAvailable: boolean
+ *              totalBookings: number,
+ *              appointments: [...],
+ *              status: string
  *            }
- *          ],
- *          totalSlots: number,
- *          availableSlots: number,
- *          bookedSlots: number
+ *          ]
  *        }
- *      }
- * 
- * 2. GET /api/availability/:availabilityId/check
- *    - Checks if a specific slot is still available before booking
- *    - Response format:
- *      {
- *        success: boolean,
- *        isAvailable: boolean,
- *        message?: string
  *      }
  */
 
@@ -74,8 +81,72 @@ export interface SlotAvailabilityResponse {
 }
 
 /**
+ * Fetch booked slots for a provider on a specific day
+ * Uses the public /api/availability/provider/:providerId/booked-slots endpoint
+ */
+export const fetchBookedSlotsForDay = async (
+  providerId: number,
+  dayOfWeek: string,
+  date?: string
+): Promise<{ success: boolean; bookedSlots: Map<number, any>; message?: string }> => {
+  try {
+    // No token needed - this is a public endpoint
+    console.log('📞 Fetching booked slots from public endpoint...');
+
+    // Build query params
+    let queryParams = `dayOfWeek=${encodeURIComponent(dayOfWeek)}`;
+    if (date) {
+      queryParams += `&date=${date}`;
+    }
+
+    const apiUrl = `${BACKEND_URL}/api/availability/provider/${providerId}/booked-slots?${queryParams}`;
+    console.log('� Calling booked slots API:', apiUrl);
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      console.warn('⚠️ Could not fetch booked slots:', errorData.message);
+      return { success: false, bookedSlots: new Map(), message: errorData.message };
+    }
+
+    const result = await response.json();
+    console.log('✅ Booked slots API response:', result);
+
+    // Create a map of availability_id -> booking info
+    const bookedSlotsMap = new Map();
+    if (result.success && result.data?.slots) {
+      result.data.slots.forEach((slot: any) => {
+        bookedSlotsMap.set(slot.availability_id, {
+          isBooked: slot.isBooked, // Simple: true if has ANY appointment
+          totalBookings: slot.totalBookings,
+          appointments: slot.appointments,
+          status: slot.status,
+        });
+      });
+      console.log('📊 Mapped', bookedSlotsMap.size, 'slot statuses from booked-slots API');
+      console.log('📋 Summary:', result.data.summary);
+    }
+
+    return {
+      success: true,
+      bookedSlots: bookedSlotsMap,
+    };
+  } catch (error: any) {
+    console.error('❌ Error fetching booked slots:', error.message);
+    return { success: false, bookedSlots: new Map(), message: error.message };
+  }
+};
+
+/**
  * Fetch available time slots for a provider on a specific date
  * This function works with the actual backend that returns weekly availability patterns
+ * and merges with real-time booking data
  */
 export const fetchProviderSlots = async (
   providerId: number,
@@ -184,28 +255,89 @@ export const fetchProviderSlots = async (
       };
     }
 
-    // Transform the slots from the backend format
-    const transformedSlots: TimeSlot[] = daySlots.map((slot: any) => ({
-      availability_id: slot.availability_id || slot.id,
-      startTime: slot.startTime || slot.time_start,
-      endTime: slot.endTime || slot.time_end,
-      time_start: slot.startTime || slot.time_start,
-      time_end: slot.endTime || slot.time_end,
-      dayOfWeek: slot.dayOfWeek || dayOfWeek,
-      isAvailable: slot.isAvailable !== undefined ? slot.isAvailable : !slot.isBooked && !slot.isFullyBooked,
-      isBooked: slot.isBooked || slot.isFullyBooked || false,
-      isActive: slot.isActive !== undefined ? slot.isActive : true,
-      slot_duration: slot.slot_duration || slot.duration,
-      totalBookings: slot.totalBookings,
-      estimatedAvailableSlots: slot.estimatedAvailableSlots,
-      isFullyBooked: slot.isFullyBooked,
-      displayTime: formatTimeSlot(slot.startTime || slot.time_start, slot.endTime || slot.time_end),
-    }));
+    // Fetch real-time booking status for the provider's slots
+    console.log('🔄 Fetching real-time booking status...');
+    const bookedSlotsResult = await fetchBookedSlotsForDay(providerId, dayOfWeek, date);
+    const bookedSlotsMap = bookedSlotsResult.bookedSlots;
+    
+    console.log('📊 Booked slots API result:', {
+      success: bookedSlotsResult.success,
+      mapSize: bookedSlotsMap.size,
+      message: bookedSlotsResult.message,
+      slotIds: Array.from(bookedSlotsMap.keys())
+    });
+
+    // Transform the slots from the backend format and merge with booking data
+    const transformedSlots: TimeSlot[] = daySlots.map((slot: any) => {
+      const slotId = slot.availability_id || slot.id;
+      const bookingInfo = bookedSlotsMap.get(slotId);
+      
+      console.log(`🔍 Checking slot ${slotId}:`, {
+        hasBookingInfo: !!bookingInfo,
+        bookingInfo: bookingInfo,
+        slotData: {
+          isBooked: slot.isBooked,
+          isFullyBooked: slot.isFullyBooked,
+          totalBookings: slot.totalBookings,
+          estimatedAvailableSlots: slot.estimatedAvailableSlots
+        }
+      });
+      
+      // Simple logic based on new API:
+      // - If bookingInfo.isBooked = true, slot has an appointment (CANNOT BOOK)
+      // - If bookingInfo.isBooked = false, slot is available (CAN BOOK)
+      // - Fall back to checking totalBookings if API data not available
+      const isBooked = bookingInfo?.isBooked !== undefined 
+        ? bookingInfo.isBooked 
+        : (slot.totalBookings > 0 || slot.isBooked || slot.isFullyBooked || false);
+      
+      const bookingCount = bookingInfo?.totalBookings !== undefined
+        ? bookingInfo.totalBookings
+        : (slot.totalBookings || 0);
+      
+      console.log(`📍 Slot ${slotId}: ${slot.startTime}-${slot.endTime}`, {
+        isBooked,
+        bookingCount,
+        status: bookingInfo?.status || (isBooked ? 'Booked' : 'Available')
+      });
+      
+      return {
+        availability_id: slotId,
+        startTime: slot.startTime || slot.time_start,
+        endTime: slot.endTime || slot.time_end,
+        time_start: slot.startTime || slot.time_start,
+        time_end: slot.endTime || slot.time_end,
+        dayOfWeek: slot.dayOfWeek || dayOfWeek,
+        isAvailable: !isBooked && slot.isActive !== false,
+        isBooked: isBooked,
+        isActive: slot.isActive !== undefined ? slot.isActive : true,
+        slot_duration: slot.slot_duration || slot.duration,
+        totalBookings: bookingCount,
+        estimatedAvailableSlots: slot.estimatedAvailableSlots,
+        isFullyBooked: isBooked, // In new API, isBooked means slot is taken
+        displayTime: formatTimeSlot(slot.startTime || slot.time_start, slot.endTime || slot.time_end),
+      };
+    });
 
     console.log('✅ Provider time slots:', transformedSlots.length);
     console.log('✅ Transformed slots detail:', JSON.stringify(transformedSlots, null, 2));
-    console.log('✅ Available slots:', transformedSlots.filter(s => s.isAvailable).length);
-    console.log('✅ Booked slots:', transformedSlots.filter(s => !s.isAvailable).length);
+    
+    const availableCount = transformedSlots.filter(s => s.isAvailable && !s.isBooked).length;
+    const bookedCount = transformedSlots.filter(s => s.isBooked).length;
+    
+    console.log('✅ Available slots:', availableCount);
+    console.log('❌ Booked slots:', bookedCount);
+    console.log('📊 Booking summary:', {
+      total: transformedSlots.length,
+      available: availableCount,
+      booked: bookedCount,
+      details: transformedSlots.map(s => ({
+        id: s.availability_id,
+        time: s.displayTime,
+        status: s.isBooked ? 'BOOKED' : 'AVAILABLE',
+        bookings: s.totalBookings || 0
+      }))
+    });
 
     return {
       success: true,
@@ -214,7 +346,7 @@ export const fetchProviderSlots = async (
         date,
         slots: transformedSlots,
         totalSlots: transformedSlots.length,
-        availableSlots: transformedSlots.filter(s => s.isAvailable).length,
+        availableSlots: transformedSlots.filter(s => !s.isBooked && s.isActive).length,
         bookedSlots: transformedSlots.filter(s => s.isBooked).length,
       },
     };

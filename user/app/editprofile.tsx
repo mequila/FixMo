@@ -1025,152 +1025,146 @@ export default function Account() {
         </View>
       </ScrollView>
 
-      {/* Province Picker Modal (iOS) */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={showProvincePicker}
-          transparent={true}
-          animationType="slide"
-        >
+      {/* Province Picker Modal */}
+      <Modal
+        visible={showProvincePicker}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
           <View style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingBottom: 30,
           }}>
             <View style={{
-              backgroundColor: 'white',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingBottom: 30,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e0e0e0',
             }}>
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 15,
-                borderBottomWidth: 1,
-                borderBottomColor: '#e0e0e0',
-              }}>
-                <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Province</Text>
-                <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <Picker
-                selectedValue={selectedProvince}
-                onValueChange={(itemValue) => setSelectedProvince(itemValue)}
-                style={{ height: 200 }}
-              >
-                <Picker.Item label="-- Choose Province/District --" value="" />
-                {getProvinces().map((province) => (
-                  <Picker.Item key={province} label={province} value={province} />
-                ))}
-              </Picker>
+              <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Province</Text>
+              <TouchableOpacity onPress={() => setShowProvincePicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <Picker
+              selectedValue={selectedProvince}
+              onValueChange={(itemValue) => setSelectedProvince(itemValue)}
+              style={{ height: 200 }}
+            >
+              <Picker.Item label="-- Choose Province/District --" value="" />
+              {getProvinces().map((province) => (
+                <Picker.Item key={province} label={province} value={province} />
+              ))}
+            </Picker>
           </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
 
-      {/* Municipality Picker Modal (iOS) */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={showMunicipalityPicker}
-          transparent={true}
-          animationType="slide"
-        >
+      {/* Municipality Picker Modal */}
+      <Modal
+        visible={showMunicipalityPicker}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
           <View style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingBottom: 30,
           }}>
             <View style={{
-              backgroundColor: 'white',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingBottom: 30,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e0e0e0',
             }}>
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 15,
-                borderBottomWidth: 1,
-                borderBottomColor: '#e0e0e0',
-              }}>
-                <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Municipality/City</Text>
-                <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <Picker
-                selectedValue={selectedMunicipality}
-                onValueChange={(itemValue) => setSelectedMunicipality(itemValue)}
-                style={{ height: 200 }}
-              >
-                <Picker.Item label="-- Choose City/Municipality --" value="" />
-                {getMunicipalities().map((municipality) => (
-                  <Picker.Item key={municipality} label={municipality} value={municipality} />
-                ))}
-              </Picker>
+              <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Municipality/City</Text>
+              <TouchableOpacity onPress={() => setShowMunicipalityPicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <Picker
+              selectedValue={selectedMunicipality}
+              onValueChange={(itemValue) => setSelectedMunicipality(itemValue)}
+              style={{ height: 200 }}
+            >
+              <Picker.Item label="-- Choose City/Municipality --" value="" />
+              {getMunicipalities().map((municipality) => (
+                <Picker.Item key={municipality} label={municipality} value={municipality} />
+              ))}
+            </Picker>
           </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
 
-      {/* Barangay Picker Modal (iOS) */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={showBarangayPicker}
-          transparent={true}
-          animationType="slide"
-        >
+      {/* Barangay Picker Modal */}
+      <Modal
+        visible={showBarangayPicker}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
           <View style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingBottom: 30,
           }}>
             <View style={{
-              backgroundColor: 'white',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingBottom: 30,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e0e0e0',
             }}>
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 15,
-                borderBottomWidth: 1,
-                borderBottomColor: '#e0e0e0',
-              }}>
-                <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Barangay</Text>
-                <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
-                  <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <Picker
-                selectedValue={selectedBarangay}
-                onValueChange={(itemValue) => setSelectedBarangay(itemValue)}
-                style={{ height: 200 }}
-              >
-                <Picker.Item label="-- Choose Barangay --" value="" />
-                {getBarangays().map((barangay: string) => (
-                  <Picker.Item key={barangay} label={barangay} value={barangay} />
-                ))}
-              </Picker>
+              <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16 }}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '600' }}>Select Barangay</Text>
+              <TouchableOpacity onPress={() => setShowBarangayPicker(false)}>
+                <Text style={{ color: '#008080', fontSize: 16, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <Picker
+              selectedValue={selectedBarangay}
+              onValueChange={(itemValue) => setSelectedBarangay(itemValue)}
+              style={{ height: 200 }}
+            >
+              <Picker.Item label="-- Choose Barangay --" value="" />
+              {getBarangays().map((barangay: string) => (
+                <Picker.Item key={barangay} label={barangay} value={barangay} />
+              ))}
+            </Picker>
           </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
 
       {/* OTP Verification Modal */}
       <Modal
