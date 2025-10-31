@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Picker } from '@react-native-picker/picker';
 import { homeStyles } from "./components/homeStyles";
 import { calculateDistance, formatDistance, parseCoordinates, sortProvidersByDistance } from "../utils/distanceCalculator";
 import { getCustomerBookedDates, formatDateForComparison, shouldDisableDate, getDisabledDateMessage } from "../utils/bookingDateHelper";
@@ -88,6 +89,10 @@ const ServiceProvider = () => {
   // Booked dates state
   const [bookedDates, setBookedDates] = useState<string[]>([]);
   const [customerId, setCustomerId] = useState<number | null>(null);
+  
+  // Distance filter state
+  const [maxDistance, setMaxDistance] = useState<number>(2); // Default 2km
+  const [showDistanceWarning, setShowDistanceWarning] = useState(false);
 
   // Initialize default date based on current time
   const getDefaultDate = () => {
@@ -129,7 +134,7 @@ const ServiceProvider = () => {
     if (selectedDate) {
       fetchServiceProviders();
     }
-  }, [serviceTitle, category, selectedDate]);
+  }, [serviceTitle, category, selectedDate, maxDistance]);
 
   // Format date for API call (YYYY-MM-DD) using local time
   const formatDateForAPI = (date: Date) => {
@@ -141,6 +146,7 @@ const ServiceProvider = () => {
 
   const fetchServiceProviders = async () => {
     try {
+      setShowDistanceWarning(false); // Reset warning flag
       const token = await AsyncStorage.getItem('token');
       
       console.log('🔍 Fetching service providers...');
@@ -272,6 +278,25 @@ const ServiceProvider = () => {
               serviceListings.slice(0, 3).forEach((p, i) => {
                 console.log(`${i + 1}. ${p.provider?.provider_name || 'Unknown'} - ${p.distance ? formatDistance(p.distance) : 'No distance'}`);
               });
+              
+              // Filter providers - only exclude those beyond 8km
+              const providersWithinRange = serviceListings.filter(p => 
+                p.distance === undefined || p.distance <= 8
+              );
+              const providersBeyond8km = serviceListings.filter(p => 
+                p.distance !== undefined && p.distance > 8
+              );
+              
+              console.log(`\n📊 Providers within 8km:`, providersWithinRange.length);
+              console.log(`⚠️ Providers beyond 8km:`, providersBeyond8km.length);
+              
+              // Show warning if there are providers beyond 8km
+              if (providersBeyond8km.length > 0) {
+                setShowDistanceWarning(true);
+              }
+              
+              // Use filtered list
+              serviceListings = providersWithinRange;
             } else {
               console.log('⚠️ User location could not be parsed, skipping distance calculation');
             }
@@ -397,13 +422,45 @@ const ServiceProvider = () => {
                 <Ionicons name="calendar-outline" size={20} color="#399d9d" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
+            
+            {/* Distance Filter - Compact inline version */}
+            <View style={styles.distanceFilterInline}>
+              <View style={styles.distanceFilterRow}>
+                <Ionicons name="location" size={18} color="#399d9d" />
+                <Text style={styles.distanceFilterLabelSmall}>Max Distance</Text>
+              </View>
+              <View style={styles.pickerContainerSmall}>
+                <Picker
+                  selectedValue={maxDistance}
+                  onValueChange={(itemValue) => setMaxDistance(itemValue)}
+                  style={styles.pickerSmall}
+                  dropdownIconColor="#399d9d"
+                  mode="dropdown"
+                >
+                  <Picker.Item label="Within 1 km" value={1} />
+                  <Picker.Item label="Within 2 km" value={2} />
+                  <Picker.Item label="Within 3 km" value={3} />
+                  <Picker.Item label="Within 4 km" value={4} />
+                  <Picker.Item label="Within 5 km" value={5} />
+                  <Picker.Item label="Within 6 km" value={6} />
+                  <Picker.Item label="Within 7 km" value={7} />
+                  <Picker.Item label="Within 8 km" value={8} />
+                </Picker>
+              </View>
+            </View>
+            
             <View style={{ marginTop: 8, paddingHorizontal: 5 }}>
               <Text style={{ fontSize: 11, color: "#666", fontStyle: "italic" }}>
-                📅 You can book appointments up to 15 days in advance
+                � You can book appointments up to 15 days in advance
               </Text>
               {bookedDates.length > 0 && (
                 <Text style={{ fontSize: 11, color: "#ff6b6b", fontStyle: "italic", marginTop: 4 }}>
                   🚫 You have {bookedDates.length} date(s) already booked and unavailable
+                </Text>
+              )}
+              {showDistanceWarning && (
+                <Text style={{ fontSize: 11, color: "#ff9800", fontStyle: "italic", marginTop: 4 }}>
+                  ⚠️ Some providers beyond 8km are excluded
                 </Text>
               )}
             </View>
@@ -458,6 +515,32 @@ const ServiceProvider = () => {
                 
                 if (!providerIdToPass) {
                   Alert.alert('Error', 'Provider ID not found. Cannot view profile.\n\nProvider data: ' + JSON.stringify(provider.provider));
+                  return;
+                }
+                
+                // Check if provider is in 5-8km range and show warning
+                if (provider.distance !== undefined && provider.distance >= 5 && provider.distance <= 8) {
+                  Alert.alert(
+                    '⚠️ Distance Warning',
+                    `This provider is ${formatDistance(provider.distance)} away from your location.\n\nProvider may cancel or may ask for extra fees since your location is too far.`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Continue Anyway',
+                        onPress: () => {
+                          router.push({
+                            pathname: '/profile_serviceprovider',
+                            params: {
+                              serviceId: provider.id,
+                              providerId: providerIdToPass.toString(),
+                              selectedDate: selectedDate ? formatDateForAPI(selectedDate) : '',
+                              category: category
+                            }
+                          });
+                        }
+                      }
+                    ]
+                  );
                   return;
                 }
                 
@@ -573,8 +656,17 @@ const ServiceProvider = () => {
                     <Text style={styles.distanceText}>
                       {formatDistance(provider.distance)} away
                     </Text>
+                    {provider.distance >= 5 && provider.distance <= 8 && (
+                      <View style={styles.distanceWarningBadge}>
+                        <Ionicons name="warning" size={12} color="#ff9800" />
+                        <Text style={styles.distanceWarningText}>Far distance</Text>
+                      </View>
+                    )}
                   </View>
                 )}
+                
+                {/* Warning message for providers in 5-8km range */}
+
                 
                 <View style={styles.priceContainer}>
                   <Text style={styles.priceText}>
@@ -693,6 +785,81 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#008080",
+  },
+  distanceFilterInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingHorizontal: 5,
+    paddingVertical: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  distanceFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  distanceFilterLabelSmall: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  pickerContainerSmall: {
+    minWidth: 150,
+    borderWidth: 1.5,
+    borderColor: "#399d9d",
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
+    height: 42,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  pickerSmall: {
+    height: 42,
+    width: '100%',
+    color: '#333',
+  },
+  distanceWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3e0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  distanceWarningText: {
+    fontSize: 10,
+    color: '#ff9800',
+    marginLeft: 2,
+    fontWeight: '600',
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3e0',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  warningText: {
+    fontSize: 11,
+    color: '#ff9800',
+    marginLeft: 6,
+    flex: 1,
+    fontStyle: 'italic',
   },
 });
 

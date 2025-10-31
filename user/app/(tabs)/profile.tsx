@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -157,104 +158,112 @@ const Profile = () => {
           </Text>
         </SafeAreaView>
 
-        <View style={{ flexDirection: "row", marginLeft: 20, alignItems: "center", marginTop: 8}}>
-            {customerData?.profile_photo && !imageError ? (
-              <Image 
-                source={{ 
-                  uri: customerData.profile_photo.startsWith('http') 
-                    ? customerData.profile_photo 
-                    : `${BACKEND_URL}/${customerData.profile_photo}` 
-                }} 
-                style={{ width: 100, height: 100, borderRadius: 50 }}
-                onError={(error) => {
-                  console.log('Image failed to load:', customerData.profile_photo);
-                  setImageError(true);
-                }}
-              />
-            ) : (
-              <Ionicons name="person-circle" size={100} color={"#008080"} 
-                  style={{ alignSelf: "center", marginTop: 10 }} />
-            )}
-                
-            <View style={{ flexDirection: "column", marginLeft: 18, alignItems: "flex-start" }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>
-                        {customerData ? `${customerData.first_name} ${customerData.last_name}` : 'User'}
-                    </Text>
-                    {customerData?.verification_status === 'approved' && (
-                        <Ionicons 
-                            name="checkmark-circle" 
-                            size={20} 
-                            color="#1DA1F2" 
-                            style={{ marginLeft: 8, marginTop: 10 }} 
-                        />
-                    )}
-                </View>
-                <Text style={{ textAlign: "center", fontSize: 16, color: "gray", marginTop: 5 }}>
-                    {customerData?.phone_number || '09123456789'}
-                </Text>
-            </View>
-        </View>
- 
-      {/* Verification Status Banner */}
-      {customerData && customerData.verification_status !== 'approved' && (
-        <TouchableOpacity 
-          onPress={() => setShowVerificationModal(true)}
-          style={{
-            marginHorizontal: 20,
-            marginTop: 15,
-            backgroundColor: customerData.verification_status === 'rejected' ? '#ffe6e6' : '#fff8e1',
-            borderRadius: 10,
-            padding: 15,
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: customerData.verification_status === 'rejected' ? '#ff4444' : '#ffc107',
-          }}
+        <ScrollView 
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons 
-            name={customerData.verification_status === 'rejected' ? 'close-circle' : 'alert-circle'} 
-            size={24} 
-            color={customerData.verification_status === 'rejected' ? '#ff4444' : '#f57c00'} 
-            style={{ marginRight: 12 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={{ 
-              fontSize: 14, 
-              fontWeight: '600', 
-              color: '#333',
-              marginBottom: 3,
-            }}>
-              {customerData.verification_status === 'rejected' ? 'Verification Rejected' : 
-               customerData.verification_status === 'pending' ? 'Verification Pending' : 'Account Not Verified'}
-            </Text>
-            {customerData.verification_status === 'rejected' && customerData.rejection_reason ? (
-              <Text style={{ fontSize: 12, color: '#ff4444', fontWeight: '500' }}>
-                {customerData.rejection_reason}
-              </Text>
-            ) : (
-              <Text style={{ fontSize: 12, color: '#666' }}>
-                {customerData.verification_status === 'pending' ? 'Under review' : 'Tap to verify your account'}
-              </Text>
-            )}
+          <View style={{ flexDirection: "row", marginLeft: 20, alignItems: "center", marginTop: 8}}>
+              {customerData?.profile_photo && !imageError ? (
+                <Image 
+                  source={{ 
+                    uri: customerData.profile_photo.startsWith('http') 
+                      ? customerData.profile_photo 
+                      : `${BACKEND_URL}/${customerData.profile_photo}` 
+                  }} 
+                  style={{ width: 100, height: 100, borderRadius: 50 }}
+                  onError={(error) => {
+                    console.log('Image failed to load:', customerData.profile_photo);
+                    setImageError(true);
+                  }}
+                />
+              ) : (
+                <Ionicons name="person-circle" size={100} color={"#008080"} 
+                    style={{ alignSelf: "center", marginTop: 10 }} />
+              )}
+                  
+              <View style={{ flexDirection: "column", marginLeft: 18, alignItems: "flex-start" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={{ textAlign: "center", fontSize: 20, marginTop: 10 }}>
+                          {customerData ? `${customerData.first_name} ${customerData.last_name}` : 'User'}
+                      </Text>
+                      {customerData?.verification_status === 'approved' && (
+                          <Ionicons 
+                              name="checkmark-circle" 
+                              size={20} 
+                              color="#1DA1F2" 
+                              style={{ marginLeft: 8, marginTop: 10 }} 
+                          />
+                      )}
+                  </View>
+                  <Text style={{ textAlign: "center", fontSize: 16, color: "gray", marginTop: 5 }}>
+                      {customerData?.phone_number || '09123456789'}
+                  </Text>
+              </View>
           </View>
+   
+        {/* Verification Status Banner */}
+        {customerData && customerData.verification_status !== 'approved' && (
+          <TouchableOpacity 
+            onPress={() => setShowVerificationModal(true)}
+            style={{
+              marginHorizontal: 20,
+              marginTop: 15,
+              backgroundColor: customerData.verification_status === 'rejected' ? '#ffe6e6' : '#fff8e1',
+              borderRadius: 10,
+              padding: 15,
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: customerData.verification_status === 'rejected' ? '#ff4444' : '#ffc107',
+            }}
+          >
+            <Ionicons 
+              name={customerData.verification_status === 'rejected' ? 'close-circle' : 'alert-circle'} 
+              size={24} 
+              color={customerData.verification_status === 'rejected' ? '#ff4444' : '#f57c00'} 
+              style={{ marginRight: 12 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ 
+                fontSize: 14, 
+                fontWeight: '600', 
+                color: '#333',
+                marginBottom: 3,
+              }}>
+                {customerData.verification_status === 'rejected' ? 'Verification Rejected' : 
+                 customerData.verification_status === 'pending' ? 'Verification Pending' : 'Account Not Verified'}
+              </Text>
+              {customerData.verification_status === 'rejected' && customerData.rejection_reason ? (
+                <Text style={{ fontSize: 12, color: '#ff4444', fontWeight: '500' }}>
+                  {customerData.rejection_reason}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 12, color: '#666' }}>
+                  {customerData.verification_status === 'pending' ? 'Under review' : 'Tap to verify your account'}
+                </Text>
+              )}
+            </View>
           <Ionicons name="chevron-forward" size={20} color="#999" />
         </TouchableOpacity>
       )}
 
-      <ProfileCard
-        label="Edit Profile"
-        iconName="create-outline"
+        <ProfileCard
+          label="Edit Profile"
+          iconName="create-outline"
         onPress={() => router.push("/editprofile")}
+      />
+
+      <ProfileCard
+        label="Fix-Score"
+        iconName="speedometer-outline"
+        onPress={() => router.push("/penalty-score-details")}
       />
 
       <ProfileCard
         label="Report an Issue"
         iconName="flag-outline"
         onPress={() => router.push("/report")}
-      />
-
-      <View style={homeStyles.profilePartition} />
+      />      <View style={homeStyles.profilePartition} />
 
 
       <ProfileCard
@@ -286,6 +295,8 @@ const Profile = () => {
         iconName="log-out-outline"
         onPress={handleLogout}
       />
+      
+      </ScrollView>
 
       {/* Deactivated Account Modal */}
       <Modal

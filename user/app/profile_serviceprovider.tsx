@@ -20,6 +20,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReVerificationModal from './components/ReVerificationModal';
 import SlotSelector from './components/SlotSelector';
 import { TimeSlot } from '../utils/slotService';
+import { canCreateBooking } from '../utils/penaltyHelpers';
+import { getPenaltyInfo } from '../utils/penaltyService';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -810,6 +812,81 @@ export default function profile_serviceprovider() {
       console.log('Service Data:', serviceData);
       console.log('Provider Data:', providerData);
       console.log('==============================');
+      
+      // Check penalty score and booking limits
+      try {
+        const penaltyData = await getPenaltyInfo();
+        if (penaltyData.success && penaltyData.data) {
+          const { penalty_points, is_suspended } = penaltyData.data;
+          
+          // Check if account is deactivated
+          if (is_suspended || penalty_points <= 50) {
+            Alert.alert(
+              'Account Deactivated',
+              'Your account has been deactivated due to low Fix-Score. Please contact admin for reactivation.',
+              [{ text: 'OK' }]
+            );
+            setBookingLoading(false);
+            return;
+          }
+          
+          // Get current active bookings count
+          const userId = await AsyncStorage.getItem('userId');
+          const token = await AsyncStorage.getItem('token');
+          
+          if (userId && token) {
+            const bookingsResponse = await fetch(
+              `${BACKEND_URL}/api/appointments/customer/${userId}?status=scheduled`,
+              {
+                headers: { 'Authorization': `Bearer ${token}` }
+              }
+            );
+            
+            if (bookingsResponse.ok) {
+              const bookingsData = await bookingsResponse.json();
+              const activeBookingsCount = bookingsData.data?.length || 0;
+              
+              // Check booking limits
+              const bookingCheck = canCreateBooking(penalty_points, 'customer', activeBookingsCount);
+              
+              if (!bookingCheck.allowed) {
+                Alert.alert(
+                  'Booking Limit Reached',
+                  bookingCheck.message || 'You have reached your booking limit.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'View Fix-Score',
+                      onPress: () => {
+                        setShowBookingModal(false);
+                        router.push('/penalty-score-details');
+                      }
+                    }
+                  ]
+                );
+                setBookingLoading(false);
+                return;
+              }
+              
+              // Show warning for limited/restricted accounts
+              if (penalty_points < 71 && bookingCheck.limit) {
+                Alert.alert(
+                  'Account Warning',
+                  `Your Fix-Score is ${penalty_points}. You have limited booking access (${bookingCheck.limit} booking${bookingCheck.limit > 1 ? 's' : ''} max). Improve your score to remove restrictions.`,
+                  [
+                    { text: 'Cancel', style: 'cancel', onPress: () => setBookingLoading(false) },
+                    { text: 'Continue Anyway', onPress: () => {} }
+                  ]
+                );
+                // Don't return here, let them continue if they press "Continue"
+              }
+            }
+          }
+        }
+      } catch (penaltyError) {
+        console.error('Error checking penalty score:', penaltyError);
+        // Continue with booking even if penalty check fails
+      }
       
       // Generate random 6-digit appointment ID
       const appointmentId = Math.floor(100000 + Math.random() * 900000).toString();
