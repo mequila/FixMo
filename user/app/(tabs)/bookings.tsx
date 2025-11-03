@@ -24,6 +24,7 @@ interface Appointment {
   service_title?: string;
   name: string;
   status: string;
+  originalStatus?: string; // Store the original backend status (e.g., provider_no_show)
   statusColor: string;
   date?: string;
   provider_first_name?: string;
@@ -151,6 +152,17 @@ export default function Bookings() {
   const [isCancelBackjobVisible, setIsCancelBackjobVisible] = useState(false);
   const [cancelBackjobReason, setCancelBackjobReason] = useState("");
   const [cancelBackjobNotes, setCancelBackjobNotes] = useState("");
+
+  // No-show reporting states
+  const [isNoShowModalVisible, setIsNoShowModalVisible] = useState(false);
+  const [noShowPhoto, setNoShowPhoto] = useState<any>(null);
+  const [noShowDescription, setNoShowDescription] = useState("");
+  const [noShowLoading, setNoShowLoading] = useState(false);
+
+  // Auto-prompt no-show states (for overdue scheduled appointments)
+  const [isAutoNoShowPromptVisible, setIsAutoNoShowPromptVisible] = useState(false);
+  const [overdueAppointment, setOverdueAppointment] = useState<Appointment | null>(null);
+  const [checkedAppointmentIds, setCheckedAppointmentIds] = useState<Set<number>>(new Set());
 
   // Rating detection state (SEPARATE FROM MAIN APPOINTMENTS)
   const [isRatingPopupShown, setIsRatingPopupShown] = useState(false);
@@ -654,6 +666,79 @@ export default function Bookings() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Check for overdue scheduled appointments (1+ day past scheduled date)
+  const checkForOverdueAppointments = () => {
+    console.log('=== CHECKING FOR OVERDUE APPOINTMENTS ===');
+    
+    // Skip if any modal is already open
+    if (isModalVisible || isBackjobModalVisible || isNoShowModalVisible || isAutoNoShowPromptVisible) {
+      console.log('Skipping overdue check - modal already open');
+      return;
+    }
+
+    const now = new Date();
+    console.log('Current time:', now.toISOString());
+
+    // Find scheduled appointments that are more than 1 day overdue
+    const overdueAppointments = bookings.filter(booking => {
+      // Only check Scheduled appointments
+      if (booking.status !== 'Scheduled') return false;
+      
+      // Skip if already checked
+      if (checkedAppointmentIds.has(booking.appointment_id)) return false;
+
+      const scheduledDate = new Date(booking.scheduled_date || booking.date || '');
+      const oneDayAfter = new Date(scheduledDate);
+      oneDayAfter.setDate(oneDayAfter.getDate() + 1);
+
+      const isOverdue = now > oneDayAfter;
+      
+      if (isOverdue) {
+        console.log('Found overdue appointment:', {
+          id: booking.appointment_id,
+          scheduledDate: scheduledDate.toISOString(),
+          oneDayAfter: oneDayAfter.toISOString(),
+          hoursOverdue: Math.floor((now.getTime() - oneDayAfter.getTime()) / (1000 * 60 * 60))
+        });
+      }
+
+      return isOverdue;
+    });
+
+    if (overdueAppointments.length > 0) {
+      console.log('=== FOUND OVERDUE APPOINTMENTS ===');
+      console.log('Total overdue:', overdueAppointments.length);
+      
+      // Show prompt for the first overdue appointment
+      const firstOverdue = overdueAppointments[0];
+      setOverdueAppointment(firstOverdue);
+      setIsAutoNoShowPromptVisible(true);
+      
+      // Mark as checked
+      setCheckedAppointmentIds(prev => new Set(prev).add(firstOverdue.appointment_id));
+    } else {
+      console.log('No overdue appointments found');
+    }
+  };
+
+  // Check for overdue appointments when bookings change
+  useEffect(() => {
+    if (bookings.length > 0) {
+      checkForOverdueAppointments();
+    }
+  }, [bookings]);
+
+  // Periodic check for overdue appointments every 5 minutes
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!isModalVisible && !isBackjobModalVisible && !isNoShowModalVisible && !isAutoNoShowPromptVisible) {
+        checkForOverdueAppointments();
+      }
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, [isModalVisible, isBackjobModalVisible, isNoShowModalVisible, isAutoNoShowPromptVisible, bookings, checkedAppointmentIds]);
+
   // Auto-scroll tab bar when active tab changes
   useEffect(() => {
     if (tabScrollRef.current) {
@@ -873,6 +958,7 @@ export default function Bookings() {
               service_title: finalServiceTitle,
               name: `${appointment.serviceProvider?.provider_first_name || ''} ${appointment.serviceProvider?.provider_last_name || ''}`.trim() || 'Service Provider',
               status: mapAppointmentStatus(appointment.appointment_status),
+              originalStatus: appointment.appointment_status, // Store original status
               statusColor: getStatusColor(appointment.appointment_status),
               date: appointment.scheduled_date,
               provider_first_name: appointment.serviceProvider?.provider_first_name,
@@ -956,6 +1042,8 @@ export default function Bookings() {
         case 'ongoing': return 'Ongoing'; // Added explicit 'ongoing' mapping
         case 'completed': return 'Completed';
         case 'cancelled': return 'Cancelled';
+        case 'provider_no_show': return 'Cancelled'; // Map to Cancelled tab
+        case 'provider-no-show': return 'Cancelled'; // Map to Cancelled tab
         case 'no-show': return 'Cancelled'; // Treat no-show as cancelled
         case 'no_show': return 'Cancelled'; // Handle underscore variant
         case 'pending': return 'Pending';
@@ -978,6 +1066,8 @@ export default function Bookings() {
     switch (status.toLowerCase()) {
       case 'completed': return '#228b22';
       case 'cancelled': return '#a20021';
+      case 'provider_no_show': return '#ff6b00'; // Orange color for provider no-show
+      case 'provider-no-show': return '#ff6b00'; // Orange color for provider no-show
       case 'no-show': return '#a20021'; // Same color as cancelled
       case 'no_show': return '#a20021'; // Handle underscore variant
       case 'in_progress': 
@@ -987,6 +1077,34 @@ export default function Bookings() {
       case 'pending': return '#9e9e9e';
       case 'in-warranty': return '#4caf50';
       case 'backjob': return '#ff6b35';
+    }
+  };
+
+  // Get display label for status (different from mapped status for tabs)
+  const getStatusDisplayLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'provider_no_show':
+      case 'provider-no-show':
+        return 'Provider No-Show';
+      case 'no-show':
+      case 'no_show':
+        return 'Customer No-Show';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'completed':
+        return 'Completed';
+      case 'in_progress':
+      case 'in-progress':
+      case 'ongoing':
+        return 'Ongoing';
+      case 'scheduled':
+        return 'Scheduled';
+      case 'in-warranty':
+        return 'In Warranty';
+      case 'backjob':
+        return 'Backjob';
+      default:
+        return status;
     }
   };
 
@@ -1264,6 +1382,224 @@ export default function Bookings() {
   // Handle backjob cancellation - show inline cancel form
   const handleCancelBackjob = async () => {
     setIsCancelBackjobVisible(true);
+  };
+
+  // Handle no-show photo selection
+  const handleNoShowPhotoSelection = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to upload evidence photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setNoShowPhoto(result.assets[0]);
+        Alert.alert('Success', 'Evidence photo selected!');
+      }
+    } catch (error) {
+      console.error('No-show photo selection error:', error);
+      Alert.alert('Error', 'Failed to select photo. Please try again.');
+    }
+  };
+
+  // Handle no-show report submission
+  const handleNoShowReport = async () => {
+    if (!noShowPhoto) {
+      Alert.alert('Photo Required', 'Please attach a photo as evidence of the no-show.');
+      return;
+    }
+    
+    if (!noShowDescription.trim()) {
+      Alert.alert('Description Required', 'Please provide a detailed description of what happened.');
+      return;
+    }
+
+    if (!selectedBooking) {
+      Alert.alert('Error', 'No appointment selected.');
+      return;
+    }
+
+    setNoShowLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please log in again.');
+        setNoShowLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      
+      // Add photo
+      const photoFile: any = {
+        uri: Platform.OS === 'ios' ? noShowPhoto.uri.replace('file://', '') : noShowPhoto.uri,
+        type: noShowPhoto.mimeType || 'image/jpeg',
+        name: noShowPhoto.fileName || `no-show-evidence-${Date.now()}.jpg`,
+      };
+      formData.append('evidence_photo', photoFile);
+      
+      // Add description
+      formData.append('description', noShowDescription.trim());
+
+      console.log('Submitting no-show report for appointment:', selectedBooking.appointment_id);
+      console.log('Using endpoint: POST /auth/appointments/:appointmentId/report-no-show');
+
+      const response = await fetch(
+        `${BACKEND_URL}/auth/appointments/${selectedBooking.appointment_id}/report-no-show`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        Alert.alert(
+          'No-Show Reported',
+          'Provider no-show has been reported successfully. Our team will review your report.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsNoShowModalVisible(false);
+                setNoShowPhoto(null);
+                setNoShowDescription('');
+                setIsModalVisible(false);
+                setSelectedBooking(null);
+                fetchAppointments(true);
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', result.message || 'Failed to report no-show. Please try again.');
+      }
+    } catch (error) {
+      console.error('No-show report error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    } finally {
+      setNoShowLoading(false);
+    }
+  };
+
+  // Handle auto-prompt no-show submission (when provider is overdue)
+  const handleAutoPromptNoShowReport = async () => {
+    if (!noShowPhoto) {
+      Alert.alert('Photo Required', 'Please attach a photo as evidence of the no-show.');
+      return;
+    }
+    
+    if (!noShowDescription.trim()) {
+      Alert.alert('Description Required', 'Please provide a detailed description of what happened.');
+      return;
+    }
+
+    if (!overdueAppointment) {
+      Alert.alert('Error', 'No appointment selected.');
+      return;
+    }
+
+    setNoShowLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please log in again.');
+        setNoShowLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      
+      // Add photo
+      const photoFile: any = {
+        uri: Platform.OS === 'ios' ? noShowPhoto.uri.replace('file://', '') : noShowPhoto.uri,
+        type: noShowPhoto.mimeType || 'image/jpeg',
+        name: noShowPhoto.fileName || `no-show-evidence-${Date.now()}.jpg`,
+      };
+      formData.append('evidence_photo', photoFile);
+      
+      // Add description
+      formData.append('description', noShowDescription.trim());
+
+      console.log('Submitting auto-prompt no-show report for appointment:', overdueAppointment.appointment_id);
+      console.log('Using endpoint: POST /auth/appointments/:appointmentId/report-no-show');
+
+      const response = await fetch(
+        `${BACKEND_URL}/auth/appointments/${overdueAppointment.appointment_id}/report-no-show`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        Alert.alert(
+          'No-Show Reported',
+          'Provider no-show has been reported successfully. Our team will review your report.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsAutoNoShowPromptVisible(false);
+                setNoShowPhoto(null);
+                setNoShowDescription('');
+                setOverdueAppointment(null);
+                fetchAppointments(true);
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', result.message || 'Failed to report no-show. Please try again.');
+      }
+    } catch (error) {
+      console.error('Auto-prompt no-show report error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    } finally {
+      setNoShowLoading(false);
+    }
+  };
+
+  // Handle dismissing the auto-prompt (maybe provider showed up late)
+  const handleDismissAutoPrompt = () => {
+    Alert.alert(
+      'Dismiss Reminder',
+      'Are you sure the provider showed up? This reminder won\'t appear again for this appointment.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Yes, Provider Showed Up',
+          onPress: () => {
+            setIsAutoNoShowPromptVisible(false);
+            setNoShowPhoto(null);
+            setNoShowDescription('');
+            setOverdueAppointment(null);
+          }
+        }
+      ]
+    );
   };
 
   // Handle cancel backjob with reason
@@ -1894,6 +2230,34 @@ export default function Bookings() {
                           </View>
                         )}
 
+                        {/* Show provider no-show indicator */}
+                        {(b.originalStatus?.toLowerCase() === 'provider_no_show' || b.originalStatus?.toLowerCase() === 'provider-no-show') && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginBottom: 8,
+                              backgroundColor: "#fff3cd",
+                              padding: 8,
+                              borderRadius: 8,
+                              borderLeftWidth: 3,
+                              borderLeftColor: "#ff6b00",
+                            }}
+                          >
+                            <Text style={{ fontSize: 16, marginRight: 6 }}>⚠️</Text>
+                            <Text
+                              style={{
+                                color: "#856404",
+                                fontSize: 12,
+                                fontWeight: "500",
+                                flex: 1,
+                              }}
+                            >
+                              Provider reported as no-show. The report is under review.
+                            </Text>
+                          </View>
+                        )}
+
                         <View
                           style={{
                             flexDirection: "row",
@@ -1916,7 +2280,7 @@ export default function Bookings() {
                                 fontWeight: "bold",
                               }}
                             >
-                              {b.status}
+                              {getStatusDisplayLabel(b.originalStatus || b.status)}
                             </Text>
                           </View>
 
@@ -2181,10 +2545,26 @@ export default function Bookings() {
                             Alert.alert('Select Reason', 'Please choose a cancellation reason.'); 
                             return; 
                           }
-                          
-                          setCancelLoading(true);
-                          try {
-                            console.log('=== CANCEL APPOINTMENT DEBUG ===');
+
+                          // Show Fix-Score warning before canceling
+                          Alert.alert(
+                            '⚠️ Fix-Score Warning',
+                            'Cancelling this appointment may result in penalty points being deducted from your Fix-Score, especially if cancelled within 24 hours of the scheduled time.\n\nAre you sure you want to continue?',
+                            [
+                              {
+                                text: 'No, Keep Booking',
+                                style: 'cancel',
+                                onPress: () => {
+                                  console.log('User cancelled the cancellation');
+                                }
+                              },
+                              {
+                                text: 'Yes, Cancel Booking',
+                                style: 'destructive',
+                                onPress: async () => {
+                                  setCancelLoading(true);
+                                  try {
+                                    console.log('=== CANCEL APPOINTMENT DEBUG ===');
                             console.log('Appointment ID:', selectedBooking.appointment_id);
                             console.log('Cancel reason:', cancelReason);
                             console.log('Cancel notes:', cancelNotes);
@@ -2247,13 +2627,17 @@ export default function Bookings() {
                                 }
                               ]
                             );
-                          } catch (e) {
-                            console.error('Cancel appointment error:', e);
-                            const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred';
-                            Alert.alert('Error', `Network error: ${errorMessage}. Please check your connection and try again.`);
-                          } finally {
-                            setCancelLoading(false);
-                          }
+                                  } catch (e) {
+                                    console.error('Cancel appointment error:', e);
+                                    const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred';
+                                    Alert.alert('Error', `Network error: ${errorMessage}. Please check your connection and try again.`);
+                                  } finally {
+                                    setCancelLoading(false);
+                                  }
+                                }
+                              }
+                            ]
+                          );
                         }} 
                         disabled={cancelLoading}
                       >
@@ -2303,6 +2687,72 @@ export default function Bookings() {
                   </Text>
                 </View>
               );
+            })()}
+
+            {/* Report No-Show section - for scheduled appointments past end time */}
+            {selectedBooking.status === "Scheduled" && (() => {
+              const now = new Date();
+              const sched = selectedBooking.scheduled_date ? new Date(selectedBooking.scheduled_date) : null;
+              
+              if (!sched) return null;
+              
+              // Calculate end time from slot_end_time or default to 2 hours after start
+              let appointmentEndTime = new Date(sched);
+              if (selectedBooking.slot_end_time) {
+                // Parse the time slot (format: "HH:MM:SS" or "HH:MM")
+                const endTimeParts = selectedBooking.slot_end_time.split(':');
+                appointmentEndTime.setHours(parseInt(endTimeParts[0]), parseInt(endTimeParts[1]), 0, 0);
+              } else {
+                // Default: 2 hours after scheduled time
+                appointmentEndTime.setHours(appointmentEndTime.getHours() + 2);
+              }
+              
+              // Check if current time is past the appointment end time
+              const canReportNoShow = now > appointmentEndTime;
+              
+              if (canReportNoShow) {
+                return (
+                  <View style={{ marginTop: 16 }}>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        console.log('🚨 Report No-Show button clicked!');
+                        console.log('Selected booking:', selectedBooking?.appointment_id);
+                        // Close the appointment details modal first
+                        setIsModalVisible(false);
+                        // Then open the no-show modal after a small delay
+                        setTimeout(() => {
+                          setIsNoShowModalVisible(true);
+                        }, 300);
+                      }}
+                      style={{ 
+                        backgroundColor: "#ff9500",
+                        paddingVertical: 12,
+                        borderRadius: 25,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{
+                        color: "white",
+                        fontSize: 18,
+                        fontWeight: "700",
+                      }}>
+                        Report Provider No-Show
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={{ 
+                      color: '#666', 
+                      fontSize: 12, 
+                      textAlign: 'center',
+                      marginTop: 8,
+                      fontStyle: 'italic'
+                    }}>
+                      Provider didn't show up? Report it with evidence.
+                    </Text>
+                  </View>
+                );
+              }
+              
+              return null;
             })()}
 
             {/* Actions section - only show for In Warranty bookings */}
@@ -2849,6 +3299,528 @@ export default function Bookings() {
           </TouchableOpacity>
             </TouchableOpacity>
           </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* No-Show Report Modal */}
+      <Modal
+        visible={isNoShowModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsNoShowModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderRadius: 20,
+              padding: 20,
+              width: '90%',
+              maxHeight: '80%',
+            }}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={{ 
+                  flexDirection: 'row', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: 20
+                }}>
+                  <Text style={{ 
+                    fontSize: 22, 
+                    fontWeight: 'bold',
+                    color: '#ff9500'
+                  }}>
+                    Report Provider No-Show
+                  </Text>
+                  <TouchableOpacity onPress={() => {
+                    setIsNoShowModalVisible(false);
+                    setNoShowPhoto(null);
+                    setNoShowDescription('');
+                  }}>
+                    <Ionicons name="close-circle" size={30} color="#999" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Info Text */}
+                <View style={{
+                  backgroundColor: '#fff3cd',
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 20,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#ff9500'
+                }}>
+                  <Text style={{ 
+                    fontSize: 14, 
+                    color: '#856404',
+                    lineHeight: 20
+                  }}>
+                    <Text style={{ fontWeight: 'bold' }}>Important:</Text> Only report if the provider did not show up for the scheduled appointment. Photo evidence and detailed description are required.
+                  </Text>
+                </View>
+
+                {/* Photo Upload Section */}
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '600', 
+                  marginBottom: 10,
+                  color: '#333'
+                }}>
+                  Evidence Photo <Text style={{ color: 'red' }}>*</Text>
+                </Text>
+                
+                <TouchableOpacity
+                  onPress={handleNoShowPhotoSelection}
+                  style={{
+                    backgroundColor: noShowPhoto ? '#e8f5e9' : '#f5f5f5',
+                    padding: 15,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: noShowPhoto ? '#4caf50' : '#ddd',
+                    borderStyle: 'dashed',
+                    alignItems: 'center',
+                    marginBottom: 15
+                  }}
+                >
+                  {noShowPhoto ? (
+                    <View style={{ alignItems: 'center' }}>
+                      <Image 
+                        source={{ uri: noShowPhoto.uri }} 
+                        style={{ 
+                          width: 200, 
+                          height: 200, 
+                          borderRadius: 10,
+                          marginBottom: 10
+                        }} 
+                      />
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="checkmark-circle" size={20} color="#4caf50" />
+                        <Text style={{ 
+                          color: '#4caf50', 
+                          fontSize: 14,
+                          fontWeight: '600',
+                          marginLeft: 5
+                        }}>
+                          Photo Selected
+                        </Text>
+                      </View>
+                      <Text style={{ 
+                        color: '#666', 
+                        fontSize: 12,
+                        marginTop: 5
+                      }}>
+                        Tap to change photo
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ alignItems: 'center' }}>
+                      <Ionicons name="camera-outline" size={40} color="#999" />
+                      <Text style={{ 
+                        color: '#666', 
+                        fontSize: 14,
+                        marginTop: 10,
+                        fontWeight: '500'
+                      }}>
+                        Tap to select evidence photo
+                      </Text>
+                      <Text style={{ 
+                        color: '#999', 
+                        fontSize: 12,
+                        marginTop: 5,
+                        textAlign: 'center'
+                      }}>
+                        Required: Photo showing timestamp or proof of no-show
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Description Section */}
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '600', 
+                  marginBottom: 10,
+                  color: '#333'
+                }}>
+                  Description <Text style={{ color: 'red' }}>*</Text>
+                </Text>
+                
+                <TextInput
+                  value={noShowDescription}
+                  onChangeText={setNoShowDescription}
+                  placeholder="Describe what happened in detail...&#10;&#10;Include:&#10;- What time you waited until&#10;- Attempts to contact the provider&#10;- Any other relevant details"
+                  multiline
+                  numberOfLines={6}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#ddd',
+                    borderRadius: 10,
+                    padding: 12,
+                    fontSize: 14,
+                    textAlignVertical: 'top',
+                    backgroundColor: '#fafafa',
+                    marginBottom: 20
+                  }}
+                />
+
+                {/* Action Buttons */}
+                <TouchableOpacity
+                  onPress={handleNoShowReport}
+                  disabled={noShowLoading || !noShowPhoto || !noShowDescription.trim()}
+                  style={{
+                    backgroundColor: (noShowLoading || !noShowPhoto || !noShowDescription.trim()) 
+                      ? '#ccc' 
+                      : '#ff9500',
+                    paddingVertical: 15,
+                    borderRadius: 25,
+                    alignItems: 'center',
+                    marginBottom: 10
+                  }}
+                >
+                  {noShowLoading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={{
+                      color: 'white',
+                      fontSize: 18,
+                      fontWeight: '700',
+                    }}>
+                      Submit Report
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsNoShowModalVisible(false);
+                    setNoShowPhoto(null);
+                    setNoShowDescription('');
+                  }}
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    paddingVertical: 15,
+                    borderRadius: 25,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    color: '#666',
+                    fontSize: 16,
+                    fontWeight: '600',
+                  }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Helper Text */}
+                <Text style={{
+                  fontSize: 12,
+                  color: '#999',
+                  textAlign: 'center',
+                  marginTop: 15,
+                  fontStyle: 'italic'
+                }}>
+                  Provider will receive a penalty if the no-show is verified.
+                </Text>
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Auto-Prompt No-Show Modal (for overdue scheduled appointments) */}
+      <Modal
+        visible={isAutoNoShowPromptVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => handleDismissAutoPrompt()}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderRadius: 20,
+              padding: 20,
+              width: '90%',
+              maxHeight: '85%',
+            }}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header with Alert Icon */}
+                <View style={{ 
+                  alignItems: 'center',
+                  marginBottom: 20
+                }}>
+                  <View style={{
+                    backgroundColor: '#fff3cd',
+                    borderRadius: 50,
+                    width: 80,
+                    height: 80,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 15
+                  }}>
+                    <Ionicons name="alert-circle" size={50} color="#ff9500" />
+                  </View>
+                  <Text style={{ 
+                    fontSize: 24, 
+                    fontWeight: 'bold',
+                    color: '#ff9500',
+                    textAlign: 'center'
+                  }}>
+                    Provider Didn't Show Up?
+                  </Text>
+                </View>
+
+                {/* Appointment Info */}
+                {overdueAppointment && (
+                  <View style={{
+                    backgroundColor: '#f8f9fa',
+                    padding: 15,
+                    borderRadius: 12,
+                    marginBottom: 20
+                  }}>
+                    <Text style={{ 
+                      fontSize: 16, 
+                      fontWeight: '600',
+                      color: '#333',
+                      marginBottom: 8
+                    }}>
+                      Scheduled Appointment:
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                      📅 {new Date(overdueAppointment.scheduled_date || overdueAppointment.date || '').toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </Text>
+                    {overdueAppointment.slot_start_time && (
+                      <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                        ⏰ {overdueAppointment.slot_start_time} - {overdueAppointment.slot_end_time}
+                      </Text>
+                    )}
+                    <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                      👤 {overdueAppointment.name}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#666' }}>
+                      🔧 {overdueAppointment.service_title || overdueAppointment.type}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Explanation Text */}
+                <View style={{
+                  backgroundColor: '#e3f2fd',
+                  padding: 15,
+                  borderRadius: 10,
+                  marginBottom: 20,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#2196f3'
+                }}>
+                  <Text style={{ 
+                    fontSize: 14, 
+                    color: '#1565c0',
+                    lineHeight: 20
+                  }}>
+                    It's been more than 24 hours since your scheduled appointment. If the provider didn't show up, please file a no-show report so we can take appropriate action.
+                  </Text>
+                </View>
+
+                {/* Photo Upload Section */}
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '600', 
+                  marginBottom: 10,
+                  color: '#333'
+                }}>
+                  Evidence Photo <Text style={{ color: 'red' }}>*</Text>
+                </Text>
+                
+                <TouchableOpacity
+                  onPress={handleNoShowPhotoSelection}
+                  style={{
+                    backgroundColor: noShowPhoto ? '#e8f5e9' : '#f5f5f5',
+                    padding: 15,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: noShowPhoto ? '#4caf50' : '#ddd',
+                    borderStyle: 'dashed',
+                    alignItems: 'center',
+                    marginBottom: 15
+                  }}
+                >
+                  {noShowPhoto ? (
+                    <View style={{ alignItems: 'center' }}>
+                      <Image 
+                        source={{ uri: noShowPhoto.uri }} 
+                        style={{ 
+                          width: 180, 
+                          height: 180, 
+                          borderRadius: 10,
+                          marginBottom: 10
+                        }} 
+                      />
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="checkmark-circle" size={20} color="#4caf50" />
+                        <Text style={{ 
+                          color: '#4caf50', 
+                          fontSize: 14,
+                          fontWeight: '600',
+                          marginLeft: 5
+                        }}>
+                          Photo Selected
+                        </Text>
+                      </View>
+                      <Text style={{ 
+                        color: '#666', 
+                        fontSize: 12,
+                        marginTop: 5
+                      }}>
+                        Tap to change photo
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ alignItems: 'center' }}>
+                      <Ionicons name="camera-outline" size={40} color="#999" />
+                      <Text style={{ 
+                        color: '#666', 
+                        fontSize: 14,
+                        marginTop: 10,
+                        fontWeight: '500'
+                      }}>
+                        Tap to select evidence photo
+                      </Text>
+                      <Text style={{ 
+                        color: '#999', 
+                        fontSize: 12,
+                        marginTop: 5,
+                        textAlign: 'center'
+                      }}>
+                        Photo showing timestamp or proof of no-show
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Description Section */}
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '600', 
+                  marginBottom: 10,
+                  color: '#333'
+                }}>
+                  What Happened? <Text style={{ color: 'red' }}>*</Text>
+                </Text>
+                
+                <TextInput
+                  value={noShowDescription}
+                  onChangeText={setNoShowDescription}
+                  placeholder="Describe the situation...&#10;&#10;Examples:&#10;- Waited until [time] but provider never arrived&#10;- Called/messaged but got no response&#10;- Provider confirmed but didn't show"
+                  multiline
+                  numberOfLines={5}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#ddd',
+                    borderRadius: 10,
+                    padding: 12,
+                    fontSize: 14,
+                    textAlignVertical: 'top',
+                    backgroundColor: '#fafafa',
+                    marginBottom: 20
+                  }}
+                />
+
+                {/* Action Buttons */}
+                <TouchableOpacity
+                  onPress={handleAutoPromptNoShowReport}
+                  disabled={noShowLoading || !noShowPhoto || !noShowDescription.trim()}
+                  style={{
+                    backgroundColor: (noShowLoading || !noShowPhoto || !noShowDescription.trim()) 
+                      ? '#ccc' 
+                      : '#ff9500',
+                    paddingVertical: 16,
+                    borderRadius: 25,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    shadowColor: '#ff9500',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 5
+                  }}
+                >
+                  {noShowLoading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="flag" size={20} color="white" style={{ marginRight: 8 }} />
+                      <Text style={{
+                        color: 'white',
+                        fontSize: 18,
+                        fontWeight: '700',
+                      }}>
+                        Report No-Show
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleDismissAutoPrompt}
+                  style={{
+                    backgroundColor: '#e8f5e9',
+                    paddingVertical: 14,
+                    borderRadius: 25,
+                    alignItems: 'center',
+                    marginBottom: 10,
+                    borderWidth: 1,
+                    borderColor: '#4caf50'
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4caf50" style={{ marginRight: 8 }} />
+                    <Text style={{
+                      color: '#4caf50',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}>
+                      Provider Showed Up
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Helper Text */}
+                <Text style={{
+                  fontSize: 12,
+                  color: '#999',
+                  textAlign: 'center',
+                  marginTop: 10,
+                  fontStyle: 'italic',
+                  lineHeight: 18
+                }}>
+                  Filing a false report may result in penalties. Only report if the provider genuinely didn't show up for the scheduled appointment.
+                </Text>
+              </ScrollView>
+            </View>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
 

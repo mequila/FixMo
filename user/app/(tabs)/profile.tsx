@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Text, 
   View, 
@@ -53,6 +53,58 @@ const Profile = () => {
     
     loadCustomerData();
   }, []);
+
+  // Background check for activation status - runs every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const checkActivationStatus = async () => {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (!token || !isActive) return;
+
+          // Make API request to check current activation status
+          const response = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.data) {
+              // Check if account is deactivated
+              const isDeactivated = result.data.is_activated === false || result.data.account_status === 'deactivated';
+              
+              if (isDeactivated && !showDeactivatedModal) {
+                console.log('Background check: Account is deactivated');
+                setShowDeactivatedModal(true);
+              }
+              
+              // Update customer data if needed
+              setCustomerData(result.data);
+            }
+          }
+        } catch (error) {
+          console.error('Background activation check error:', error);
+        }
+      };
+
+      // Check immediately when screen comes into focus
+      checkActivationStatus();
+
+      // Set up interval to check every 30 seconds while on this screen
+      const intervalId = setInterval(checkActivationStatus, 30000);
+
+      return () => {
+        isActive = false;
+        clearInterval(intervalId);
+      };
+    }, [showDeactivatedModal])
+  );
 
   const loadCustomerData = async () => {
     try {
@@ -247,9 +299,9 @@ const Profile = () => {
         </TouchableOpacity>
       )}
 
-        <ProfileCard
-          label="Edit Profile"
-          iconName="create-outline"
+      <ProfileCard
+        label="Edit Profile"
+        iconName="create-outline"
         onPress={() => router.push("/editprofile")}
       />
 
@@ -274,13 +326,6 @@ const Profile = () => {
 
 
       <ProfileCard
-        label="Contact Us"
-        iconName="mail-outline"
-        onPress={() => router.push("/contactUs")}
-      />
-
-
-      <ProfileCard
         label="Terms and Conditions"
         iconName="book-outline"
         onPress={() => router.push("/termsConditions")}
@@ -294,9 +339,7 @@ const Profile = () => {
         label="Logout"
         iconName="log-out-outline"
         onPress={handleLogout}
-      />
-      
-      </ScrollView>
+      />      </ScrollView>
 
       {/* Deactivated Account Modal */}
       <Modal
@@ -345,8 +388,8 @@ const Profile = () => {
               color: '#666',
               lineHeight: 24,
             }}>
-              Your account has been deactivated by an administrator. 
-              Please contact customer service for assistance.
+              Your account has been deactivated due to your Fix-Score falling below 50 points. 
+              Please report your issue or email the admin for review and reactivation.
             </Text>
 
             <View style={{
@@ -363,7 +406,7 @@ const Profile = () => {
                 fontStyle: 'italic',
                 textAlign: 'center',
               }}>
-                You will not be able to book appointments or access certain features until your account is reactivated.
+                You cannot book appointments or access certain features until your account is reactivated. Contact support to appeal.
               </Text>
             </View>
             
@@ -375,7 +418,7 @@ const Profile = () => {
               <TouchableOpacity 
                 onPress={() => {
                   setShowDeactivatedModal(false);
-                  router.push('/contactUs');
+                  router.push('/report');
                 }}
                 style={{
                   flex: 1,
@@ -390,7 +433,7 @@ const Profile = () => {
                   color: 'white',
                   fontWeight: '600',
                 }}>
-                  Contact Support
+                  Report Issue
                 </Text>
               </TouchableOpacity>
               

@@ -105,12 +105,8 @@ export default function Splash() {
                     // Continue with normal login flow if profile check fails
                 }
 
-                Alert.alert("Success", "Login successful!", [
-                    {
-                        text: "OK",
-                        onPress: () => router.replace("/(tabs)"),
-                    },
-                ]);
+                // Navigate directly without alert
+                router.replace("/(tabs)");
             } else {
                 Alert.alert(
                     "Login Failed",

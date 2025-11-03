@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReVerificationModal from './components/ReVerificationModal';
 import SlotSelector from './components/SlotSelector';
 import { TimeSlot } from '../utils/slotService';
-import { canCreateBooking } from '../utils/penaltyHelpers';
+import { canCreateBooking, getBookingLimit } from '../utils/penaltyHelpers';
 import { getPenaltyInfo } from '../utils/penaltyService';
 
 // Get backend URL from environment variables
@@ -178,6 +178,10 @@ export default function profile_serviceprovider() {
   } | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [showSlotSelector, setShowSlotSelector] = useState(false);
+  const [penaltyInfo, setPenaltyInfo] = useState<{
+    penalty_points: number;
+    is_suspended: boolean;
+  } | null>(null);
 
   // Calculate total images for pagination
   const getTotalImages = () => {
@@ -203,7 +207,22 @@ export default function profile_serviceprovider() {
     fetchAllData();
     fetchCustomerProfile();
     checkBookingAvailability();
+    fetchPenaltyInfo();
   }, [serviceId, providerId, category, availabilityId]);
+
+  const fetchPenaltyInfo = async () => {
+    try {
+      const result = await getPenaltyInfo();
+      if (result.success && result.data) {
+        setPenaltyInfo({
+          penalty_points: result.data.penalty_points,
+          is_suspended: result.data.is_suspended,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching penalty info:', error);
+    }
+  };
 
   const fetchCustomerProfile = async () => {
     try {
@@ -291,14 +310,21 @@ export default function profile_serviceprovider() {
       return;
     }
 
-    // Check booking limit - customer can only have 3 scheduled appointments
-    if (bookingAvailability && !bookingAvailability.canBook) {
-      Alert.alert(
-        'Booking Limit Reached',
-        `You have reached the maximum of ${bookingAvailability.maxAllowed} scheduled appointments. You currently have ${bookingAvailability.scheduledCount} scheduled appointments.\n\nPlease wait for one of your appointments to be completed, cancelled, or in-progress before booking again.`,
-        [{ text: 'OK' }]
-      );
-      return;
+    // Check booking limit using penalty-based limits
+    if (bookingAvailability) {
+      const penaltyPoints = penaltyInfo?.penalty_points ?? 100;
+      const maxLimit = getBookingLimit(penaltyPoints, 'customer') ?? 3;
+      const currentCount = bookingAvailability.scheduledCount;
+      const canBook = currentCount < maxLimit;
+      
+      if (!canBook) {
+        Alert.alert(
+          'Booking Limit Reached',
+          `You have reached the maximum of ${maxLimit} scheduled appointment${maxLimit !== 1 ? 's' : ''}. You currently have ${currentCount} scheduled appointment${currentCount !== 1 ? 's' : ''}.\n\nPlease wait for one of your appointments to be completed, cancelled, or in-progress before booking again.${penaltyPoints < 71 ? '\n' : ''}`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
     }
 
     // Validate selected date is within 15 days
@@ -678,6 +704,7 @@ export default function profile_serviceprovider() {
     await fetchAllData();
     await fetchCustomerProfile();
     await checkBookingAvailability();
+    await fetchPenaltyInfo();
     setRefreshing(false);
   };
 
@@ -1408,25 +1435,48 @@ export default function profile_serviceprovider() {
                       color={bookingAvailability.canBook ? "#2e7d32" : "#c62828"} 
                     />
                     <View style={{ marginLeft: 8, flex: 1 }}>
-                      <Text style={{
-                        fontSize: 12,
-                        color: bookingAvailability.canBook ? "#2e7d32" : "#c62828",
-                        fontWeight: "600"
-                      }}>
-                        {bookingAvailability.canBook 
-                          ? `Available Slots: ${bookingAvailability.availableSlots}/${bookingAvailability.maxAllowed}`
-                          : `Booking Limit Reached (${bookingAvailability.scheduledCount}/${bookingAvailability.maxAllowed})`
-                        }
-                      </Text>
-                      {bookingAvailability.canBook ? (
-                        <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
-                          You can book {bookingAvailability.availableSlots} more {bookingAvailability.availableSlots === 1 ? 'appointment' : 'appointments'}
-                        </Text>
-                      ) : (
-                        <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
-                          Complete or cancel an appointment to book more
-                        </Text>
-                      )}
+                      {/* Calculate dynamic limits based on penalty points */}
+                      {(() => {
+                        const penaltyPoints = penaltyInfo?.penalty_points ?? 100;
+                        const maxLimit = getBookingLimit(penaltyPoints, 'customer') ?? 3;
+                        const currentCount = bookingAvailability.scheduledCount;
+                        const availableSlots = Math.max(0, maxLimit - currentCount);
+                        const canBook = availableSlots > 0;
+                        
+                        return (
+                          <>
+                            <Text style={{
+                              fontSize: 12,
+                              color: canBook ? "#2e7d32" : "#c62828",
+                              fontWeight: "600"
+                            }}>
+                              {canBook
+                                ? `Available Slots: ${availableSlots}/${maxLimit}`
+                                : `Booking Limit Reached (${currentCount}/${maxLimit})`
+                              }
+                            </Text>
+                            {canBook ? (
+                              <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                                You can book {availableSlots} more {availableSlots === 1 ? 'appointment' : 'appointments'}
+                              </Text>
+                            ) : (
+                              <Text style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                                Complete or cancel an appointment to book more
+                              </Text>
+                            )}
+                            {penaltyPoints < 71 && (
+                              <Text style={{ 
+                                fontSize: 10, 
+                                color: "#856404",
+                                marginTop: 4,
+                                fontStyle: 'italic'
+                              }}>
+                              Fix-Score: {penaltyPoints}/100 - Your booking capacity is limited. Improve your Fix-Score to increase your booking limit.
+                              </Text>
+                            )}
+                          </>
+                        );
+                      })()}
                     </View>
                     <TouchableOpacity 
                       onPress={checkBookingAvailability}

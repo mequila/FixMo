@@ -146,6 +146,7 @@ const ServiceProvider = () => {
 
   const fetchServiceProviders = async () => {
     try {
+      setLoading(true); // Show loading indicator
       setShowDistanceWarning(false); // Reset warning flag
       const token = await AsyncStorage.getItem('token');
       
@@ -155,16 +156,19 @@ const ServiceProvider = () => {
       
       if (!token) {
         Alert.alert('Error', 'Please login first');
+        setLoading(false);
         return;
       }
 
       if (!serviceTitle) {
         setProviders([]);
+        setLoading(false);
         return;
       }
 
       if (!selectedDate) {
         setProviders([]);
+        setLoading(false);
         return;
       }
 
@@ -422,6 +426,14 @@ const ServiceProvider = () => {
                 <Ionicons name="calendar-outline" size={20} color="#399d9d" style={{ marginLeft: 8 }} />
               </View>
             </TouchableOpacity>
+            
+            {/* Loading indicator for date changes */}
+            {loading && selectedDate && (
+              <View style={styles.loadingIndicatorSmall}>
+                <ActivityIndicator size="small" color="#399d9d" />
+                <Text style={styles.loadingTextSmall}>Loading available providers...</Text>
+              </View>
+            )}
             
             {/* Distance Filter - Compact inline version */}
             <View style={styles.distanceFilterInline}>
@@ -718,6 +730,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+  },
+  loadingIndicatorSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f0f9f9',
+    borderRadius: 8,
+  },
+  loadingTextSmall: {
+    fontSize: 13,
+    color: '#399d9d',
+    marginLeft: 8,
+    fontWeight: '500',
   },
   providerCard: {
     marginHorizontal: 20,

@@ -19,7 +19,7 @@ import {
   getPenaltyInfo,
   getViolationHistory,
   getRewardStats,
-  submitAppeal,
+  getRestorationHistory,
 } from '../utils/penaltyService';
 import { useRouter } from 'expo-router';
 import { getStatusText, getStatusColor } from '../utils/penaltyHelpers';
@@ -30,13 +30,11 @@ const PenaltyScorePage = () => {
   const [violations, setViolations] = useState<any[]>([]);
   const [filteredViolations, setFilteredViolations] = useState<any[]>([]);
   const [rewardStats, setRewardStats] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]); // Combined violations and restorations
+  const [filteredHistory, setFilteredHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [appealModalVisible, setAppealModalVisible] = useState(false);
   const [infoModalVisible, setInfoModalVisible] = useState(false);
-  const [selectedViolation, setSelectedViolation] = useState<any>(null);
-  const [appealReason, setAppealReason] = useState('');
-  const [submittingAppeal, setSubmittingAppeal] = useState(false);
   const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | '90days'>('all');
 
   const userType = 'customer'; // This could come from user context/profile
@@ -47,11 +45,11 @@ const PenaltyScorePage = () => {
 
   useEffect(() => {
     filterViolationsByDate();
-  }, [violations, dateFilter]);
+  }, [history, dateFilter]);
 
   const filterViolationsByDate = () => {
     if (dateFilter === 'all') {
-      setFilteredViolations(violations);
+      setFilteredHistory(history);
       return;
     }
 
@@ -71,17 +69,18 @@ const PenaltyScorePage = () => {
     }
 
     const cutoffDate = new Date(now.setDate(now.getDate() - daysAgo));
-    const filtered = violations.filter(v => new Date(v.created_at) >= cutoffDate);
-    setFilteredViolations(filtered);
+    const filtered = history.filter(item => new Date(item.created_at) >= cutoffDate);
+    setFilteredHistory(filtered);
   };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [infoRes, violationsRes, rewardsRes] = await Promise.all([
+      const [infoRes, violationsRes, rewardsRes, restorationsRes] = await Promise.all([
         getPenaltyInfo(),
         getViolationHistory(),
         getRewardStats(),
+        getRestorationHistory(),
       ]);
 
       console.log('Penalty Info Response:', infoRes);
@@ -89,8 +88,60 @@ const PenaltyScorePage = () => {
         setPenaltyInfo(infoRes.data);
         console.log('Penalty Info Set:', infoRes.data);
       }
-      if (violationsRes.success) setViolations(violationsRes.data.violations || []);
-      if (rewardsRes.success) setRewardStats(rewardsRes.data);
+      
+      // Process violations
+      const violationsList = violationsRes.success ? (violationsRes.data.violations || []) : [];
+      setViolations(violationsList);
+      console.log('📊 Violations count:', violationsList.length);
+      console.log('📊 Sample violation:', violationsList[0]);
+      
+      // Check if violations list includes any restorations (points with positive values)
+      // Some backends might return restorations as part of violations with different status
+      const actualViolations = violationsList.filter((v: any) => {
+        const points = v.penalty_points_deducted || v.points_deducted || v.penalty_points || v.points || 0;
+        return points > 0; // Only keep actual violations (deductions)
+      });
+      
+      const inlineRestorations = violationsList.filter((v: any) => {
+        const points = v.penalty_points_deducted || v.points_deducted || v.penalty_points || v.points || 0;
+        return points < 0; // Negative points might indicate restoration
+      }).map((v: any) => ({
+        ...v,
+        type: 'restoration',
+        points_restored: Math.abs(v.penalty_points_deducted || v.points_deducted || v.penalty_points || v.points || 0)
+      }));
+      
+      console.log('📊 Actual violations:', actualViolations.length);
+      console.log('📊 Inline restorations found:', inlineRestorations.length);
+      
+      // Process restorations
+      console.log('✅ Restorations Response Full:', JSON.stringify(restorationsRes, null, 2));
+      console.log('✅ Restorations success flag:', restorationsRes.success);
+      console.log('✅ Restorations error:', restorationsRes.error);
+      
+      const restorationsList = restorationsRes.success ? (restorationsRes.data || []) : [];
+      console.log('✅ Restorations list after processing:', restorationsList);
+      console.log('✅ Restorations count:', restorationsList.length);
+      console.log('✅ Restorations data sample:', restorationsList[0]);
+      
+      console.log('🧪 Using real backend data');
+      
+      // Combine and mark the type for each record
+      const combinedHistory = [
+        ...actualViolations.map((v: any) => ({ ...v, type: 'violation' })),
+        ...inlineRestorations,
+        ...restorationsList.map((r: any) => ({ ...r, type: 'restoration' }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      console.log('📋 Combined history count:', combinedHistory.length);
+      console.log('📋 Combined history sample:', combinedHistory.slice(0, 3));
+      
+      setHistory(combinedHistory);
+      
+      if (rewardsRes.success) {
+        setRewardStats(rewardsRes.data);
+        console.log('🎁 Rewards data:', rewardsRes.data);
+      }
     } catch (error) {
       console.error('Error loading penalty data:', error);
       Alert.alert('Error', 'Failed to load penalty information');
@@ -105,24 +156,12 @@ const PenaltyScorePage = () => {
     setRefreshing(false);
   };
 
-  const handleAppealSubmit = async () => {
-    if (appealReason.trim().length < 10) {
-      Alert.alert('Error', 'Appeal reason must be at least 10 characters');
-      return;
-    }
-
-    setSubmittingAppeal(true);
-    const result = await submitAppeal(selectedViolation.violation_id, appealReason);
-    setSubmittingAppeal(false);
-    
-    if (result.success) {
-      Alert.alert('Success', 'Appeal submitted successfully');
-      setAppealModalVisible(false);
-      setAppealReason('');
-      handleRefresh();
-    } else {
-      Alert.alert('Error', result.error || 'Failed to submit appeal');
-    }
+  // Test function to manually check adjustments endpoint
+  const testAdjustmentsEndpoint = async () => {
+    console.log('🧪 Testing adjustments endpoint manually...');
+    const result = await getRestorationHistory();
+    console.log('🧪 Test result:', result);
+    Alert.alert('Test Result', `Success: ${result.success}\nData count: ${result.data?.length || 0}\n\nCheck console for details`);
   };
 
   const handleContactAdmin = () => {
@@ -179,22 +218,39 @@ const PenaltyScorePage = () => {
                 {getStatusText(penaltyInfo?.penalty_points || 100, penaltyInfo?.is_suspended || false)}
               </Text>
             </View>
+            
+            {/* Status Description */}
+            <StatusDescription 
+              points={penaltyInfo?.penalty_points || 100} 
+              isSuspended={penaltyInfo?.is_suspended || false}
+              userType={userType}
+            />
+            
             {penaltyInfo?.last_updated && (
               <Text style={styles.lastUpdated}>
                 Last updated: {new Date(penaltyInfo.last_updated).toLocaleDateString()}
               </Text>
             )}
             {penaltyInfo?.is_suspended && (
-              <View style={styles.suspendedBanner}>
-                <Ionicons name="warning" size={20} color="#DC2626" />
-                <Text style={styles.suspendedText}>Account Suspended</Text>
+              <View style={styles.suspendedBannerContainer}>
+                <View style={styles.suspendedBanner}>
+                  <Ionicons name="warning" size={20} color="#DC2626" />
+                  <Text style={styles.suspendedText}>Account Deactivated</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.reportButton}
+                  onPress={() => router.push('/report')}
+                >
+                  <Ionicons name="document-text-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.reportButtonText}>Report or Appeal</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
 
-          {/* Violation History Section */}
+          {/* Points History Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Violation History</Text>
+            <Text style={styles.sectionTitle}>Points History</Text>
             
             {/* Date Filter Buttons */}
             <View style={styles.filterContainer}>
@@ -224,92 +280,32 @@ const PenaltyScorePage = () => {
               </TouchableOpacity>
             </View>
 
-            {filteredViolations.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>✨ No violations found</Text>
+                <Text style={styles.emptyStateText}>✨ No history found</Text>
                 <Text style={styles.emptyStateSubtext}>
-                  {dateFilter === 'all' ? 'Keep up the good work!' : 'No violations in this period'}
+                  {dateFilter === 'all' ? 'Keep up the good work!' : 'No records in this period'}
                 </Text>
               </View>
             ) : (
-              filteredViolations.map((violation) => (
-                <ViolationCard
-                  key={violation.violation_id}
-                  violation={violation}
-                  onAppeal={() => {
-                    setSelectedViolation(violation);
-                    setAppealModalVisible(true);
-                  }}
-                />
+              filteredHistory.map((item, index) => (
+                item.type === 'restoration' ? (
+                  <RestorationCard
+                    key={`restoration-${item.adjustment_id || index}`}
+                    restoration={item}
+                  />
+                ) : (
+                  <ViolationCard
+                    key={`violation-${item.violation_id || index}`}
+                    violation={item}
+                  />
+                )
               ))
             )}
           </View>
 
-          {/* How to Improve Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💪 How to Improve Your Score</Text>
-            <View style={styles.tipsCard}>
-              <TipItem text="Complete bookings to earn +5 points each" />
-              <TipItem text="Leave 5-star ratings to earn +5 points" />
-              <TipItem text="Don't cancel appointments late (< 24 hours)" />
-              <TipItem text="Show up to scheduled appointments" />
-              <TipItem text="Be respectful to service providers" />
-            </View>
-          </View>
-
           <View style={{ height: 40 }} />
         </ScrollView>
-
-        {/* Appeal Modal */}
-        <Modal
-          visible={appealModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setAppealModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Submit Appeal</Text>
-              <Text style={styles.modalSubtitle}>
-                Violation: {selectedViolation?.violation_type?.violation_name}
-              </Text>
-
-              <TextInput
-                style={styles.appealInput}
-                placeholder="Explain why this violation should be reversed... (min 10 characters)"
-                multiline
-                numberOfLines={6}
-                value={appealReason}
-                onChangeText={setAppealReason}
-                textAlignVertical="top"
-              />
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => {
-                    setAppealModalVisible(false);
-                    setAppealReason('');
-                  }}
-                  disabled={submittingAppeal}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.submitButton]}
-                  onPress={handleAppealSubmit}
-                  disabled={submittingAppeal}
-                >
-                  {submittingAppeal ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.submitButtonText}>Submit Appeal</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
 
         {/* Fix-Score Info Modal */}
         <Modal
@@ -333,7 +329,7 @@ const PenaltyScorePage = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#D1FAE5' }]}>
                     <Text style={[styles.tierBadgeText, { color: '#065F46' }]}>100-81 Points</Text>
                   </View>
-                  <Text style={styles.tierTitle}>✅ Good Standing</Text>
+                  <Text style={styles.tierTitle}>Good Standing</Text>
                   <Text style={styles.tierDescription}>
                     Your account is in excellent condition. You have full access to all booking features without any restrictions. Keep up the good work!
                   </Text>
@@ -346,7 +342,7 @@ const PenaltyScorePage = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#FEF3C7' }]}>
                     <Text style={[styles.tierBadgeText, { color: '#92400E' }]}>80-71 Points</Text>
                   </View>
-                  <Text style={styles.tierTitle}>⚠️ At Risk</Text>
+                  <Text style={styles.tierTitle}>At Risk</Text>
                   <Text style={styles.tierDescription}>
                     Your account has entered the warning level. You'll receive notifications reminding you to avoid late cancellations or no-shows.
                   </Text>
@@ -359,7 +355,7 @@ const PenaltyScorePage = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#FED7AA' }]}>
                     <Text style={[styles.tierBadgeText, { color: '#9A3412' }]}>70-61 Points</Text>
                   </View>
-                  <Text style={styles.tierTitle}>🔶 Limited Access</Text>
+                  <Text style={styles.tierTitle}>Limited Access</Text>
                   <Text style={styles.tierDescription}>
                     Your privileges are now limited due to repeated violations. Improve your score to regain full access.
                   </Text>
@@ -372,7 +368,7 @@ const PenaltyScorePage = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#FECACA' }]}>
                     <Text style={[styles.tierBadgeText, { color: '#991B1B' }]}>60-51 Points</Text>
                   </View>
-                  <Text style={styles.tierTitle}>🚫 Restricted</Text>
+                  <Text style={styles.tierTitle}>Restricted</Text>
                   <Text style={styles.tierDescription}>
                     Serious warning! Your booking access is severely limited. Continued violations may result in account suspension.
                   </Text>
@@ -385,7 +381,7 @@ const PenaltyScorePage = () => {
                   <View style={[styles.tierBadge, { backgroundColor: '#FEE2E2' }]}>
                     <Text style={[styles.tierBadgeText, { color: '#7F1D1D' }]}>≤50 Points</Text>
                   </View>
-                  <Text style={styles.tierTitle}>❌ Account Deactivated</Text>
+                  <Text style={styles.tierTitle}>Account Deactivated</Text>
                   <Text style={styles.tierDescription}>
                     Your account has been automatically deactivated. You must contact the admin for review or appeal before reactivation.
                   </Text>
@@ -394,7 +390,7 @@ const PenaltyScorePage = () => {
                 </View>
 
                 <View style={styles.infoTipsBox}>
-                  <Text style={styles.infoTipsTitle}>💡 How to Improve Your Score:</Text>
+                  <Text style={styles.infoTipsTitle}>How to Improve Your Score:</Text>
                   <Text style={styles.infoTip}>• Complete bookings on time (+5 points each)</Text>
                   <Text style={styles.infoTip}>• Receive good ratings (+5 points per 5-star)</Text>
                   <Text style={styles.infoTip}>• Avoid late cancellations (&lt; 24 hours)</Text>
@@ -417,6 +413,64 @@ const PenaltyScorePage = () => {
 };
 
 // Helper Components
+const StatusDescription = ({ points, isSuspended, userType }: { points: number; isSuspended: boolean; userType: 'customer' | 'provider' }) => {
+  const getDescription = () => {
+    if (isSuspended || points <= 50) {
+      return {
+        icon: '❌',
+        text: 'Your account is deactivated. Contact admin support for reactivation.',
+        bgColor: '#FEE2E2',
+        textColor: '#991B1B',
+      };
+    }
+    if (points >= 81) {
+      return {
+        icon: '✅',
+        text: 'No restrictions. Full access to all booking features.',
+        bgColor: '#D1FAE5',
+        textColor: '#065F46',
+      };
+    }
+    if (points >= 71) {
+      return {
+        icon: '⚠️',
+        text: 'No restrictions yet, but maintain good behavior to avoid penalties.',
+        bgColor: '#FEF3C7',
+        textColor: '#92400E',
+      };
+    }
+    if (points >= 61) {
+      return {
+        icon: '🔶',
+        text: userType === 'customer' 
+          ? 'Limited access. Maximum 2 bookings at a time.'
+          : 'Limited access. Maximum 3 slots per day.',
+        bgColor: '#FED7AA',
+        textColor: '#9A3412',
+      };
+    }
+    return {
+      icon: '🚫',
+      text: userType === 'customer'
+        ? 'Heavily restricted. Only 1 booking allowed at a time.'
+        : 'Heavily restricted. Only 2 slots allowed per day.',
+      bgColor: '#FECACA',
+      textColor: '#991B1B',
+    };
+  };
+
+  const description = getDescription();
+
+  return (
+    <View style={[styles.statusDescriptionBox, { backgroundColor: description.bgColor }]}>
+      <Text style={styles.statusDescriptionIcon}>{description.icon}</Text>
+      <Text style={[styles.statusDescriptionText, { color: description.textColor }]}>
+        {description.text}
+      </Text>
+    </View>
+  );
+};
+
 const StatCard = ({ label, value, color }: { label: string; value: number; color: string }) => (
   <View style={styles.statCard}>
     <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -435,11 +489,7 @@ const RewardItem = ({ icon, label, value, points }: any) => (
   </View>
 );
 
-const ViolationCard = ({ violation, onAppeal }: any) => {
-  const canAppeal =
-    violation.status === 'active' &&
-    (!violation.appeal_status || violation.appeal_status === 'rejected');
-
+const ViolationCard = ({ violation }: any) => {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'active':
@@ -500,17 +550,88 @@ const ViolationCard = ({ violation, onAppeal }: any) => {
 
       <View style={styles.violationFooter}>
         {violation.appeal_status && (
-          <Text style={styles.appealStatus}>
-            Appeal: {violation.appeal_status}
-          </Text>
-        )}
-
-        {canAppeal && (
-          <TouchableOpacity style={styles.appealButton} onPress={onAppeal}>
-            <Text style={styles.appealButtonText}>Appeal</Text>
-          </TouchableOpacity>
+          <View style={styles.appealStatusContainer}>
+            <Ionicons 
+              name={
+                violation.appeal_status === 'pending' ? 'time-outline' :
+                violation.appeal_status === 'approved' ? 'checkmark-circle' :
+                violation.appeal_status === 'rejected' ? 'close-circle' :
+                'document-text-outline'
+              } 
+              size={16} 
+              color={
+                violation.appeal_status === 'pending' ? '#F59E0B' :
+                violation.appeal_status === 'approved' ? '#10B981' :
+                violation.appeal_status === 'rejected' ? '#DC2626' :
+                '#6B7280'
+              }
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.appealStatus}>
+              Appeal: {violation.appeal_status.charAt(0).toUpperCase() + violation.appeal_status.slice(1)}
+            </Text>
+          </View>
         )}
       </View>
+    </View>
+  );
+};
+
+const RestorationCard = ({ restoration }: { restoration: any }) => {
+  // Get points restored - matching PenaltyAdjustment table fields
+  const pointsRestored = restoration.points_adjusted || 
+                         restoration.points_restored || 
+                         restoration.points_added || 
+                         restoration.points || 5; // Default to 5 if not specified
+
+  const reason = restoration.reason || 
+                 restoration.adjustment_type || 
+                 restoration.restoration_reason || 
+                 restoration.description || 
+                 'Points Restored';
+
+  const adjustmentType = restoration.adjustment_type || 'restore';
+  const adjustmentLabel = adjustmentType === 'restore' ? 'Restored' : 
+                         adjustmentType === 'bonus' ? 'Bonus' : 
+                         adjustmentType === 'adjustment' ? 'Adjusted' : 'Restored';
+
+  return (
+    <View style={styles.restorationCard}>
+      <View style={styles.violationHeader}>
+        <View style={styles.violationTitleRow}>
+          <Text style={styles.restorationName}>
+            {reason}
+          </Text>
+          <View style={styles.badgeContainer}>
+            <View style={styles.restoredBadge}>
+              <Text style={styles.restoredBadgeText}>
+                {adjustmentLabel}
+              </Text>
+            </View>
+            <View style={styles.pointsRestoredBadge}>
+              <Text style={styles.pointsRestoredBadgeText}>
+                +{pointsRestored} pts
+              </Text>
+            </View>
+          </View>
+        </View>
+        <Text style={styles.violationDate}>
+          {new Date(restoration.created_at).toLocaleDateString()}
+        </Text>
+      </View>
+
+      {(restoration.details || restoration.previous_points) && (
+        <View style={styles.restorationDetailsContainer}>
+          {restoration.details && (
+            <Text style={styles.restorationDetails}>{restoration.details}</Text>
+          )}
+          {restoration.previous_points !== undefined && restoration.new_points !== undefined && (
+            <Text style={styles.restorationPointsInfo}>
+              Points: {restoration.previous_points} → {restoration.new_points}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -594,10 +715,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  statusDescriptionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
+    width: '100%',
+  },
+  statusDescriptionIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  statusDescriptionText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
   lastUpdated: {
     fontSize: 12,
     color: '#9CA3AF',
     marginTop: 4,
+  },
+  suspendedBannerContainer: {
+    marginTop: 16,
   },
   suspendedBanner: {
     flexDirection: 'row',
@@ -606,13 +749,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    marginTop: 16,
   },
   suspendedText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#DC2626',
     marginLeft: 8,
+  },
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#399d9d',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 12,
+    elevation: 2,
+    shadowColor: '#399d9d',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  reportButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   section: {
     marginTop: 16,
@@ -759,6 +922,57 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     elevation: 2,
   },
+  restorationCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+  },
+  restorationName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  restorationDetailsContainer: {
+    marginBottom: 8,
+  },
+  restorationDetails: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  restorationPointsInfo: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  restoredBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  restoredBadgeText: {
+    color: '#065F46',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  pointsRestoredBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pointsRestoredBadgeText: {
+    color: '#10B981',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   violationHeader: {
     marginBottom: 12,
   },
@@ -845,21 +1059,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  appealStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   appealStatus: {
     fontSize: 12,
     color: '#6B7280',
-    flex: 1,
+    fontWeight: '500',
   },
   appealButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    backgroundColor: '#399d9d',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#399d9d',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   appealButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   tipsCard: {
     backgroundColor: '#FFFFFF',

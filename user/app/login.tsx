@@ -112,16 +112,8 @@ export default function Login() {
           // Don't block login if push notifications fail
         }
         
-        Alert.alert(
-          'Success', 
-          'Login successful!', 
-          [
-            {
-              text: 'OK',
-              onPress: () => router.push('/(tabs)')
-            }
-          ]
-        );
+        // Navigate directly without alert
+        router.push('/(tabs)');
       } else {
         Alert.alert('Login Failed', data.message || 'Invalid credentials');
       }
@@ -333,8 +325,8 @@ export default function Login() {
               color: '#666',
               lineHeight: 24,
             }}>
-              Your account has been deactivated by an administrator. 
-              Please contact customer service for assistance.
+              Your account has been deactivated due to your Fix-Score falling below 50 points. 
+              Please report your issue or email the admin for review and reactivation.
             </Text>
 
             <View style={{
@@ -351,7 +343,7 @@ export default function Login() {
                 fontStyle: 'italic',
                 textAlign: 'center',
               }}>
-                You will not be able to access the app until your account is reactivated.
+                You cannot access the app until your account is reactivated. Contact support to appeal.
               </Text>
             </View>
             
@@ -359,6 +351,27 @@ export default function Login() {
               flexDirection: 'column',
               gap: 10,
             }}>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowDeactivatedModal(false);
+                  router.push('/report');
+                }}
+                style={{
+                  backgroundColor: '#008080',
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 16,
+                  color: 'white',
+                  fontWeight: '600',
+                }}>
+                  Report Issue
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity 
                 onPress={async () => {
                   setShowDeactivatedModal(false);

@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from 'expo-image-picker';
+import { getPenaltyInfo, getViolationHistory, submitAppeal } from '../utils/penaltyService';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -29,6 +30,24 @@ interface Appointment {
   provider_first_name?: string;
   provider_last_name?: string;
   provider_id?: number;
+}
+
+interface Violation {
+  violation_id: number;
+  violation_type: string | {
+    violation_name: string;
+    violation_code: string;
+    penalty_points: number;
+    description: string;
+  };
+  description: string;
+  violation_details?: string;
+  penalty_points: number;
+  points_deducted?: number;
+  violation_date: string;
+  created_at?: string;
+  status: string;
+  appeal_status: string | null;
 }
 
 const ReportForm = () => {
@@ -48,6 +67,11 @@ const ReportForm = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [violations, setViolations] = useState<Violation[]>([]);
+  const [selectedViolationId, setSelectedViolationId] = useState<string>("");
+  const [appealReason, setAppealReason] = useState("");
+  const [loadingViolations, setLoadingViolations] = useState(false);
+  const [violationsError, setViolationsError] = useState<string | null>(null);
 
   // Load user data and appointments if logged in
   useEffect(() => {
@@ -101,6 +125,56 @@ const ReportForm = () => {
               setAppointments(formattedAppointments);
             }
           }
+        }
+
+        // Fetch user's violations for penalty appeal option
+        setLoadingViolations(true);
+        setViolationsError(null);
+        try {
+          console.log('=== FETCHING VIOLATIONS FOR REPORT PAGE ===');
+          const violationsResponse = await getViolationHistory();
+          console.log('Violations response:', JSON.stringify(violationsResponse, null, 2));
+          
+          if (violationsResponse.success && violationsResponse.data) {
+            console.log('Raw violations data:', violationsResponse.data);
+            console.log('Is array?', Array.isArray(violationsResponse.data));
+            
+            // Handle both array directly or nested in violations property
+            const violationsArray = Array.isArray(violationsResponse.data) 
+              ? violationsResponse.data 
+              : (violationsResponse.data.violations || []);
+            
+            console.log('Violations array:', violationsArray);
+            console.log('Total violations count:', violationsArray.length);
+            
+            // Filter to only show appealable violations (active, not already appealed/under review)
+            const appealableViolations = violationsArray.filter((v: Violation) => {
+              const isAppealable = v.status === 'active' && (!v.appeal_status || v.appeal_status === 'rejected');
+              console.log(`Violation ${v.violation_id}:`, {
+                status: v.status,
+                appeal_status: v.appeal_status,
+                isAppealable
+              });
+              return isAppealable;
+            });
+            
+            console.log('Appealable violations count:', appealableViolations.length);
+            console.log('Appealable violations:', appealableViolations);
+            
+            setViolations(appealableViolations);
+          } else {
+            console.error('Failed to fetch violations:', violationsResponse.error);
+            setViolationsError(violationsResponse.error || 'Failed to load violations');
+            // Set empty array on failure
+            setViolations([]);
+          }
+        } catch (error) {
+          console.error('Error fetching violations:', error);
+          setViolationsError(error instanceof Error ? error.message : 'Network error');
+          // Set empty array on error
+          setViolations([]);
+        } finally {
+          setLoadingViolations(false);
         }
       }
     } catch (error) {
@@ -209,6 +283,13 @@ const ReportForm = () => {
       Alert.alert("Error", "Please select a report type");
       return false;
     }
+    
+    // For penalty appeals, violation selection is required
+    if (reportType === 'penalty_appeal' && !selectedViolationId) {
+      Alert.alert("Error", "Please select a violation to appeal");
+      return false;
+    }
+    
     if (!subject.trim()) {
       Alert.alert("Error", "Please enter a subject");
       return false;
@@ -226,6 +307,38 @@ const ReportForm = () => {
     setLoading(true);
 
     try {
+      // Handle penalty appeal separately through penalty service
+      if (reportType === 'penalty_appeal') {
+        console.log('Submitting penalty appeal for violation:', selectedViolationId);
+        const result = await submitAppeal(parseInt(selectedViolationId), description.trim());
+        
+        if (result.success) {
+          Alert.alert(
+            "Appeal Submitted",
+            "Your penalty appeal has been submitted successfully. Our team will review it within 3-5 business days.",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  // Clear form
+                  setReportType("");
+                  setSubject("");
+                  setDescription("");
+                  setSelectedViolationId("");
+                  setImages([]);
+                  router.back();
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Error", result.error || "Failed to submit appeal. Please try again.");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Regular report submission continues here
       const formData = new FormData();
       
       // Required fields
@@ -415,34 +528,50 @@ const ReportForm = () => {
             Your Name <Text style={{ color: "red" }}>*</Text>
           </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, reporterName && { backgroundColor: '#f5f5f5', color: '#666' }]}
             placeholder="Enter your full name"
             value={reporterName}
             onChangeText={setReporterName}
+            editable={!reporterName}
           />
+          {reporterName && (
+            <Text style={[styles.helperText, { color: '#666', fontSize: 11, marginTop: -8 }]}>
+             
+            </Text>
+          )}
 
           {/* Reporter Email */}
           <Text style={styles.label}>
             Email Address <Text style={{ color: "red" }}>*</Text>
           </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, reporterEmail && { backgroundColor: '#f5f5f5', color: '#666' }]}
             placeholder="your.email@example.com"
             value={reporterEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             onChangeText={setReporterEmail}
+            editable={!reporterEmail}
           />
+          {reporterEmail && (
+            <Text style={[styles.helperText, { color: '#666', fontSize: 11, marginTop: -8 }]}>
+            </Text>
+          )}
 
           {/* Reporter Phone (Optional) */}
           <Text style={styles.label}>Phone Number (Optional)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, reporterPhone && { backgroundColor: '#f5f5f5', color: '#666' }]}
             placeholder="+63 9XX XXX XXXX"
             value={reporterPhone}
             keyboardType="phone-pad"
             onChangeText={setReporterPhone}
+            editable={!reporterPhone}
           />
+          {reporterPhone && (
+            <Text style={[styles.helperText, { color: '#666', fontSize: 11, marginTop: -8 }]}>
+            </Text>
+          )}
 
           {/* Report Type */}
           <Text style={styles.label}>
@@ -459,6 +588,7 @@ const ReportForm = () => {
               <Picker.Item label="👤 Account Issue" value="account_issue" />
               <Picker.Item label="🔧 Service Provider Issue" value="provider_issue" />
               <Picker.Item label="⚠️ Safety Concern" value="safety_concern" />
+              <Picker.Item label="⚖️ Penalty Appeal" value="penalty_appeal" />
               <Picker.Item label="📋 Other" value="other" />
             </Picker>
           </View>
@@ -490,6 +620,193 @@ const ReportForm = () => {
                 <Text style={styles.helperText}>
                   Provider will be automatically notified if selected.
                 </Text>
+              )}
+            </>
+          )}
+
+          {/* Violation Selection - For Penalty Appeal */}
+          {reportType === 'penalty_appeal' && (
+            <>
+              <Text style={styles.label}>
+                Select Violation to Appeal <Text style={{ color: "red" }}>*</Text>
+              </Text>
+              
+              {loadingViolations && (
+                <View style={{
+                  backgroundColor: '#f8f9fa',
+                  padding: 15,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
+                  <ActivityIndicator size="small" color="#008080" />
+                  <Text style={{ marginLeft: 10, color: '#666' }}>Loading violations...</Text>
+                </View>
+              )}
+              
+              {violationsError && (
+                <View style={{
+                  backgroundColor: '#f8d7da',
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#dc3545',
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="alert-circle" size={20} color="#721c24" />
+                    <Text style={{ 
+                      fontSize: 14, 
+                      fontWeight: 'bold', 
+                      color: '#721c24',
+                      marginLeft: 8,
+                      flex: 1
+                    }}>
+                      Error Loading Violations
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: '#721c24', marginTop: 5 }}>
+                    {violationsError}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => loadUserData()}
+                    style={{
+                      marginTop: 10,
+                      backgroundColor: '#dc3545',
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 6,
+                      alignSelf: 'flex-start'
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                      Retry
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              {!loadingViolations && !violationsError && (
+                <>
+                  <View style={styles.pickerWrapper}>
+                    <Picker
+                      selectedValue={selectedViolationId}
+                      onValueChange={(val) => setSelectedViolationId(val)}
+                    >
+                      <Picker.Item label="Select a violation..." value="" />
+                      {violations.map((violation) => {
+                        const date = new Date(violation.created_at || violation.violation_date).toLocaleDateString();
+                        const violationName = typeof violation.violation_type === 'string' 
+                          ? violation.violation_type 
+                          : violation.violation_type.violation_name;
+                        const penaltyPoints = violation.points_deducted || violation.penalty_points;
+                        const label = `${violationName} (-${penaltyPoints} pts) on ${date}`;
+                        return (
+                          <Picker.Item 
+                            key={violation.violation_id} 
+                            label={label} 
+                            value={violation.violation_id.toString()} 
+                          />
+                        );
+                      })}
+                    </Picker>
+                  </View>
+                  
+                  {/* Show detailed violation info when selected */}
+                  {selectedViolationId && (() => {
+                const selectedViolation = violations.find(v => v.violation_id.toString() === selectedViolationId);
+                if (selectedViolation) {
+                  const violationName = typeof selectedViolation.violation_type === 'string' 
+                    ? selectedViolation.violation_type 
+                    : selectedViolation.violation_type.violation_name;
+                  const penaltyPoints = selectedViolation.points_deducted || selectedViolation.penalty_points;
+                  const violationDate = selectedViolation.created_at || selectedViolation.violation_date;
+                  const violationDescription = selectedViolation.violation_details || selectedViolation.description;
+                  
+                  return (
+                    <View style={{
+                      backgroundColor: '#fff3cd',
+                      borderLeftWidth: 4,
+                      borderLeftColor: '#ffc107',
+                      padding: 12,
+                      borderRadius: 8,
+                      marginTop: 10,
+                      marginBottom: 10,
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Ionicons name="alert-circle" size={20} color="#856404" />
+                        <Text style={{ 
+                          fontSize: 14, 
+                          fontWeight: 'bold', 
+                          color: '#856404',
+                          marginLeft: 8 
+                        }}>
+                          Selected Violation Details
+                        </Text>
+                      </View>
+                      
+                      <View style={{ marginBottom: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#856404', fontWeight: '600' }}>
+                          Type: <Text style={{ fontWeight: 'normal' }}>{violationName}</Text>
+                        </Text>
+                      </View>
+                      
+                      <View style={{ marginBottom: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#856404', fontWeight: '600' }}>
+                          Penalty: <Text style={{ fontWeight: 'bold', color: '#dc3545' }}>
+                            -{penaltyPoints} points
+                          </Text>
+                        </Text>
+                      </View>
+                      
+                      <View style={{ marginBottom: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#856404', fontWeight: '600' }}>
+                          Date: <Text style={{ fontWeight: 'normal' }}>
+                            {new Date(violationDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Text>
+                        </Text>
+                      </View>
+                      
+                      {violationDescription && (
+                        <View style={{ marginTop: 4 }}>
+                          <Text style={{ fontSize: 12, color: '#856404', fontWeight: '600' }}>
+                            Reason:
+                          </Text>
+                          <Text style={{ fontSize: 11, color: '#856404', marginTop: 2, fontStyle: 'italic' }}>
+                            "{violationDescription}"
+                          </Text>
+                        </View>
+                      )}
+                      
+                      <View style={{ 
+                        marginTop: 10, 
+                        paddingTop: 10, 
+                        borderTopWidth: 1, 
+                        borderTopColor: '#ffc107' 
+                      }}>
+                        <Text style={{ fontSize: 11, color: '#856404', fontStyle: 'italic' }}>
+                          💡 Provide a detailed explanation below for why this penalty should be removed.
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
+              
+              {violations.length === 0 && !loadingViolations && !violationsError && (
+                <Text style={styles.helperText}>
+                  No appealable violations found. Only active violations that haven't been appealed can be selected.
+                </Text>
+              )}
+                </>
               )}
             </>
           )}
