@@ -185,9 +185,8 @@ const PenaltyScorePage = () => {
   }
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#e7ecec" />
-      <SafeAreaView style={{ flex: 0, backgroundColor: '#e7ecec' }} />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -408,7 +407,7 @@ const PenaltyScorePage = () => {
           </View>
         </Modal>
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -644,6 +643,10 @@ const TipItem = ({ text }: { text: string }) => (
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#e7ecec',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',

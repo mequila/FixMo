@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { MessageService } from '../../utils/messageAPI';
 import AuthService from '../../utils/authService';
 import { syncAuthWithExistingStorage } from '../../utils/appInitializer';
+import { useOverdueAppointmentCheck } from '../../utils/useOverdueAppointmentCheck';
 
 
 // Get backend URL from environment variables
@@ -164,10 +165,31 @@ export default function Bookings() {
   const [overdueAppointment, setOverdueAppointment] = useState<Appointment | null>(null);
   const [checkedAppointmentIds, setCheckedAppointmentIds] = useState<Set<number>>(new Set());
 
+  // Provider completion confirmation modal (simpler modal for overdue appointments)
+  const [isProviderConfirmationVisible, setIsProviderConfirmationVisible] = useState(false);
+  const [confirmationAppointment, setConfirmationAppointment] = useState<Appointment | null>(null);
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+  const [finalPrice, setFinalPrice] = useState<string>('');
+  const [showPriceInput, setShowPriceInput] = useState(false);
+
   // Rating detection state (SEPARATE FROM MAIN APPOINTMENTS)
   const [isRatingPopupShown, setIsRatingPopupShown] = useState(false);
 
   const { width } = useWindowDimensions();
+
+  // Global overdue appointment check (works across all tabs)
+  useOverdueAppointmentCheck((overdueAppointment) => {
+    // Only show modal if no other modals are open
+    if (!isModalVisible && !isBackjobModalVisible && !isNoShowModalVisible && !isAutoNoShowPromptVisible && !isProviderConfirmationVisible) {
+      setConfirmationAppointment({
+        ...overdueAppointment,
+        statusColor: '#ff9800'
+      } as Appointment);
+      setFinalPrice(overdueAppointment.starting_price?.toString() || '0');
+      setShowPriceInput(false);
+      setIsProviderConfirmationVisible(true);
+    }
+  }, true);
 
   // Initialize AuthService when component mounts
   useEffect(() => {
@@ -671,7 +693,7 @@ export default function Bookings() {
     console.log('=== CHECKING FOR OVERDUE APPOINTMENTS ===');
     
     // Skip if any modal is already open
-    if (isModalVisible || isBackjobModalVisible || isNoShowModalVisible || isAutoNoShowPromptVisible) {
+    if (isModalVisible || isBackjobModalVisible || isNoShowModalVisible || isAutoNoShowPromptVisible || isProviderConfirmationVisible) {
       console.log('Skipping overdue check - modal already open');
       return;
     }
@@ -679,7 +701,7 @@ export default function Bookings() {
     const now = new Date();
     console.log('Current time:', now.toISOString());
 
-    // Find scheduled appointments that are more than 1 day overdue
+    // Find scheduled appointments that are more than 12 hours overdue
     const overdueAppointments = bookings.filter(booking => {
       // Only check Scheduled appointments
       if (booking.status !== 'Scheduled') return false;
@@ -688,17 +710,17 @@ export default function Bookings() {
       if (checkedAppointmentIds.has(booking.appointment_id)) return false;
 
       const scheduledDate = new Date(booking.scheduled_date || booking.date || '');
-      const oneDayAfter = new Date(scheduledDate);
-      oneDayAfter.setDate(oneDayAfter.getDate() + 1);
+      const twelveHoursAfter = new Date(scheduledDate);
+      twelveHoursAfter.setHours(twelveHoursAfter.getHours() + 12);
 
-      const isOverdue = now > oneDayAfter;
+      const isOverdue = now > twelveHoursAfter;
       
       if (isOverdue) {
         console.log('Found overdue appointment:', {
           id: booking.appointment_id,
           scheduledDate: scheduledDate.toISOString(),
-          oneDayAfter: oneDayAfter.toISOString(),
-          hoursOverdue: Math.floor((now.getTime() - oneDayAfter.getTime()) / (1000 * 60 * 60))
+          twelveHoursAfter: twelveHoursAfter.toISOString(),
+          hoursOverdue: Math.floor((now.getTime() - twelveHoursAfter.getTime()) / (1000 * 60 * 60))
         });
       }
 
@@ -709,10 +731,12 @@ export default function Bookings() {
       console.log('=== FOUND OVERDUE APPOINTMENTS ===');
       console.log('Total overdue:', overdueAppointments.length);
       
-      // Show prompt for the first overdue appointment
+      // Show simple confirmation modal for the first overdue appointment
       const firstOverdue = overdueAppointments[0];
-      setOverdueAppointment(firstOverdue);
-      setIsAutoNoShowPromptVisible(true);
+      setConfirmationAppointment(firstOverdue);
+      setFinalPrice(firstOverdue.starting_price?.toString() || '0');
+      setShowPriceInput(false);
+      setIsProviderConfirmationVisible(true);
       
       // Mark as checked
       setCheckedAppointmentIds(prev => new Set(prev).add(firstOverdue.appointment_id));
@@ -721,23 +745,9 @@ export default function Bookings() {
     }
   };
 
-  // Check for overdue appointments when bookings change
-  useEffect(() => {
-    if (bookings.length > 0) {
-      checkForOverdueAppointments();
-    }
-  }, [bookings]);
-
-  // Periodic check for overdue appointments every 5 minutes
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!isModalVisible && !isBackjobModalVisible && !isNoShowModalVisible && !isAutoNoShowPromptVisible) {
-        checkForOverdueAppointments();
-      }
-    }, 300000); // 5 minutes
-
-    return () => clearInterval(intervalId);
-  }, [isModalVisible, isBackjobModalVisible, isNoShowModalVisible, isAutoNoShowPromptVisible, bookings, checkedAppointmentIds]);
+  // NOTE: Overdue checks are now handled globally via useOverdueAppointmentCheck hook
+  // The checkForOverdueAppointments function above is kept for backward compatibility
+  // but is no longer called automatically
 
   // Auto-scroll tab bar when active tab changes
   useEffect(() => {
@@ -1600,6 +1610,114 @@ export default function Bookings() {
         }
       ]
     );
+  };
+
+  // Handle provider confirmation - YES (Provider showed up)
+  const handleProviderShowedUp = async () => {
+    if (!confirmationAppointment) return;
+
+    // If price input is not shown yet, show it first
+    if (!showPriceInput) {
+      setShowPriceInput(true);
+      return;
+    }
+
+    // Validate final price
+    const priceValue = parseFloat(finalPrice);
+    const startingPrice = confirmationAppointment.starting_price || 0;
+
+    if (!finalPrice || finalPrice.trim() === '') {
+      Alert.alert('Price Required', 'Please enter the final price for the service.');
+      return;
+    }
+
+    if (isNaN(priceValue) || priceValue < 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid price (cannot be negative).');
+      return;
+    }
+
+    if (priceValue < startingPrice) {
+      Alert.alert(
+        'Invalid Price', 
+        `Final price must be equal to or higher than the starting price (₱${startingPrice.toFixed(2)}).`
+      );
+      return;
+    }
+
+    setConfirmationLoading(true);
+    try {
+      const token = await AuthService.getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required. Please log in again.');
+        return;
+      }
+
+      console.log('Marking appointment as finished:', confirmationAppointment.appointment_id);
+      console.log('Final price:', priceValue);
+
+      const response = await fetch(
+        `${BACKEND_URL}/auth/appointments/${confirmationAppointment.appointment_id}/finish`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            final_price: priceValue
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        Alert.alert(
+          'Success',
+          'Appointment marked as finished!',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsProviderConfirmationVisible(false);
+                setConfirmationAppointment(null);
+                setFinalPrice('');
+                setShowPriceInput(false);
+                fetchAppointments(true);
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', result.message || 'Failed to update appointment status.');
+      }
+    } catch (error) {
+      console.error('Error marking appointment as finished:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    } finally {
+      setConfirmationLoading(false);
+    }
+  };
+
+  // Handle provider confirmation - NO (Provider didn't show up)
+  const handleProviderNoShow = () => {
+    if (!confirmationAppointment) return;
+
+    // Close confirmation modal and open the no-show report modal
+    setIsProviderConfirmationVisible(false);
+    setOverdueAppointment(confirmationAppointment);
+    setIsAutoNoShowPromptVisible(true);
+    setConfirmationAppointment(null);
+    setFinalPrice('');
+    setShowPriceInput(false);
+  };
+
+  // Handle dismiss confirmation modal
+  const handleDismissConfirmation = () => {
+    setIsProviderConfirmationVisible(false);
+    setConfirmationAppointment(null);
+    setFinalPrice('');
+    setShowPriceInput(false);
   };
 
   // Handle cancel backjob with reason
@@ -3640,7 +3758,7 @@ export default function Bookings() {
                     color: '#1565c0',
                     lineHeight: 20
                   }}>
-                    It's been more than 24 hours since your scheduled appointment. If the provider didn't show up, please file a no-show report so we can take appropriate action.
+                    It's been more than 12 hours since your scheduled appointment. If the provider didn't show up, please file a no-show report so we can take appropriate action.
                   </Text>
                 </View>
 
@@ -3821,6 +3939,253 @@ export default function Bookings() {
               </ScrollView>
             </View>
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Provider Confirmation Modal (Simple Yes/No) */}
+      <Modal
+        visible={isProviderConfirmationVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => handleDismissConfirmation()}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderRadius: 20,
+              padding: 30,
+              width: '85%',
+              maxWidth: 400,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              elevation: 5,
+            }}>
+            {/* Icon */}
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <View style={{
+                backgroundColor: '#e3f2fd',
+                borderRadius: 50,
+                width: 80,
+                height: 80,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 15
+              }}>
+                <Ionicons name="help-circle" size={50} color="#2196f3" />
+              </View>
+            </View>
+
+            {/* Question */}
+            <Text style={{ 
+              fontSize: 22, 
+              fontWeight: 'bold',
+              color: '#333',
+              textAlign: 'center',
+              marginBottom: 15
+            }}>
+              Did the provider show up?
+            </Text>
+
+            {/* Appointment Info */}
+            {confirmationAppointment && (
+              <View style={{
+                backgroundColor: '#f8f9fa',
+                padding: 15,
+                borderRadius: 12,
+                marginBottom: 20
+              }}>
+                <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                  📅 {new Date(confirmationAppointment.scheduled_date || confirmationAppointment.date || '').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </Text>
+                {confirmationAppointment.slot_start_time && (
+                  <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                    ⏰ {confirmationAppointment.slot_start_time} - {confirmationAppointment.slot_end_time}
+                  </Text>
+                )}
+                <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                  👤 {confirmationAppointment.name}
+                </Text>
+                <Text style={{ fontSize: 14, color: '#666' }}>
+                  🔧 {confirmationAppointment.service_title || confirmationAppointment.type}
+                </Text>
+                <View style={{
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTopWidth: 1,
+                  borderTopColor: '#ddd'
+                }}>
+                  <Text style={{ fontSize: 13, color: '#666', fontWeight: '600' }}>
+                    Starting Price: ₱{confirmationAppointment.starting_price?.toFixed(2) || '0.00'}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Conditionally show price input or Yes/No buttons */}
+            {!showPriceInput ? (
+              // Show Yes/No buttons initially
+              <>
+                <TouchableOpacity
+                  onPress={handleProviderShowedUp}
+                  disabled={confirmationLoading}
+                  style={{
+                    backgroundColor: confirmationLoading ? '#ccc' : '#4caf50',
+                    paddingVertical: 16,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="checkmark-circle" size={24} color="white" style={{ marginRight: 8 }} />
+                    <Text style={{
+                      color: 'white',
+                      fontSize: 18,
+                      fontWeight: '700',
+                    }}>
+                      Yes, Provider Showed Up
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleProviderNoShow}
+                  disabled={confirmationLoading}
+                  style={{
+                    backgroundColor: confirmationLoading ? '#f5f5f5' : '#ffebee',
+                    paddingVertical: 16,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: confirmationLoading ? '#ddd' : '#ef5350',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="close-circle" size={24} color={confirmationLoading ? '#999' : '#ef5350'} style={{ marginRight: 8 }} />
+                    <Text style={{
+                      color: confirmationLoading ? '#999' : '#ef5350',
+                      fontSize: 18,
+                      fontWeight: '700',
+                    }}>
+                      No, Provider Didn't Show
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Show price input after clicking Yes
+              <>
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{
+                    fontSize: 15,
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: 8
+                  }}>
+                    Final Price <Text style={{ color: 'red' }}>*</Text>
+                  </Text>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 2,
+                    borderColor: '#399d9d',
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    backgroundColor: '#fff'
+                  }}>
+                    <Text style={{ fontSize: 18, color: '#333', marginRight: 5 }}>₱</Text>
+                    <TextInput
+                      value={finalPrice}
+                      onChangeText={(text) => {
+                        // Only allow numbers and decimal point
+                        const cleaned = text.replace(/[^0-9.]/g, '');
+                        // Ensure only one decimal point
+                        const parts = cleaned.split('.');
+                        if (parts.length > 2) return;
+                        setFinalPrice(cleaned);
+                      }}
+                      placeholder={confirmationAppointment?.starting_price?.toFixed(2) || "0.00"}
+                      keyboardType="decimal-pad"
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        fontSize: 16,
+                        color: '#333'
+                      }}
+                    />
+                  </View>
+                  <Text style={{
+                    fontSize: 12,
+                    color: '#666',
+                    marginTop: 5,
+                    fontStyle: 'italic'
+                  }}>
+                    Must be equal to or higher than starting price
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleProviderShowedUp}
+                  disabled={confirmationLoading}
+                  style={{
+                    backgroundColor: confirmationLoading ? '#ccc' : '#4caf50',
+                    paddingVertical: 16,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  {confirmationLoading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="checkmark-circle" size={24} color="white" style={{ marginRight: 8 }} />
+                      <Text style={{
+                        color: 'white',
+                        fontSize: 18,
+                        fontWeight: '700',
+                      }}>
+                        Confirm & Finish
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setShowPriceInput(false)}
+                  disabled={confirmationLoading}
+                  style={{
+                    paddingVertical: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    color: confirmationLoading ? '#ccc' : '#999',
+                    fontSize: 14,
+                  }}>
+                    Go Back
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
         </KeyboardAvoidingView>
       </Modal>
 

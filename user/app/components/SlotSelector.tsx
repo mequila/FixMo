@@ -52,34 +52,65 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
           estimatedAvailableSlots: s.estimatedAvailableSlots
         })));
         
+        // Check if selected date is today
+        const today = new Date();
+        const selectedDateObj = new Date(selectedDate);
+        const isToday = today.toDateString() === selectedDateObj.toDateString();
+        
+        // Filter out past time slots if booking for today
+        let filteredSlots = allSlots;
+        if (isToday) {
+          const currentTime = today.getHours() * 60 + today.getMinutes(); // Current time in minutes
+          
+          filteredSlots = allSlots.filter(slot => {
+            const startTime = slot.startTime || slot.time_start;
+            if (!startTime) return true; // Keep slots without time info
+            
+            // Parse slot start time (format: "HH:MM" or "HH:MM:SS")
+            const [hours, minutes] = startTime.split(':').map(Number);
+            const slotTimeInMinutes = hours * 60 + minutes;
+            
+            // Keep slot if it hasn't started yet (with 30 min buffer)
+            const isPastTime = slotTimeInMinutes < (currentTime - 30);
+            
+            if (isPastTime) {
+              console.log('⏰ Filtering out past slot:', slot.displayTime, `(${startTime})`);
+            }
+            
+            return !isPastTime;
+          });
+          
+          console.log(`⏰ Filtered ${allSlots.length - filteredSlots.length} past time slots for today`);
+        }
+        
         // Filter for truly available slots (not booked and not fully booked)
-        const availableSlots = allSlots.filter(slot => 
+        const availableSlots = filteredSlots.filter(slot => 
           slot.isAvailable && !slot.isBooked && !slot.isFullyBooked
         );
         
         console.log('✅ Loaded', availableSlots.length, 'available slots out of', result.data.totalSlots, 'total');
-        console.log('❌ Booked/Full slots:', allSlots.filter(s => s.isBooked || s.isFullyBooked).length);
+        console.log('❌ Booked/Full slots:', filteredSlots.filter(s => s.isBooked || s.isFullyBooked).length);
         
         // TEMP: Show alert with debug info
         console.warn('DEBUG INFO:', {
-          totalSlots: allSlots.length,
+          totalSlots: filteredSlots.length,
           availableSlots: availableSlots.length,
-          bookedSlots: allSlots.filter(s => s.isBooked || s.isFullyBooked).length,
+          bookedSlots: filteredSlots.filter(s => s.isBooked || s.isFullyBooked).length,
           message: result.message,
         });
         
-        // Show ALL slots (both available and booked) so user can see booked ones
-        setSlots(allSlots);
+        // Show filtered slots (both available and booked) so user can see booked ones
+        setSlots(filteredSlots);
         
         if (result.message && result.message.includes('Mock')) {
           // Show a toast or alert that mock data is being used
           console.warn('⚠️ Using mock data - backend not connected:', result.message);
         }
         
-        if (availableSlots.length === 0 && allSlots.length > 0) {
+        if (availableSlots.length === 0 && filteredSlots.length > 0) {
           Alert.alert(
             'All Slots Booked',
-            `All time slots are fully booked for the selected date.\n\nTotal slots: ${allSlots.length}\nBooked: ${allSlots.filter(s => s.isBooked || s.isFullyBooked).length}\n\nPlease try a different date.`
+            `All time slots are fully booked for the selected date.\n\nTotal slots: ${filteredSlots.length}\nBooked: ${filteredSlots.filter(s => s.isBooked || s.isFullyBooked).length}\n\nPlease try a different date.`
           );
         }
       } else {

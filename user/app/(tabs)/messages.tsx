@@ -9,6 +9,7 @@ import { Conversation, ConversationResponse, ApiErrorResponse, Message } from '.
 import { useAuth } from '../../utils/authService'
 import NetworkHelper from '../../utils/networkHelper'
 import { Socket } from 'socket.io-client'
+import { useOverdueAppointmentCheck } from '../../utils/useOverdueAppointmentCheck'
 
 const messages = () => {
   const router = useRouter()
@@ -21,6 +22,11 @@ const messages = () => {
   const [isSocketConnected, setIsSocketConnected] = useState(false)
   
   const socketRef = useRef<Socket | null>(null)
+
+  // Global overdue appointment check
+  useOverdueAppointmentCheck((overdueAppointment) => {
+    router.push('/(tabs)/bookings');
+  }, true);
   
   useEffect(() => {
     if (isLoading) return; // Don't do anything while still loading auth state

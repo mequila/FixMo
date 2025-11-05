@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ScrollView } from "react-native";
+ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ScrollView, Platform } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     padding: 16,
-    paddingTop: 70,
+    paddingTop: Platform.OS === 'android' ? 50 : 70,
   },
   header: {
     flexDirection: 'row',

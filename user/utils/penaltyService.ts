@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ApiErrorHandler } from './apiErrorHandler';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -23,6 +24,16 @@ export const getPenaltyInfo = async () => {
         'Content-Type': 'application/json',
       },
     });
+
+    // Check for 401 - token expired
+    if (response.status === 401) {
+      console.log('🔐 Token expired in getPenaltyInfo');
+      await ApiErrorHandler.handleTokenExpiration();
+      return {
+        success: false,
+        error: 'Session expired',
+      };
+    }
 
     const data = await response.json();
 
@@ -79,6 +90,16 @@ export const getViolationHistory = async (status: string | null = null, limit = 
 
     console.log('🔍 Violations API response status:', response.status);
     
+    // Check for 401 - token expired
+    if (response.status === 401) {
+      console.log('🔐 Token expired in getViolationHistory');
+      await ApiErrorHandler.handleTokenExpiration();
+      return {
+        success: false,
+        error: 'Session expired',
+      };
+    }
+    
     const data = await response.json();
     console.log('🔍 Violations API response data:', JSON.stringify(data, null, 2));
 
@@ -129,6 +150,17 @@ export const submitAppeal = async (violationId: number, appealReason: string) =>
     });
 
     console.log('🔍 Appeal Response Status:', response.status);
+    
+    // Check for 401 - token expired
+    if (response.status === 401) {
+      console.log('🔐 Token expired in submitAppeal');
+      await ApiErrorHandler.handleTokenExpiration();
+      return {
+        success: false,
+        error: 'Session expired',
+      };
+    }
+    
     const data = await response.json();
     console.log('🔍 Appeal Response Data:', data);
 
@@ -173,6 +205,16 @@ export const getRewardStats = async () => {
         'Content-Type': 'application/json',
       },
     });
+
+    // Check for 401 - token expired
+    if (response.status === 401) {
+      console.log('🔐 Token expired in getRewardStats');
+      await ApiErrorHandler.handleTokenExpiration();
+      return {
+        success: false,
+        error: 'Session expired',
+      };
+    }
 
     const data = await response.json();
 
@@ -223,6 +265,17 @@ export const getRestorationHistory = async (limit = 50, offset = 0) => {
     });
 
     console.log('🔍 Adjustments API Response Status:', response.status);
+    
+    // Check for 401 - token expired
+    if (response.status === 401) {
+      console.log('🔐 Token expired in getRestorationHistory');
+      await ApiErrorHandler.handleTokenExpiration();
+      return {
+        success: false,
+        error: 'Session expired',
+      };
+    }
+    
     const data = await response.json();
     console.log('🔍 Adjustments API Response Data:', JSON.stringify(data, null, 2));
 

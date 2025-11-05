@@ -35,29 +35,35 @@ export class ApiErrorHandler {
   // Handle token expiration - force logout and redirect to login
   static async handleTokenExpiration() {
     try {
+      console.log('🔐 Token expired - starting logout process...');
+      
       // Clear all auth data
       await AsyncStorage.multiRemove(['token', 'userData', 'userId']);
+      console.log('✅ Cleared AsyncStorage');
       
-      Alert.alert(
-        'Session Expired',
-        'Your session has expired. Please login again.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (this.router) {
-                this.router.replace('/login');
-              }
-            }
-          }
-        ],
-        { cancelable: false }
-      );
+      // Navigate immediately without alert to ensure smooth transition
+      if (this.router) {
+        console.log('🔄 Navigating to login page...');
+        this.router.replace('/login-register/splash');
+      } else {
+        console.error('❌ Router not initialized!');
+      }
+      
+      // Show alert after navigation is triggered
+      setTimeout(() => {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please login again.',
+          [{ text: 'OK' }],
+          { cancelable: false }
+        );
+      }, 100);
+      
     } catch (error) {
       console.error('Error handling token expiration:', error);
       // Still try to navigate even if clearing storage fails
       if (this.router) {
-        this.router.replace('/login');
+        this.router.replace('/login-register/splash');
       }
     }
   }

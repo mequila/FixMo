@@ -10,6 +10,7 @@ import ServiceIcon from "../components/index/ServiceIcon";
 import { ApiErrorHandler } from "../../utils/apiErrorHandler";
 import { AuthService } from "../../utils/authService";
 import { NetworkHelper } from "../../utils/networkHelper";
+import { useOverdueAppointmentCheck } from "../../utils/useOverdueAppointmentCheck";
 
 interface CustomerData {
   id: number;
@@ -49,6 +50,11 @@ export default function Index() {
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+
+  // Global overdue appointment check
+  useOverdueAppointmentCheck((overdueAppointment) => {
+    router.push('/(tabs)/bookings');
+  }, true);
 
   useEffect(() => {
     // Initialize error handler with router

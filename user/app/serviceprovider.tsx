@@ -829,6 +829,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   distanceFilterLabelSmall: {
     fontSize: 14,
@@ -837,13 +838,16 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   pickerContainerSmall: {
-    minWidth: 150,
+    flex: 1,
+    minWidth: 130,
+    maxWidth: 150,
     borderWidth: 1.5,
     borderColor: "#399d9d",
     borderRadius: 8,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
-    height: 42,
+    height: 50,
+    justifyContent: 'center',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -854,7 +858,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   pickerSmall: {
-    height: 42,
+    height: 50,
     width: '100%',
     color: '#333',
   },

@@ -18,6 +18,7 @@ import homeStyles from '../components/homeStyles';
 import { ApiErrorHandler } from '../../utils/apiErrorHandler';
 import { AuthService } from '../../utils/authService';
 import ReVerificationModal from '../components/ReVerificationModal';
+import { useOverdueAppointmentCheck } from '../../utils/useOverdueAppointmentCheck';
 
 // Get backend URL from environment variables
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
@@ -45,6 +46,11 @@ const Profile = () => {
   const [imageError, setImageError] = useState(false);
   const [showDeactivatedModal, setShowDeactivatedModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  // Global overdue appointment check
+  useOverdueAppointmentCheck((overdueAppointment) => {
+    router.push('/(tabs)/bookings');
+  }, true);
 
   useEffect(() => {
     // Initialize error handler with router
