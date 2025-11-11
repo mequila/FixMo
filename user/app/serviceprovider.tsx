@@ -32,7 +32,9 @@ interface ServiceProvider {
   startingPrice: number;
   service_picture?: string;
   distance?: number; // Distance in kilometers
-  servicelisting_isactive?: boolean; // Add this field to track active status
+  servicelisting_isactive?: boolean; // snake_case field name
+  servicelisting_isActive?: boolean; // camelCase field name (as per database schema)
+  servicelistingIsActive?: boolean; // alternative naming
   provider: {
     id?: number; // Backend uses 'id' in service-listings-for-customer
     provider_id?: number; // Legacy field name
@@ -198,13 +200,24 @@ const ServiceProvider = () => {
         let serviceListings: ServiceProvider[] = result.listings || [];
         
         console.log('📊 Total providers fetched:', serviceListings.length);
+        console.log('📊 Sample provider data:', JSON.stringify(serviceListings[0], null, 2));
         
         // Filter out inactive service listings
         serviceListings = serviceListings.filter((provider) => {
-          // Check if servicelisting_isactive is true
-          const isActive = provider.servicelisting_isactive !== false;
+          // Check if servicelisting_isactive is true (must be explicitly true)
+          // Handle both camelCase and snake_case field names
+          const isActive = provider.servicelisting_isactive === true || 
+                          (provider as any).servicelisting_isActive === true ||
+                          (provider as any).servicelistingIsActive === true;
+          
           if (!isActive) {
-            console.log('🚫 Filtered out inactive provider:', provider.provider?.provider_name || 'Unknown');
+            console.log('🚫 Filtered out inactive provider:', {
+              name: provider.provider?.provider_name || provider.provider?.name || 'Unknown',
+              id: provider.id,
+              servicelisting_isactive: provider.servicelisting_isactive,
+              servicelisting_isActive: (provider as any).servicelisting_isActive,
+              servicelistingIsActive: (provider as any).servicelistingIsActive
+            });
           }
           return isActive;
         });
@@ -509,8 +522,28 @@ const ServiceProvider = () => {
               Try searching for a different service or check back later
             </Text>
           </View>
-        ) : (
-          providers.map((provider) => (
+        ) : (() => {
+          // Filter by selected max distance
+          const filteredProviders = providers.filter(provider => 
+            provider.distance === undefined || provider.distance <= maxDistance
+          );
+          
+          // Show message if all providers filtered out by distance
+          if (filteredProviders.length === 0) {
+            return (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
+                <Ionicons name="location-outline" size={60} color="#ccc" />
+                <Text style={{ marginTop: 20, fontSize: 18, color: '#666', textAlign: 'center' }}>
+                  No providers within {maxDistance} km
+                </Text>
+                <Text style={{ marginTop: 10, fontSize: 14, color: '#999', textAlign: 'center' }}>
+                  Try increasing the maximum distance filter
+                </Text>
+              </View>
+            );
+          }
+          
+          return filteredProviders.map((provider) => (
             <TouchableOpacity 
               key={provider.id} 
               onPress={() => {
@@ -687,8 +720,8 @@ const ServiceProvider = () => {
                 </View>
               </View>
             </TouchableOpacity>
-          ))
-        )}
+          ));
+        })()}
       </ScrollView>
       </View>
     </>

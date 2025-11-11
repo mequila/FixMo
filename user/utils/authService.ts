@@ -127,7 +127,7 @@ export class AuthService {
           text: 'OK',
           onPress: () => {
             if (this.router) {
-              this.router.replace('/login');
+              this.router.replace('/splash');
             }
           }
         }

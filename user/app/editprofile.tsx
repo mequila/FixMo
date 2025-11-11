@@ -202,7 +202,7 @@ export default function Account() {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         Alert.alert('Error', 'Please login first');
-        router.replace('/login');
+        router.replace('/splash');
         return;
       }
 
@@ -251,7 +251,7 @@ export default function Account() {
         }
       } else if (response.status === 401) {
         Alert.alert('Session Expired', 'Please login again');
-        router.replace('/login');
+        router.replace('/splash');
       } else {
         Alert.alert('Error', 'Failed to load profile');
       }

@@ -1,7 +1,7 @@
 
 import { Ionicons } from '@expo/vector-icons'
-import { useState } from 'react'
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import { ScrollView, Text, TouchableOpacity, View, RefreshControl, StyleSheet } from 'react-native'
 import PageHeader from './components/PageHeader'
 
 const faqCardDetails = [
@@ -37,6 +37,7 @@ const faqCardDetails = [
 
 const FAQ = () => {
   const [expanded, setExpanded] = useState<number[]>([])
+  const [refreshing, setRefreshing] = useState(false);
 
   const toggleExpand = (idx: number) => {
     setExpanded(prev =>
@@ -46,79 +47,223 @@ const FAQ = () => {
     )
   }
 
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={styles.container}>
       <PageHeader title="FAQ" backRoute="/(tabs)/profile" />
-      <ScrollView>
-        {faqCardDetails.map((item, idx) => {
-          const isOpen = expanded.includes(idx);
-          return (
-            <View
-              key={idx}
-              style={{
-                marginTop: isOpen ? 8 : 15,
-                borderRadius: 8,
-                overflow: 'hidden',
-                marginHorizontal: 16,
-                backgroundColor: isOpen ? '#e7ecec' : 'transparent',
-                borderWidth: isOpen ? 1 : 0,
-                borderColor: isOpen ? '#b2d7d7' : 'transparent',
-                elevation: isOpen ? 4 : 5,
-                shadowColor: '#008080',
-                shadowOpacity: isOpen ? 0.12 : 0.06,
-                shadowRadius: isOpen ? 8 : 3,
-              }}
-            >
+      
+      {/* Header Banner */}
+      <View style={styles.headerBanner}>
+        <Ionicons name="help-circle" size={32} color="#008080" />
+        <Text style={styles.headerTitle}>Frequently Asked Questions</Text>
+        <Text style={styles.headerSubtitle}>Find answers to common questions</Text>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#008080']}
+            tintColor="#008080"
+            title="Pull to refresh"
+            titleColor="#008080"
+          />
+        }
+      >
+        <View style={{ paddingBottom: 20 }}>
+          {faqCardDetails.map((item, idx) => {
+            const isOpen = expanded.includes(idx);
+            return (
               <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  backgroundColor: '#fff',
-                  borderTopLeftRadius: 8,
-                  borderTopRightRadius: 8,
-                }}
+                key={idx}
+                style={[
+                  styles.faqCard,
+                  isOpen && styles.faqCardExpanded
+                ]}
               >
-                <Text style={{ fontWeight: 'bold', fontSize: 16, }}>{item.question}</Text>
                 <TouchableOpacity
-                  style={{
-                    padding: 5,
-                    backgroundColor: '#008080',
-                    borderRadius: 5,
-                  }}
                   onPress={() => toggleExpand(idx)}
+                  style={styles.questionContainer}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={isOpen ? 'chevron-up' : 'chevron-down'}
-                    size={24}
-                    color='#fff'
-                  />
+                  <View style={styles.questionTextContainer}>
+                    <View style={styles.iconBadge}>
+                      <Ionicons name="help-circle-outline" size={20} color="#008080" />
+                    </View>
+                    <Text style={styles.questionText}>{item.question}</Text>
+                  </View>
+                  <View style={[styles.expandButton, isOpen && styles.expandButtonOpen]}>
+                    <Ionicons
+                      name={isOpen ? 'chevron-up' : 'chevron-down'}
+                      size={22}
+                      color='#fff'
+                    />
+                  </View>
                 </TouchableOpacity>
+                
+                {isOpen && (
+                  <View style={styles.answerContainer}>
+                    <View style={styles.answerDivider} />
+                    <View style={styles.answerIconContainer}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4caf50" />
+                    </View>
+                    <Text style={styles.answerText}>{item.answer}</Text>
+                  </View>
+                )}
               </View>
-              {isOpen && (
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    backgroundColor: '#fff',
-                    borderBottomLeftRadius: 8,
-                    borderBottomRightRadius: 8,
-                    borderTopWidth: 1,
-                    borderColor: '#e7ecec',
-                  }}
-                >
-                  <Text style={{ color: '#333', fontSize: 15, lineHeight: 25 }}>{item.answer}</Text>
-                </View>
-              )}
-            </View>
-          );
-        })}
+            );
+          })}
+        </View>
+
+        {/* Help Footer */}
+        <View style={styles.helpFooter}>
+          <Ionicons name="chatbubble-ellipses" size={28} color="#008080" />
+          <Text style={styles.helpText}>Still have questions?</Text>
+          <Text style={styles.helpSubtext}>Contact our support team for assistance</Text>
+        </View>
       </ScrollView>
     </View>
-    
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  headerBanner: {
+    backgroundColor: '#fff',
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 10,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  faqCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  faqCardExpanded: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#008080',
+  },
+  questionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  questionTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  iconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e6f7ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  questionText: {
+    flex: 1,
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 22,
+  },
+  expandButton: {
+    padding: 8,
+    backgroundColor: '#008080',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expandButtonOpen: {
+    backgroundColor: '#006666',
+  },
+  answerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  answerDivider: {
+    height: 1,
+    backgroundColor: '#e1e5e9',
+    marginBottom: 12,
+  },
+  answerIconContainer: {
+    marginBottom: 8,
+  },
+  answerText: {
+    color: '#555',
+    fontSize: 15,
+    lineHeight: 24,
+    paddingLeft: 0,
+  },
+  helpFooter: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    margin: 16,
+    marginTop: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  helpText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 12,
+  },
+  helpSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+});
 
 export default FAQ

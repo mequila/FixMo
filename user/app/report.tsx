@@ -298,6 +298,13 @@ const ReportForm = () => {
       Alert.alert("Error", "Please enter a description");
       return false;
     }
+    
+    // For penalty appeals, validate minimum description length (backend requires 10 chars)
+    if (reportType === 'penalty_appeal' && description.trim().length < 10) {
+      Alert.alert("Error", "Appeal reason must be at least 10 characters long");
+      return false;
+    }
+    
     return true;
   };
 
@@ -310,12 +317,21 @@ const ReportForm = () => {
       // Handle penalty appeal separately through penalty service
       if (reportType === 'penalty_appeal') {
         console.log('Submitting penalty appeal for violation:', selectedViolationId);
-        const result = await submitAppeal(parseInt(selectedViolationId), description.trim());
+        console.log('Including evidence images:', images.length);
+        
+        // Pass images to submitAppeal function
+        const result = await submitAppeal(
+          parseInt(selectedViolationId), 
+          description.trim(),
+          images.length > 0 ? images : undefined
+        );
         
         if (result.success) {
           Alert.alert(
             "Appeal Submitted",
-            "Your penalty appeal has been submitted successfully. Our team will review it within 3-5 business days.",
+            images.length > 0 
+              ? `Your penalty appeal has been submitted successfully with ${images.length} evidence image(s). Our team will review it within 3-5 business days.`
+              : "Your penalty appeal has been submitted successfully. Our team will review it within 3-5 business days.",
             [
               {
                 text: "OK",

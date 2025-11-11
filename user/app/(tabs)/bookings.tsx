@@ -175,6 +175,10 @@ export default function Bookings() {
   // Rating detection state (SEPARATE FROM MAIN APPOINTMENTS)
   const [isRatingPopupShown, setIsRatingPopupShown] = useState(false);
 
+  // Customer no-show warning modal state
+  const [isCustomerNoShowWarningVisible, setIsCustomerNoShowWarningVisible] = useState(false);
+  const [hasShownNoShowWarning, setHasShownNoShowWarning] = useState(false);
+
   const { width } = useWindowDimensions();
 
   // Global overdue appointment check (works across all tabs)
@@ -858,7 +862,27 @@ export default function Bookings() {
       setCancelBackjobNotes("");
       setSelectedImageUris([]);
     }
-  }, [selectedBooking]);  const fetchAppointments = async (isRefresh = false) => {
+  }, [selectedBooking]);
+
+  // Detect customer no-show and show warning modal automatically
+  useEffect(() => {
+    if (bookings.length > 0 && !hasShownNoShowWarning) {
+      // Check if any booking has customer no-show status
+      const hasCustomerNoShow = bookings.some(booking => 
+        booking.originalStatus?.toLowerCase().includes('customer') && 
+        (booking.originalStatus?.toLowerCase().includes('no-show') || 
+         booking.originalStatus?.toLowerCase().includes('no_show'))
+      );
+
+      if (hasCustomerNoShow) {
+        // Show the warning modal
+        setIsCustomerNoShowWarningVisible(true);
+        setHasShownNoShowWarning(true);
+      }
+    }
+  }, [bookings, hasShownNoShowWarning]);
+
+  const fetchAppointments = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -1054,6 +1078,8 @@ export default function Bookings() {
         case 'cancelled': return 'Cancelled';
         case 'provider_no_show': return 'Cancelled'; // Map to Cancelled tab
         case 'provider-no-show': return 'Cancelled'; // Map to Cancelled tab
+        case 'user_no_show': return 'Cancelled'; // Map to Cancelled tab
+        case 'user-no-show': return 'Cancelled'; // Map to Cancelled tab
         case 'no-show': return 'Cancelled'; // Treat no-show as cancelled
         case 'no_show': return 'Cancelled'; // Handle underscore variant
         case 'pending': return 'Pending';
@@ -1096,6 +1122,8 @@ export default function Bookings() {
       case 'provider_no_show':
       case 'provider-no-show':
         return 'Provider No-Show';
+      case 'user_no_show':
+      case 'user-no-show':
       case 'no-show':
       case 'no_show':
         return 'Customer No-Show';
@@ -4189,6 +4217,116 @@ export default function Bookings() {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Customer No-Show Warning Modal */}
+      <Modal
+        visible={isCustomerNoShowWarningVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsCustomerNoShowWarningVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20,
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 20,
+            padding: 24,
+            width: '90%',
+            maxWidth: 400,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+          }}>
+            {/* Warning Icon */}
+            <View style={{
+              alignItems: 'center',
+              marginBottom: 16,
+            }}>
+              <View style={{
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                backgroundColor: '#fff3cd',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}>
+                <Ionicons name="warning" size={32} color="#f39c12" />
+              </View>
+              <Text style={{
+                fontSize: 20,
+                fontWeight: '700',
+                color: '#333',
+                textAlign: 'center',
+              }}>
+                You Are Marked as No-Show
+              </Text>
+            </View>
+
+            {/* Warning Message */}
+            <View style={{
+              backgroundColor: '#fff9e6',
+              borderLeftWidth: 4,
+              borderLeftColor: '#f39c12',
+              padding: 16,
+              borderRadius: 8,
+              marginBottom: 20,
+            }}>
+              <Text style={{
+                fontSize: 15,
+                color: '#333',
+                lineHeight: 22,
+                textAlign: 'center',
+              }}>
+                You were marked as a no-show for an appointment. Repeating this behavior will decrease your{' '}
+                <Text style={{ fontWeight: '700', color: '#e74c3c' }}>Fix Score</Text>.
+              </Text>
+            </View>
+
+            {/* Additional Info */}
+            <View style={{
+              backgroundColor: '#f8f9fa',
+              padding: 12,
+              borderRadius: 8,
+              marginBottom: 20,
+            }}>
+              <Text style={{
+                fontSize: 13,
+                color: '#666',
+                lineHeight: 20,
+                textAlign: 'center',
+              }}>
+                💡 Please ensure you cancel appointments in advance if you cannot attend. Multiple no-shows may result in account restrictions.
+              </Text>
+            </View>
+
+            {/* Understood Button */}
+            <TouchableOpacity
+              onPress={() => setIsCustomerNoShowWarningVisible(false)}
+              style={{
+                backgroundColor: '#008080',
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: '600',
+              }}>
+                I Understand
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
     </GestureHandlerRootView>
   );

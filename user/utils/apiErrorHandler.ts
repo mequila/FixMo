@@ -43,8 +43,8 @@ export class ApiErrorHandler {
       
       // Navigate immediately without alert to ensure smooth transition
       if (this.router) {
-        console.log('🔄 Navigating to login page...');
-        this.router.replace('/login-register/splash');
+        console.log('🔄 Navigating to splash page...');
+        this.router.replace('/splash');
       } else {
         console.error('❌ Router not initialized!');
       }
@@ -63,7 +63,7 @@ export class ApiErrorHandler {
       console.error('Error handling token expiration:', error);
       // Still try to navigate even if clearing storage fails
       if (this.router) {
-        this.router.replace('/login-register/splash');
+        this.router.replace('/splash');
       }
     }
   }

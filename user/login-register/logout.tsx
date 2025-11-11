@@ -7,7 +7,7 @@ const Logout = () => {
     const handleLogout = (): void => {
         // TODO: Clear session/auth token here
         console.log("User logged out");
-        router.replace("/login");
+        router.replace("/splash");
     };
 
     const confirmLogout = (): void => {

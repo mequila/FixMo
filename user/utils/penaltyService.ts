@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { ApiErrorHandler } from './apiErrorHandler';
 
 // Get backend URL from environment variables
@@ -125,9 +126,12 @@ export const getViolationHistory = async (status: string | null = null, limit = 
 };
 
 /**
- * Submit an appeal for a violation
+ * Submit an appeal for a violation with optional evidence images
+ * Backend requirements:
+ * - appealReason: required, minimum 10 characters
+ * - evidence: optional, max 5 files
  */
-export const submitAppeal = async (violationId: number, appealReason: string) => {
+export const submitAppeal = async (violationId: number, appealReason: string, images?: any[]) => {
   try {
     const token = await AsyncStorage.getItem('token');
     if (!token) {
@@ -137,16 +141,62 @@ export const submitAppeal = async (violationId: number, appealReason: string) =>
       };
     }
 
+    // Validate appeal reason (backend requires min 10 chars)
+    if (appealReason.trim().length < 10) {
+      return {
+        success: false,
+        error: 'Appeal reason must be at least 10 characters long',
+      };
+    }
+
     console.log('🔍 Submitting appeal for violation:', violationId);
     console.log('🔍 Appeal URL:', `${BACKEND_URL}/api/penalty/appeal/${violationId}`);
+    console.log('🔍 Appeal Reason length:', appealReason.length);
+    console.log('🔍 Number of evidence files:', images?.length || 0);
+
+    // Always use FormData to match backend expectations
+    const formData = new FormData();
+    formData.append('appealReason', appealReason);
+
+    // Add evidence images if provided (max 5 files)
+    if (images && images.length > 0) {
+      const maxFiles = Math.min(images.length, 5); // Backend limit: max 5 files
+      
+      for (let index = 0; index < maxFiles; index++) {
+        const image = images[index];
+        // Handle URI formatting for different platforms
+        const uri = Platform.OS === 'ios' 
+          ? image.uri.replace('file://', '') 
+          : image.uri;
+          
+        const imageFile: any = {
+          uri: uri,
+          type: image.type || image.mimeType || 'image/jpeg',
+          name: image.fileName || image.filename || `appeal_evidence_${Date.now()}_${index}.jpg`,
+        };
+        
+        console.log(`📎 Adding evidence file ${index + 1}/${maxFiles}:`, {
+          uri: imageFile.uri.substring(0, 50) + '...',
+          type: imageFile.type,
+          name: imageFile.name,
+        });
+        
+        // Backend expects field name 'evidence' (not 'evidence_images')
+        formData.append('evidence', imageFile);
+      }
+      
+      console.log(`📤 Sending appeal with ${maxFiles} evidence file(s)`);
+    } else {
+      console.log('📤 Sending appeal without evidence files');
+    }
 
     const response = await fetch(`${BACKEND_URL}/api/penalty/appeal/${violationId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        // Don't set Content-Type for FormData - browser will set it with boundary
       },
-      body: JSON.stringify({ appealReason }),
+      body: formData,
     });
 
     console.log('🔍 Appeal Response Status:', response.status);
@@ -165,10 +215,12 @@ export const submitAppeal = async (violationId: number, appealReason: string) =>
     console.log('🔍 Appeal Response Data:', data);
 
     if (response.ok) {
+      // Include evidence URLs in response if backend returns them
       return {
         success: true,
         data: data.data,
         message: data.message,
+        evidenceUrls: data.data?.evidenceUrls || data.data?.evidence_urls || [],
       };
     } else {
       return {

@@ -1,5 +1,8 @@
-import { ScrollView, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, Text, View, RefreshControl, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import PageHeader from './components/PageHeader';
+
 const termsList = [
   {
     title: "Eligibility",
@@ -24,14 +27,6 @@ const termsList = [
   {
     title: "Service Guarantee",
     description: "FixMo verifies providers and allows user reviews but is not liable for service outcomes beyond verification, warranty handling, and the rating system."
-  },
-  {
-    title: "Payments & Fees",
-    description: "Users agree to pay the displayed service fees through FixMo’s supported payment methods. Cancellations made outside the allowed window may incur charges."
-  },
-  {
-    title: "Cancellations & Refunds",
-    description: "Refunds and cancellations are subject to FixMo’s refund policy. Refund requests may be reviewed based on service status and provider confirmation."
   },
   {
     title: "Warranty & Backjobs",
@@ -85,21 +80,173 @@ const termsList = [
 ];
 
 const termsConditions = () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={styles.container}>
       <PageHeader title="Terms and Conditions" backRoute="/profile" />
-      <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+      
+      {/* Header Banner */}
+      <View style={styles.headerBanner}>
+        <Ionicons name="document-text" size={32} color="#008080" />
+        <Text style={styles.headerTitle}>Terms & Conditions</Text>
+        <Text style={styles.headerSubtitle}>Last updated: November 5, 2025</Text>
+      </View>
+
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#008080']}
+            tintColor="#008080"
+            title="Pull to refresh"
+            titleColor="#008080"
+          />
+        }
+      >
+        <View style={styles.introCard}>
+          <Text style={styles.introText}>
+            By using FixMo, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
+          </Text>
+        </View>
+
         {termsList.map((item, idx) => (
-          <View key={idx} style={{ marginBottom: 18 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#008080', marginBottom: 4 }}>
-              {idx + 1}. {item.title}
-            </Text>
-            <Text style={{ color: '#333', fontSize: 15, lineHeight: 24 }}>{item.description}</Text>
+          <View key={idx} style={styles.termCard}>
+            <View style={styles.termHeader}>
+              <View style={styles.numberBadge}>
+                <Text style={styles.numberText}>{idx + 1}</Text>
+              </View>
+              <Text style={styles.termTitle}>{item.title}</Text>
+            </View>
+            <Text style={styles.termDescription}>{item.description}</Text>
           </View>
         ))}
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Ionicons name="shield-checkmark" size={24} color="#008080" />
+          <Text style={styles.footerText}>
+            These terms are legally binding. By using FixMo, you acknowledge that you have read and agreed to these terms.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  headerBanner: {
+    backgroundColor: '#fff',
+    padding: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 10,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  introCard: {
+    backgroundColor: '#e6f7ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#008080',
+  },
+  introText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  termCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  termHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  numberBadge: {
+    backgroundColor: '#008080',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  numberText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  termTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#008080',
+    flex: 1,
+  },
+  termDescription: {
+    fontSize: 15,
+    color: '#555',
+    lineHeight: 24,
+  },
+  footer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20,
+  },
+});
 
 export default termsConditions;

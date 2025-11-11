@@ -381,6 +381,12 @@ export default function ProfileScreen() {
             }
         }
 
+            // Ensure profile photo is provided
+            if (!photo) {
+                Alert.alert('Profile Photo Required', 'Please add a profile photo before continuing.');
+                return false;
+            }
+
         // Check username availability
         if (usernameStatus === 'taken') {
             Alert.alert('Username Taken', 'Please choose a different username.');
