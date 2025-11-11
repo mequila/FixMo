@@ -41,7 +41,7 @@ const _layout = () => {
                 headerStyle: { backgroundColor: "#e7ecec" },
                 headerTitleAlign: "center",
                 tabBarIcon: ({color, size}) => (
-                    <Ionicons name='bookmark' size={25} color={color}/>
+                    <Ionicons name='calendar' size={25} color={color}/>
                 )    
             }}
         />

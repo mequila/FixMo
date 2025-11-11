@@ -301,9 +301,9 @@ const Profile = () => {
                 </Text>
               )}
             </View>
-          <Ionicons name="chevron-forward" size={20} color="#999" />
-        </TouchableOpacity>
-      )}
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
 
       <ProfileCard
         label="Edit Profile"
