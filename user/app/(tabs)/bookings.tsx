@@ -12,6 +12,7 @@ import { MessageService } from '../../utils/messageAPI';
 import AuthService from '../../utils/authService';
 import { syncAuthWithExistingStorage } from '../../utils/appInitializer';
 import { useOverdueAppointmentCheck } from '../../utils/useOverdueAppointmentCheck';
+import { AvailabilityService, WeeklySchedule, DaySchedule, TimeSlot } from '../../utils/availabilityService';
 
 
 // Get backend URL from environment variables
@@ -182,18 +183,37 @@ export default function Bookings() {
   // Rebook modal states
   const [isRebookModalVisible, setIsRebookModalVisible] = useState(false);
   const [rebookAppointment, setRebookAppointment] = useState<Appointment | null>(null);
-  const [providerAvailability, setProviderAvailability] = useState<any[]>([]);
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null);
   const [selectedRebookDate, setSelectedRebookDate] = useState<string | null>(null);
-  const [selectedRebookSlot, setSelectedRebookSlot] = useState<any | null>(null);
+  const [selectedDaySchedule, setSelectedDaySchedule] = useState<DaySchedule | null>(null);
+  const [dayTimeSlots, setDayTimeSlots] = useState<TimeSlot[]>([]);
+  const [selectedRebookSlot, setSelectedRebookSlot] = useState<TimeSlot | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [rebookServiceId, setRebookServiceId] = useState<number | null>(null);
+  const [rebookStep, setRebookStep] = useState<'date' | 'time'>('date');
 
   const { width } = useWindowDimensions();
 
   // Global overdue appointment check (works across all tabs)
   useOverdueAppointmentCheck((overdueAppointment) => {
+    console.log('🚨 OVERDUE APPOINTMENT DETECTED:', {
+      appointment_id: overdueAppointment.appointment_id,
+      scheduled_date: overdueAppointment.scheduled_date,
+      provider: overdueAppointment.name,
+      service: overdueAppointment.service_title,
+    });
+
+    console.log('🔍 Modal states:', {
+      isModalVisible,
+      isBackjobModalVisible,
+      isNoShowModalVisible,
+      isAutoNoShowPromptVisible,
+      isProviderConfirmationVisible
+    });
+
     // Only show modal if no other modals are open
     if (!isModalVisible && !isBackjobModalVisible && !isNoShowModalVisible && !isAutoNoShowPromptVisible && !isProviderConfirmationVisible) {
+      console.log('✅ Showing provider confirmation modal for overdue appointment');
       setConfirmationAppointment({
         ...overdueAppointment,
         statusColor: '#ff9800'
@@ -201,6 +221,8 @@ export default function Bookings() {
       setFinalPrice(overdueAppointment.starting_price?.toString() || '0');
       setShowPriceInput(false);
       setIsProviderConfirmationVisible(true);
+    } else {
+      console.log('⚠️ Another modal is already open, not showing overdue modal');
     }
   }, true);
 
@@ -1805,80 +1827,36 @@ export default function Bookings() {
     }
   };
 
-  // Fetch provider availability for rebook
+  // Fetch provider availability for rebook using new API
   const fetchProviderAvailability = async (providerId: number, serviceTitle: string) => {
     setAvailabilityLoading(true);
+    setRebookStep('date');
+    
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        Alert.alert('Error', 'Authentication required');
-        return;
-      }
-
-      console.log('=== FETCHING PROVIDER WEEKLY DAYS ===');
+      console.log('=== FETCHING PROVIDER WEEKLY SCHEDULE ===');
       console.log('Provider ID:', providerId);
       console.log('Service title:', serviceTitle);
       
-      // Use the weekly-days endpoint to get all available days
-      const response = await fetch(
-        `${BACKEND_URL}/auth/provider/${providerId}/weekly-days`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Get current week start date
+      const weekStart = AvailabilityService.getWeekStart();
+      console.log('Week start date:', weekStart);
 
-      console.log('Response status:', response.status);
+      // Fetch weekly schedule using new API
+      const result = await AvailabilityService.getProviderWeeklySchedule(providerId, weekStart);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Weekly days response:', JSON.stringify(result, null, 2));
-        
-        if (result.success && result.data) {
-          // The response structure has weekly days data
-          const weeklyDays = result.data.weeklyDays || result.data.availability || result.data;
-          
-          console.log('Provider ID from response:', result.data.providerId || providerId);
-          console.log('Weekly days array:', weeklyDays);
-          
-          // Set the availability slots (all days of the week that provider is available)
-          if (weeklyDays && weeklyDays.length > 0) {
-            setProviderAvailability(weeklyDays);
-            console.log('✅ Successfully loaded', weeklyDays.length, 'weekly day slots');
-            
-            // We need to get the service listing ID from the original appointment
-            // Since the endpoint doesn't return it, we'll fetch it separately
-            await fetchServiceListingId(providerId, serviceTitle);
-          } else {
-            console.log('⚠️ No weekly days found');
-            setProviderAvailability([]);
-            setRebookServiceId(null);
-            
-            Alert.alert(
-              'No Availability',
-              'This provider has not set their weekly availability schedule yet. Please try contacting them directly or choose another provider.',
-              [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    setIsRebookModalVisible(false);
-                    setRebookAppointment(null);
-                  }
-                }
-              ]
-            );
-          }
-        } else {
-          console.log('⚠️ Invalid response format:', result);
-          setProviderAvailability([]);
-          setRebookServiceId(null);
-          
+      if (result.success && result.data) {
+        console.log('✅ Successfully loaded weekly schedule');
+        console.log('📊 Summary:', result.data.summary);
+        console.log('📅 Active days:', result.data.summary.activeDays);
+        console.log('🔢 Available slots:', result.data.summary.availableSlots);
+
+        setWeeklySchedule(result.data);
+
+        // Check if provider has any availability
+        if (result.data.summary.availableSlots === 0) {
           Alert.alert(
-            'No Service Available',
-            result.message || 'This provider is not currently offering this service.',
+            'No Availability',
+            'This provider has no available time slots in the coming weeks. Please try contacting them directly or choose another provider.',
             [
               {
                 text: 'OK',
@@ -1889,16 +1867,19 @@ export default function Bookings() {
               }
             ]
           );
+          return;
         }
+
+        // Fetch service listing ID
+        await fetchServiceListingId(providerId, serviceTitle);
+        
       } else {
-        const errorText = await response.text();
-        console.error('Failed to fetch weekly days:', response.status, errorText);
-        setProviderAvailability([]);
-        setRebookServiceId(null);
+        console.error('❌ Failed to load weekly schedule:', result.message);
+        setWeeklySchedule(null);
         
         Alert.alert(
           'Availability Not Found',
-          'Unable to load provider weekly availability. The provider may not have set their schedule yet.',
+          result.message || 'Unable to load provider availability. The provider may not have set their schedule yet.',
           [
             {
               text: 'OK',
@@ -1911,12 +1892,11 @@ export default function Bookings() {
         );
       }
       
-      console.log('=== END FETCHING WEEKLY DAYS ===');
+      console.log('=== END FETCHING WEEKLY SCHEDULE ===');
       
     } catch (error) {
-      console.error('Error fetching provider weekly days:', error);
-      setProviderAvailability([]);
-      setRebookServiceId(null);
+      console.error('❌ Error fetching provider weekly schedule:', error);
+      setWeeklySchedule(null);
       Alert.alert(
         'Network Error',
         'Unable to connect to the server. Please check your internet connection.'
@@ -1941,75 +1921,94 @@ export default function Bookings() {
     );
   };
 
-  // Get available dates from provider availability
-  const getAvailableDates = () => {
-    if (!providerAvailability || providerAvailability.length === 0) return [];
+  // Get available dates from weekly schedule
+  const getAvailableDates = (): Date[] => {
+    if (!weeklySchedule) return [];
     
-    const today = new Date();
-    const availableDates: Date[] = [];
-    
-    // Get next 60 days
-    for (let i = 0; i < 60; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-      
-      // Check if provider is available on this day
-      const hasAvailability = providerAvailability.some(slot => {
-        // Handle both dayOfWeek and day_of_week field names
-        const slotDay = slot.dayOfWeek || slot.day_of_week;
-        // Check if slot is active and available
-        const isActive = slot.availability_isActive !== false && 
-                        slot.isActive !== false && 
-                        slot.is_active !== false;
-        const isAvailable = slot.isAvailable !== false && 
-                           slot.is_available !== false &&
-                           slot.isBookingAllowed !== false;
-        const notBooked = !slot.isBooked && !slot.is_booked;
-        
-        return slotDay === dayOfWeek && isActive && isAvailable && notBooked;
-      });
-      
-      if (hasAvailability) {
-        availableDates.push(date);
-      }
-    }
-    
-    return availableDates;
+    return AvailabilityService.getAvailableDatesFromSchedule(weeklySchedule, 8);
   };
 
-  // Get time slots for selected date
-  const getTimeSlotsForDate = (dateString: string) => {
-    if (!providerAvailability || providerAvailability.length === 0) return [];
+  // Fetch time slots for specific day when date is selected
+  const fetchTimeSlotsForDate = async (dateString: string) => {
+    if (!rebookAppointment?.provider_id) return;
     
-    const date = new Date(dateString);
-    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    console.log('🔍 fetchTimeSlotsForDate called with dateString:', dateString);
     
-    return providerAvailability.filter(slot => {
-      // Handle both camelCase and snake_case field names
-      const slotDay = slot.dayOfWeek || slot.day_of_week;
-      // Check if slot is active and available
-      const isActive = slot.availability_isActive !== false && 
-                      slot.isActive !== false && 
-                      slot.is_active !== false;
-      const isAvailable = slot.isAvailable !== false && 
-                         slot.is_available !== false &&
-                         slot.isBookingAllowed !== false;
-      const notBooked = !slot.isBooked && !slot.is_booked;
-      
-      return slotDay === dayOfWeek && isActive && isAvailable && notBooked;
-    });
+    setAvailabilityLoading(true);
+    try {
+      const dayOfWeek = AvailabilityService.getDayOfWeek(dateString);
+      console.log('🕐 Fetching time slots for:', dayOfWeek, dateString);
+      console.log('📍 Provider ID:', rebookAppointment.provider_id);
+
+      const result = await AvailabilityService.getAvailableTimeSlotsForDay(
+        rebookAppointment.provider_id,
+        dayOfWeek,
+        dateString
+      );
+
+      if (result.success && result.data) {
+        console.log('✅ Time slots loaded:', result.data.summary.available, 'available');
+        console.log('📅 API returned date:', result.data.date);
+        console.log('📅 API returned day:', result.data.dayOfWeek);
+        
+        // Filter to show only future time slots (important for today's date)
+        const futureSlots = AvailabilityService.filterFutureTimeSlots(
+          dateString, 
+          result.data.availableTimeSlots
+        );
+        
+        console.log('📅 Future slots after filtering:', futureSlots.length);
+        console.log('📅 All slots from API:', result.data.availableTimeSlots.length);
+        setDayTimeSlots(futureSlots);
+        
+        // Also get the day schedule from weekly schedule for consistency
+        const daySchedule = weeklySchedule?.schedule.find(
+          (day) => day.dayOfWeek === dayOfWeek
+        );
+        setSelectedDaySchedule(daySchedule || null);
+        
+        if (futureSlots.length === 0) {
+          Alert.alert(
+            'No Time Slots Available',
+            dateString === AvailabilityService.formatDate(new Date())
+              ? `All time slots for today have passed. Please select a future date.`
+              : `Unfortunately, there are no available time slots for ${dayOfWeek}, ${dateString}. Please select another date.`
+          );
+        } else {
+          setRebookStep('time');
+        }
+      } else {
+        console.error('❌ Failed to load time slots:', result.message);
+        setDayTimeSlots([]);
+        Alert.alert('Error', result.message || 'Unable to load time slots for this date.');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching time slots:', error);
+      setDayTimeSlots([]);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  // Get time slots for selected date (used by UI)
+  const getTimeSlotsForDate = (dateString: string): TimeSlot[] => {
+    return dayTimeSlots;
   };
 
   // Handle date selection in rebook modal
-  const handleRebookDateSelect = (dateString: string) => {
+  const handleRebookDateSelect = async (dateString: string) => {
+    console.log('📅 Date selected:', dateString);
+    console.log('📅 Date type:', typeof dateString);
+    
     setSelectedRebookDate(dateString);
     setSelectedRebookSlot(null);
+    
+    // Fetch time slots for the selected date
+    await fetchTimeSlotsForDate(dateString);
   };
 
   // Handle time slot selection
-  const handleRebookSlotSelect = (slot: any) => {
+  const handleRebookSlotSelect = (slot: TimeSlot) => {
     setSelectedRebookSlot(slot);
   };
 
@@ -2025,12 +2024,8 @@ export default function Bookings() {
     console.log('Current Service ID:', rebookServiceId);
     console.log('Selected Date:', selectedRebookDate);
     console.log('Selected Slot:', selectedRebookSlot);
-    
-    // Handle both camelCase and snake_case field names
-    const availabilityId = selectedRebookSlot.availability_id || 
-                          selectedRebookSlot.availabilityId;
-    
-    console.log('Availability ID:', availabilityId);
+    console.log('Availability ID:', selectedRebookSlot.availability_id);
+    console.log('Time Range:', `${selectedRebookSlot.startTime} - ${selectedRebookSlot.endTime}`);
     console.log('Service Title:', rebookAppointment.service_title);
 
     // If service ID is not available yet, try to fetch it one more time
@@ -2069,7 +2064,7 @@ export default function Bookings() {
                 console.log('✅ Service ID fetched successfully:', providerListing.id);
                 
                 // Navigate with the fetched service ID
-                navigateToProviderProfile(providerListing.id, availabilityId);
+                navigateToProviderProfile(providerListing.id, selectedRebookSlot.availability_id);
                 return;
               }
             }
@@ -2104,19 +2099,21 @@ export default function Bookings() {
         setRebookAppointment(null);
         setSelectedRebookDate(null);
         setSelectedRebookSlot(null);
-        setProviderAvailability([]);
+        setWeeklySchedule(null);
+        setDayTimeSlots([]);
         setRebookServiceId(null);
+        setRebookStep('date');
       }, 500);
       
       return;
     }
 
     // Navigate with existing service ID
-    navigateToProviderProfile(rebookServiceId, availabilityId);
+    navigateToProviderProfile(rebookServiceId, selectedRebookSlot.availability_id);
   };
 
   // Helper function to navigate to provider profile
-  const navigateToProviderProfile = (serviceId: number, availabilityId: any) => {
+  const navigateToProviderProfile = (serviceId: number, availabilityId: number) => {
     console.log('Navigating to provider profile with serviceId:', serviceId);
     
     // Close modal first
@@ -2129,7 +2126,7 @@ export default function Bookings() {
         serviceId: serviceId.toString(),
         providerId: rebookAppointment?.provider_id?.toString() || '',
         selectedDate: selectedRebookDate || '',
-        availabilityId: availabilityId?.toString() || '',
+        availabilityId: availabilityId.toString(),
         category: rebookAppointment?.service_title || rebookAppointment?.type || ''
       }
     });
@@ -2139,8 +2136,11 @@ export default function Bookings() {
       setRebookAppointment(null);
       setSelectedRebookDate(null);
       setSelectedRebookSlot(null);
-      setProviderAvailability([]);
+      setWeeklySchedule(null);
+      setDayTimeSlots([]);
+      setSelectedDaySchedule(null);
       setRebookServiceId(null);
+      setRebookStep('date');
     }, 500);
   };
 
@@ -4758,7 +4758,11 @@ export default function Bookings() {
           setRebookAppointment(null);
           setSelectedRebookDate(null);
           setSelectedRebookSlot(null);
-          setProviderAvailability([]);
+          setWeeklySchedule(null);
+          setDayTimeSlots([]);
+          setSelectedDaySchedule(null);
+          setRebookServiceId(null);
+          setRebookStep('date');
         }}
       >
         <View style={{
@@ -4812,7 +4816,11 @@ export default function Bookings() {
                   setRebookAppointment(null);
                   setSelectedRebookDate(null);
                   setSelectedRebookSlot(null);
-                  setProviderAvailability([]);
+                  setWeeklySchedule(null);
+                  setDayTimeSlots([]);
+                  setSelectedDaySchedule(null);
+                  setRebookServiceId(null);
+                  setRebookStep('date');
                 }}
                 style={{
                   padding: 8,
@@ -4845,6 +4853,57 @@ export default function Bookings() {
                 showsVerticalScrollIndicator={false}
                 style={{ maxHeight: '100%' }}
               >
+                {/* Availability Summary Card */}
+                {weeklySchedule && (
+                  <View style={{
+                    backgroundColor: '#e8f5f5',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 20,
+                    borderWidth: 1,
+                    borderColor: '#b2dfdb',
+                  }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}>
+                      <Ionicons name="calendar" size={20} color="#008080" style={{ marginRight: 8 }} />
+                      <Text style={{
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: '#008080',
+                      }}>
+                        Availability Summary
+                      </Text>
+                    </View>
+                    <View style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-around',
+                      marginTop: 8,
+                    }}>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 24, fontWeight: '700', color: '#008080' }}>
+                          {weeklySchedule.summary.availableSlots}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#666' }}>Available Slots</Text>
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 24, fontWeight: '700', color: '#008080' }}>
+                          {weeklySchedule.summary.activeDays}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#666' }}>Active Days</Text>
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 24, fontWeight: '700', color: '#4caf50' }}>
+                          {weeklySchedule.summary.availabilityRate}%
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#666' }}>Available</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
                 {/* Step 1: Select Date */}
                 <View style={{ marginBottom: 24 }}>
                   <View style={{
@@ -4861,7 +4920,11 @@ export default function Bookings() {
                       justifyContent: 'center',
                       marginRight: 10,
                     }}>
-                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>1</Text>
+                      {selectedRebookDate ? (
+                        <Ionicons name="checkmark" size={18} color="white" />
+                      ) : (
+                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>1</Text>
+                      )}
                     </View>
                     <Text style={{
                       fontSize: 18,
@@ -4885,64 +4948,116 @@ export default function Bookings() {
                       </Text>
                     </View>
                   ) : (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={{
-                        marginTop: 8,
-                      }}
-                      contentContainerStyle={{
-                        paddingRight: 16,
-                      }}
-                    >
-                      {getAvailableDates().slice(0, 14).map((date, index) => {
-                        const dateString = date.toISOString().split('T')[0];
-                        const isSelected = selectedRebookDate === dateString;
-                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                        const dayNum = date.getDate();
-                        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+                    <>
+                      <Text style={{
+                        fontSize: 13,
+                        color: '#666',
+                        marginBottom: 12,
+                      }}>
+                        Showing next 14 available dates
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={{
+                          marginTop: 4,
+                        }}
+                        contentContainerStyle={{
+                          paddingRight: 16,
+                        }}
+                      >
+                        {getAvailableDates().slice(0, 14).map((date, index) => {
+                          // Use AvailabilityService.formatDate to avoid timezone issues
+                          const dateString = AvailabilityService.formatDate(date);
+                          const isSelected = selectedRebookDate === dateString;
+                          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                          const dayNum = date.getDate();
+                          const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+                          
+                          console.log('🗓️ Rendering date card:', {
+                            dateString,
+                            dayNum,
+                            dayName,
+                            monthName,
+                            isToday: dateString === AvailabilityService.formatDate(new Date())
+                          });
+                          
+                          // Get day schedule to show available slots count
+                          const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+                          const daySchedule = weeklySchedule?.schedule.find(
+                            (day) => day.dayOfWeek === dayOfWeek
+                          );
+                          
+                          // Get accurate future slots count (filters out past slots for today)
+                          const futureSlotsCount = daySchedule 
+                            ? AvailabilityService.getAvailableFutureSlotsCount(date, daySchedule)
+                            : 0;
 
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            onPress={() => handleRebookDateSelect(dateString)}
-                            style={{
-                              backgroundColor: isSelected ? '#008080' : '#f5f5f5',
-                              borderRadius: 12,
-                              padding: 12,
-                              marginRight: 10,
-                              minWidth: 70,
-                              alignItems: 'center',
-                              borderWidth: 2,
-                              borderColor: isSelected ? '#008080' : '#e0e0e0',
-                            }}
-                          >
-                            <Text style={{
-                              fontSize: 12,
-                              fontWeight: '600',
-                              color: isSelected ? 'white' : '#666',
-                              marginBottom: 4,
-                            }}>
-                              {dayName}
-                            </Text>
-                            <Text style={{
-                              fontSize: 20,
-                              fontWeight: '700',
-                              color: isSelected ? 'white' : '#333',
-                              marginBottom: 2,
-                            }}>
-                              {dayNum}
-                            </Text>
-                            <Text style={{
-                              fontSize: 11,
-                              color: isSelected ? 'white' : '#999',
-                            }}>
-                              {monthName}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
+                          return (
+                            <TouchableOpacity
+                              key={index}
+                              onPress={() => handleRebookDateSelect(dateString)}
+                              style={{
+                                backgroundColor: isSelected ? '#008080' : '#f5f5f5',
+                                borderRadius: 12,
+                                padding: 12,
+                                marginRight: 10,
+                                minWidth: 70,
+                                alignItems: 'center',
+                                borderWidth: 2,
+                                borderColor: isSelected ? '#008080' : '#e0e0e0',
+                                shadowColor: isSelected ? '#008080' : '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: isSelected ? 0.3 : 0.1,
+                                shadowRadius: 4,
+                                elevation: isSelected ? 4 : 2,
+                              }}
+                            >
+                              <Text style={{
+                                fontSize: 12,
+                                fontWeight: '600',
+                                color: isSelected ? 'white' : '#666',
+                                marginBottom: 4,
+                              }}>
+                                {dayName}
+                              </Text>
+                              <Text style={{
+                                fontSize: 20,
+                                fontWeight: '700',
+                                color: isSelected ? 'white' : '#333',
+                                marginBottom: 2,
+                              }}>
+                                {dayNum}
+                              </Text>
+                              <Text style={{
+                                fontSize: 11,
+                                color: isSelected ? 'white' : '#999',
+                                marginBottom: 4,
+                              }}>
+                                {monthName}
+                              </Text>
+                              {futureSlotsCount > 0 && (
+                                <View style={{
+                                  backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#4caf50',
+                                  borderRadius: 8,
+                                  paddingHorizontal: 6,
+                                  paddingVertical: 2,
+                                  marginTop: 4,
+                                }}>
+                                  <Text style={{
+                                    fontSize: 10,
+                                    fontWeight: '600',
+                                    color: isSelected ? 'white' : 'white',
+                                  }}>
+                                    {futureSlotsCount} slot{futureSlotsCount !== 1 ? 's' : ''}
+                                  </Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </>
                   )}
                 </View>
 
@@ -4963,7 +5078,11 @@ export default function Bookings() {
                         justifyContent: 'center',
                         marginRight: 10,
                       }}>
-                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>2</Text>
+                        {selectedRebookSlot ? (
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        ) : (
+                          <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>2</Text>
+                        )}
                       </View>
                       <Text style={{
                         fontSize: 18,
@@ -4979,19 +5098,30 @@ export default function Bookings() {
                       padding: 12,
                       borderRadius: 8,
                       marginBottom: 12,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                     }}>
                       <Text style={{
                         fontSize: 13,
                         color: '#666',
-                        textAlign: 'center',
+                        flex: 1,
                       }}>
-                        {new Date(selectedRebookDate).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {(() => {
+                          // Parse date in local timezone to avoid day shift
+                          const [year, month, day] = selectedRebookDate.split('-').map(Number);
+                          const localDate = new Date(year, month - 1, day);
+                          return localDate.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          });
+                        })()}
                       </Text>
+                      {availabilityLoading && (
+                        <ActivityIndicator size="small" color="#008080" />
+                      )}
                     </View>
 
                     {getTimeSlotsForDate(selectedRebookDate).length === 0 ? (
@@ -5013,14 +5143,7 @@ export default function Bookings() {
                         gap: 10,
                       }}>
                         {getTimeSlotsForDate(selectedRebookDate).map((slot, index) => {
-                          // Handle both camelCase and snake_case field names
-                          const availabilityId = slot.availability_id || slot.availabilityId;
-                          const startTime = slot.startTime || slot.start_time || slot.time_start;
-                          const endTime = slot.endTime || slot.end_time || slot.time_end;
-                          const availableSlots = slot.estimatedAvailableSlots || slot.estimated_available_slots || slot.available_slots;
-                          
-                          const isSelected = selectedRebookSlot?.availability_id === availabilityId || 
-                                           selectedRebookSlot?.availabilityId === availabilityId;
+                          const isSelected = selectedRebookSlot?.availability_id === slot.availability_id;
                           
                           return (
                             <TouchableOpacity
@@ -5052,16 +5175,16 @@ export default function Bookings() {
                                   fontWeight: '600',
                                   color: isSelected ? 'white' : '#333',
                                 }}>
-                                  {startTime} - {endTime}
+                                  {slot.startTime} - {slot.endTime}
                                 </Text>
                               </View>
-                              {availableSlots !== undefined && availableSlots !== null && (
+                              {slot.timeRange && (
                                 <Text style={{
                                   fontSize: 11,
                                   color: isSelected ? 'rgba(255,255,255,0.8)' : '#999',
                                   marginTop: 4,
                                 }}>
-                                  {availableSlots} slots left
+                                  {slot.timeRange}
                                 </Text>
                               )}
                             </TouchableOpacity>

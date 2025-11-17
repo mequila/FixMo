@@ -39,14 +39,36 @@ class OverdueAppointmentTracker {
   
   async checkForOverdueAppointments(): Promise<OverdueAppointment | null> {
     try {
+      // TEMPORARY: Clear checked appointments for testing
+      console.log('🧹 TESTING: Clearing checked appointments cache');
+      this.clearChecked();
+      
+      console.log('🔄 Starting overdue appointment check...');
+      console.log('🌐 Backend URL:', BACKEND_URL);
+      
       const token = await AuthService.getToken();
       if (!token) {
-        console.log('No token available for overdue check');
+        console.log('❌ No token available for overdue check');
         return null;
       }
+      
+      console.log('🔑 Token exists, length:', token.length);
 
-      // Fetch all appointments
-      const response = await fetch(`${BACKEND_URL}/auth/appointments`, {
+      // Get user ID from storage (bookings.tsx uses 'userId' not 'customerId')
+      const userIdStr = await AsyncStorage.getItem('userId');
+      if (!userIdStr) {
+        console.log('❌ No user ID found in storage');
+        return null;
+      }
+      
+      const userId = parseInt(userIdStr, 10);
+      console.log('👤 User ID:', userId);
+
+      // Fetch customer appointments (same endpoint as bookings screen)
+      const apiUrl = `${BACKEND_URL}/api/appointments/customer/${userId}`;
+      console.log('📡 Calling API:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -54,34 +76,123 @@ class OverdueAppointmentTracker {
         },
       });
 
+      console.log('📡 API Response status:', response.status);
+
       if (!response.ok) {
-        console.error('Failed to fetch appointments for overdue check');
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch appointments for overdue check');
+        console.error('Status:', response.status);
+        console.error('Error:', errorText);
         return null;
       }
 
       const result = await response.json();
-      const appointments = result.data || [];
+      console.log('📦 Full API response structure:', {
+        hasData: !!result.data,
+        dataType: Array.isArray(result.data) ? 'array' : typeof result.data,
+        dataLength: Array.isArray(result.data) ? result.data.length : 'N/A',
+        keys: Object.keys(result),
+        sampleData: result.data?.[0] || result[0] || 'No sample available'
+      });
+      
+      const appointments = result.data || result.appointments || result || [];
+      
+      console.log(`📋 Fetched ${appointments.length} total appointments`);
+      
+      // Count appointments by status
+      const scheduledCount = appointments.filter((a: any) => a.appointment_status === 'scheduled').length;
+      const confirmedCount = appointments.filter((a: any) => a.appointment_status === 'confirmed').length;
+      const onTheWayCount = appointments.filter((a: any) => a.appointment_status === 'on the way').length;
+      console.log(`📅 Appointments by status:`, {
+        scheduled: scheduledCount,
+        confirmed: confirmedCount,
+        onTheWay: onTheWayCount,
+        total: scheduledCount + confirmedCount + onTheWayCount
+      });
 
       const now = new Date();
       
-      // Find scheduled appointments that are more than 12 hours overdue
+      console.log('🔍 Checking for overdue appointments...');
+      console.log('⏰ Current time:', now.toLocaleString());
+      
+      // Find appointments that are overdue (scheduled, confirmed, or on the way)
+      const validStatuses = ['scheduled', 'confirmed', 'on the way'];
       const overdueAppointments = appointments.filter((appointment: any) => {
-        // Only check Scheduled appointments
-        if (appointment.appointment_status !== 'scheduled') return false;
+        // Only check Scheduled, Confirmed, or On the way appointments
+        if (!validStatuses.includes(appointment.appointment_status?.toLowerCase())) return false;
         
         // Skip if already checked
-        if (this.hasBeenChecked(appointment.appointment_id)) return false;
+        if (this.hasBeenChecked(appointment.appointment_id)) {
+          console.log(`⏭️ Skipping appointment ${appointment.appointment_id} - already checked`);
+          return false;
+        }
 
-        const scheduledDate = new Date(appointment.scheduled_date || appointment.date || '');
-        const twelveHoursAfter = new Date(scheduledDate);
-        twelveHoursAfter.setHours(twelveHoursAfter.getHours() + 12);
+        // Parse the scheduled date in local timezone
+        const scheduledDateStr = appointment.scheduled_date || appointment.date || '';
+        if (!scheduledDateStr) return false;
 
-        return now > twelveHoursAfter;
+        // Extract date components (YYYY-MM-DD format from DB)
+        const dateMatch = scheduledDateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!dateMatch) {
+          console.log('⚠️ Invalid date format:', scheduledDateStr);
+          return false;
+        }
+
+        const [, year, month, day] = dateMatch;
+        
+        // Get the time slot end time, or default to end of day
+        let endHour = 23;
+        let endMinute = 59;
+        
+        if (appointment.slot_end_time) {
+          const timeMatch = appointment.slot_end_time.match(/^(\d{1,2}):(\d{2})/);
+          if (timeMatch) {
+            endHour = parseInt(timeMatch[1], 10);
+            endMinute = parseInt(timeMatch[2], 10);
+          }
+        }
+
+        // Create date in local timezone
+        const scheduledEndTime = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          endHour,
+          endMinute,
+          0,
+          0
+        );
+
+        // Add 12 hours buffer after the appointment end time
+        const twelveHoursAfter = new Date(scheduledEndTime);
+        twelveHoursAfter.setHours(twelveHoursAfter.getHours() + 6); // TEMPORARY: Changed from 12 to 6 hours for testing
+
+        const isOverdue = now > twelveHoursAfter;
+
+        if (appointment.appointment_id) {
+          console.log(`📋 Appointment ${appointment.appointment_id}:`, {
+            scheduledDate: scheduledDateStr,
+            slotEndTime: appointment.slot_end_time,
+            scheduledEndTime: scheduledEndTime.toLocaleString(),
+            twelveHoursAfter: twelveHoursAfter.toLocaleString(),
+            isOverdue,
+            status: appointment.appointment_status
+          });
+        }
+
+        return isOverdue;
       });
 
       if (overdueAppointments.length > 0) {
-        console.log('✅ Found overdue appointment:', overdueAppointments[0].appointment_id);
+        console.log(`✅ Found ${overdueAppointments.length} overdue appointment(s)`);
         const firstOverdue = overdueAppointments[0];
+        console.log('📋 Returning first overdue appointment:', {
+          appointment_id: firstOverdue.appointment_id,
+          scheduled_date: firstOverdue.scheduled_date,
+          slot_end_time: firstOverdue.slot_end_time,
+          provider: `${firstOverdue.provider_first_name} ${firstOverdue.provider_last_name}`,
+          service: firstOverdue.service_title,
+        });
         
         // Map to the expected format
         return {
@@ -103,6 +214,7 @@ class OverdueAppointmentTracker {
         };
       }
 
+      console.log('ℹ️ No overdue appointments found');
       return null;
     } catch (error) {
       console.error('Error checking for overdue appointments:', error);
