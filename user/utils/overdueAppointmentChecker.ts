@@ -186,12 +186,24 @@ class OverdueAppointmentTracker {
       if (overdueAppointments.length > 0) {
         console.log(`✅ Found ${overdueAppointments.length} overdue appointment(s)`);
         const firstOverdue = overdueAppointments[0];
-        console.log('📋 Returning first overdue appointment:', {
+        
+        // Log the raw appointment structure
+        console.log('📦 Raw appointment data:', JSON.stringify(firstOverdue, null, 2));
+        
+        // Extract nested data from API response
+        const providerFirstName = firstOverdue.serviceProvider?.provider_first_name || firstOverdue.provider_first_name || '';
+        const providerLastName = firstOverdue.serviceProvider?.provider_last_name || firstOverdue.provider_last_name || '';
+        const serviceTitle = firstOverdue.service?.service_title || firstOverdue.service_title || 'Service';
+        const startingPrice = firstOverdue.service?.service_startingprice || firstOverdue.starting_price || firstOverdue.final_price || 0;
+        
+        console.log('📋 Extracted data for modal:', {
           appointment_id: firstOverdue.appointment_id,
           scheduled_date: firstOverdue.scheduled_date,
+          slot_start_time: firstOverdue.slot_start_time,
           slot_end_time: firstOverdue.slot_end_time,
-          provider: `${firstOverdue.provider_first_name} ${firstOverdue.provider_last_name}`,
-          service: firstOverdue.service_title,
+          providerName: `${providerFirstName} ${providerLastName}`,
+          service: serviceTitle,
+          startingPrice: startingPrice,
         });
         
         // Map to the expected format
@@ -199,18 +211,18 @@ class OverdueAppointmentTracker {
           id: firstOverdue.id,
           appointment_id: firstOverdue.appointment_id,
           provider_id: firstOverdue.provider_id,
-          type: firstOverdue.service_title || 'Service',
-          service_title: firstOverdue.service_title,
-          name: `${firstOverdue.provider_first_name || ''} ${firstOverdue.provider_last_name || ''}`.trim() || 'Provider',
+          type: serviceTitle,
+          service_title: serviceTitle,
+          name: `${providerFirstName} ${providerLastName}`.trim() || 'Provider',
           status: 'Scheduled',
           date: firstOverdue.scheduled_date,
           scheduled_date: firstOverdue.scheduled_date,
           final_price: firstOverdue.final_price,
-          starting_price: firstOverdue.starting_price,
+          starting_price: startingPrice,
           slot_start_time: firstOverdue.slot_start_time,
           slot_end_time: firstOverdue.slot_end_time,
-          provider_first_name: firstOverdue.provider_first_name,
-          provider_last_name: firstOverdue.provider_last_name,
+          provider_first_name: providerFirstName,
+          provider_last_name: providerLastName,
         };
       }
 

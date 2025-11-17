@@ -13,7 +13,9 @@
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to your camera to take profile pictures.",
         "NSMicrophoneUsageDescription": "This app needs access to your microphone for recording audio.",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -74,8 +76,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "65744d48-0b06-43b1-ab9e-d8a9930997bd"
+        "projectId": "ed4d16b9-00a5-4e3b-ae15-0ef48e44f122"
       }
-    }
+    },
+    "owner": "fixmo"
   }
 }
