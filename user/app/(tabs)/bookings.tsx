@@ -1102,6 +1102,7 @@ export default function Bookings() {
     const mapped = (() => {
       switch (status.toLowerCase()) {
         case 'scheduled': return 'Scheduled';
+        case 'confirmed': return 'Ongoing'; // "On the Way" appointments show in Ongoing tab
         case 'in_progress': return 'Ongoing';
         case 'in-progress': return 'Ongoing';
         case 'ongoing': return 'Ongoing'; // Added explicit 'ongoing' mapping
@@ -1140,6 +1141,7 @@ export default function Bookings() {
       case 'in_progress': 
       case 'in-progress': 
       case 'ongoing': return '#ff8c00';
+      case 'confirmed': return '#9c27b0'; // Purple color for "On the Way"
       case 'scheduled': return '#1e90ff';
       case 'pending': return '#9e9e9e';
       case 'in-warranty': return '#4caf50';
@@ -1166,6 +1168,8 @@ export default function Bookings() {
       case 'in-progress':
       case 'ongoing':
         return 'Ongoing';
+      case 'confirmed':
+        return 'On the Way';
       case 'scheduled':
         return 'Scheduled';
       case 'in-warranty':
@@ -1878,8 +1882,8 @@ export default function Bookings() {
         setWeeklySchedule(null);
         
         Alert.alert(
-          'Availability Not Found',
-          result.message || 'Unable to load provider availability. The provider may not have set their schedule yet.',
+          'Provider Not Available',
+          'The provider is not available at the moment. Please try again later or contact them directly.',
           [
             {
               text: 'OK',
@@ -1898,8 +1902,17 @@ export default function Bookings() {
       console.error('❌ Error fetching provider weekly schedule:', error);
       setWeeklySchedule(null);
       Alert.alert(
-        'Network Error',
-        'Unable to connect to the server. Please check your internet connection.'
+        'Unable to Load Availability',
+        'The provider is not available at the moment. Please try again later.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsRebookModalVisible(false);
+              setRebookAppointment(null);
+            }
+          }
+        ]
       );
     } finally {
       setAvailabilityLoading(false);
@@ -2952,6 +2965,39 @@ export default function Bookings() {
             }}>
               Booking Details
             </Text>
+
+            {/* On the Way Notice - Show if status is "confirmed" */}
+            {selectedBooking.originalStatus?.toLowerCase() === 'confirmed' && (
+              <View style={{
+                backgroundColor: '#f3e5f5',
+                padding: 12,
+                borderRadius: 10,
+                marginBottom: 15,
+                borderLeftWidth: 4,
+                borderLeftColor: '#9c27b0',
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <Text style={{ fontSize: 20, marginRight: 8 }}>🚗</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: '#6a1b9a',
+                    marginBottom: 4,
+                  }}>
+                    Service Provider is On the Way!
+                  </Text>
+                  <Text style={{
+                    fontSize: 12,
+                    color: '#4a148c',
+                    lineHeight: 16,
+                  }}>
+                    Your service provider is heading to your location. Please be ready.
+                  </Text>
+                </View>
+              </View>
+            )}
             
             <View style={{ marginBottom: 15 }}>
               <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5}}>
@@ -4847,6 +4893,50 @@ export default function Bookings() {
                 }}>
                   Loading availability...
                 </Text>
+              </View>
+            ) : !weeklySchedule ? (
+              <View style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingVertical: 60,
+              }}>
+                <Ionicons name="alert-circle" size={64} color="#ff9800" />
+                <Text style={{
+                  marginTop: 16,
+                  fontSize: 18,
+                  fontWeight: '600',
+                  color: '#333',
+                  textAlign: 'center',
+                }}>
+                  Provider Not Available
+                </Text>
+                <Text style={{
+                  marginTop: 8,
+                  fontSize: 14,
+                  color: '#666',
+                  textAlign: 'center',
+                  paddingHorizontal: 20,
+                }}>
+                  The provider is not available at the moment. Please try again later.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsRebookModalVisible(false);
+                    setRebookAppointment(null);
+                  }}
+                  style={{
+                    marginTop: 24,
+                    backgroundColor: '#008080',
+                    paddingVertical: 12,
+                    paddingHorizontal: 32,
+                    borderRadius: 25,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+                    Close
+                  </Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <ScrollView 
