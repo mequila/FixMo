@@ -1174,7 +1174,9 @@ export default function profile_serviceprovider() {
   };
 
   // Helper function to capitalize category names properly
-  const capitalizeCategory = (categoryName: string): string => {
+  const capitalizeCategory = (categoryName: string | undefined | null): string => {
+    if (!categoryName) return 'General Service';
+    
     return categoryName
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() + ' Service')
@@ -1196,9 +1198,12 @@ export default function profile_serviceprovider() {
     
     // Third priority: use serviceData categories array
     if (serviceData?.categories && serviceData.categories.length > 0) {
-      const categoryNames = serviceData.categories.map(cat => capitalizeCategory(cat.category_name)).join(', ');
+      const categoryNames = serviceData.categories
+        .filter(cat => cat && cat.category_name) // Filter out undefined/null entries
+        .map(cat => capitalizeCategory(cat.category_name))
+        .join(', ');
       console.log('✅ Using categories from service data array:', categoryNames);
-      return categoryNames;
+      return categoryNames || 'General Service'; // Fallback if all were filtered out
     }
     
     console.log('ℹ️ Using fallback: General Service');

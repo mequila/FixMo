@@ -179,6 +179,15 @@ export default function Bookings() {
   const [isCustomerNoShowWarningVisible, setIsCustomerNoShowWarningVisible] = useState(false);
   const [hasShownNoShowWarning, setHasShownNoShowWarning] = useState(false);
 
+  // Rebook modal states
+  const [isRebookModalVisible, setIsRebookModalVisible] = useState(false);
+  const [rebookAppointment, setRebookAppointment] = useState<Appointment | null>(null);
+  const [providerAvailability, setProviderAvailability] = useState<any[]>([]);
+  const [selectedRebookDate, setSelectedRebookDate] = useState<string | null>(null);
+  const [selectedRebookSlot, setSelectedRebookSlot] = useState<any | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [rebookServiceId, setRebookServiceId] = useState<number | null>(null);
+
   const { width } = useWindowDimensions();
 
   // Global overdue appointment check (works across all tabs)
@@ -1748,6 +1757,393 @@ export default function Bookings() {
     setShowPriceInput(false);
   };
 
+  // Fetch service listing ID for navigation
+  const fetchServiceListingId = async (providerId: number, serviceTitle: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      console.log('Fetching service listing ID for provider:', providerId, 'service:', serviceTitle);
+      
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const formattedDate = tomorrow.toISOString().split('T')[0];
+      
+      // Search for the provider's service listing
+      const response = await fetch(
+        `${BACKEND_URL}/auth/service-listings?search=${encodeURIComponent(serviceTitle)}&date=${formattedDate}&page=1&limit=100`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.listings && result.listings.length > 0) {
+          // Find the listing for this specific provider
+          const providerListing = result.listings.find((listing: any) => {
+            const listingProviderId = listing.provider?.id || listing.provider?.provider_id;
+            return listingProviderId === providerId;
+          });
+          
+          if (providerListing) {
+            setRebookServiceId(providerListing.id);
+            console.log('✅ Service listing ID found:', providerListing.id);
+          } else {
+            console.log('⚠️ No matching service listing found for provider');
+            // Set a fallback - we can still navigate even without service ID
+            setRebookServiceId(null);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching service listing ID:', error);
+    }
+  };
+
+  // Fetch provider availability for rebook
+  const fetchProviderAvailability = async (providerId: number, serviceTitle: string) => {
+    setAvailabilityLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      console.log('=== FETCHING PROVIDER WEEKLY DAYS ===');
+      console.log('Provider ID:', providerId);
+      console.log('Service title:', serviceTitle);
+      
+      // Use the weekly-days endpoint to get all available days
+      const response = await fetch(
+        `${BACKEND_URL}/auth/provider/${providerId}/weekly-days`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log('Response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Weekly days response:', JSON.stringify(result, null, 2));
+        
+        if (result.success && result.data) {
+          // The response structure has weekly days data
+          const weeklyDays = result.data.weeklyDays || result.data.availability || result.data;
+          
+          console.log('Provider ID from response:', result.data.providerId || providerId);
+          console.log('Weekly days array:', weeklyDays);
+          
+          // Set the availability slots (all days of the week that provider is available)
+          if (weeklyDays && weeklyDays.length > 0) {
+            setProviderAvailability(weeklyDays);
+            console.log('✅ Successfully loaded', weeklyDays.length, 'weekly day slots');
+            
+            // We need to get the service listing ID from the original appointment
+            // Since the endpoint doesn't return it, we'll fetch it separately
+            await fetchServiceListingId(providerId, serviceTitle);
+          } else {
+            console.log('⚠️ No weekly days found');
+            setProviderAvailability([]);
+            setRebookServiceId(null);
+            
+            Alert.alert(
+              'No Availability',
+              'This provider has not set their weekly availability schedule yet. Please try contacting them directly or choose another provider.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    setIsRebookModalVisible(false);
+                    setRebookAppointment(null);
+                  }
+                }
+              ]
+            );
+          }
+        } else {
+          console.log('⚠️ Invalid response format:', result);
+          setProviderAvailability([]);
+          setRebookServiceId(null);
+          
+          Alert.alert(
+            'No Service Available',
+            result.message || 'This provider is not currently offering this service.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setIsRebookModalVisible(false);
+                  setRebookAppointment(null);
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch weekly days:', response.status, errorText);
+        setProviderAvailability([]);
+        setRebookServiceId(null);
+        
+        Alert.alert(
+          'Availability Not Found',
+          'Unable to load provider weekly availability. The provider may not have set their schedule yet.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setIsRebookModalVisible(false);
+                setRebookAppointment(null);
+              }
+            }
+          ]
+        );
+      }
+      
+      console.log('=== END FETCHING WEEKLY DAYS ===');
+      
+    } catch (error) {
+      console.error('Error fetching provider weekly days:', error);
+      setProviderAvailability([]);
+      setRebookServiceId(null);
+      Alert.alert(
+        'Network Error',
+        'Unable to connect to the server. Please check your internet connection.'
+      );
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  // Handle rebook button click
+  const handleRebookClick = async (appointment: Appointment) => {
+    if (!appointment.provider_id) {
+      Alert.alert('Error', 'Provider information not available');
+      return;
+    }
+
+    setRebookAppointment(appointment);
+    setIsRebookModalVisible(true);
+    await fetchProviderAvailability(
+      appointment.provider_id, 
+      appointment.service_title || appointment.type
+    );
+  };
+
+  // Get available dates from provider availability
+  const getAvailableDates = () => {
+    if (!providerAvailability || providerAvailability.length === 0) return [];
+    
+    const today = new Date();
+    const availableDates: Date[] = [];
+    
+    // Get next 60 days
+    for (let i = 0; i < 60; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      // Check if provider is available on this day
+      const hasAvailability = providerAvailability.some(slot => {
+        // Handle both dayOfWeek and day_of_week field names
+        const slotDay = slot.dayOfWeek || slot.day_of_week;
+        // Check if slot is active and available
+        const isActive = slot.availability_isActive !== false && 
+                        slot.isActive !== false && 
+                        slot.is_active !== false;
+        const isAvailable = slot.isAvailable !== false && 
+                           slot.is_available !== false &&
+                           slot.isBookingAllowed !== false;
+        const notBooked = !slot.isBooked && !slot.is_booked;
+        
+        return slotDay === dayOfWeek && isActive && isAvailable && notBooked;
+      });
+      
+      if (hasAvailability) {
+        availableDates.push(date);
+      }
+    }
+    
+    return availableDates;
+  };
+
+  // Get time slots for selected date
+  const getTimeSlotsForDate = (dateString: string) => {
+    if (!providerAvailability || providerAvailability.length === 0) return [];
+    
+    const date = new Date(dateString);
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    
+    return providerAvailability.filter(slot => {
+      // Handle both camelCase and snake_case field names
+      const slotDay = slot.dayOfWeek || slot.day_of_week;
+      // Check if slot is active and available
+      const isActive = slot.availability_isActive !== false && 
+                      slot.isActive !== false && 
+                      slot.is_active !== false;
+      const isAvailable = slot.isAvailable !== false && 
+                         slot.is_available !== false &&
+                         slot.isBookingAllowed !== false;
+      const notBooked = !slot.isBooked && !slot.is_booked;
+      
+      return slotDay === dayOfWeek && isActive && isAvailable && notBooked;
+    });
+  };
+
+  // Handle date selection in rebook modal
+  const handleRebookDateSelect = (dateString: string) => {
+    setSelectedRebookDate(dateString);
+    setSelectedRebookSlot(null);
+  };
+
+  // Handle time slot selection
+  const handleRebookSlotSelect = (slot: any) => {
+    setSelectedRebookSlot(slot);
+  };
+
+  // Handle confirm rebook
+  const handleConfirmRebook = async () => {
+    if (!selectedRebookDate || !selectedRebookSlot || !rebookAppointment) {
+      Alert.alert('Incomplete Selection', 'Please select both a date and time slot');
+      return;
+    }
+
+    console.log('=== REBOOK NAVIGATION DEBUG ===');
+    console.log('Provider ID:', rebookAppointment.provider_id);
+    console.log('Current Service ID:', rebookServiceId);
+    console.log('Selected Date:', selectedRebookDate);
+    console.log('Selected Slot:', selectedRebookSlot);
+    
+    // Handle both camelCase and snake_case field names
+    const availabilityId = selectedRebookSlot.availability_id || 
+                          selectedRebookSlot.availabilityId;
+    
+    console.log('Availability ID:', availabilityId);
+    console.log('Service Title:', rebookAppointment.service_title);
+
+    // If service ID is not available yet, try to fetch it one more time
+    if (!rebookServiceId) {
+      console.log('Service ID not available, attempting to fetch...');
+      setAvailabilityLoading(true);
+      
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token && rebookAppointment.provider_id) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const formattedDate = tomorrow.toISOString().split('T')[0];
+          
+          const response = await fetch(
+            `${BACKEND_URL}/auth/service-listings?search=${encodeURIComponent(rebookAppointment.service_title || rebookAppointment.type)}&date=${formattedDate}&page=1&limit=100`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.listings && result.listings.length > 0) {
+              const providerListing = result.listings.find((listing: any) => {
+                const listingProviderId = listing.provider?.id || listing.provider?.provider_id;
+                return listingProviderId === rebookAppointment.provider_id;
+              });
+              
+              if (providerListing && providerListing.id) {
+                setRebookServiceId(providerListing.id);
+                console.log('✅ Service ID fetched successfully:', providerListing.id);
+                
+                // Navigate with the fetched service ID
+                navigateToProviderProfile(providerListing.id, availabilityId);
+                return;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching service ID:', error);
+      } finally {
+        setAvailabilityLoading(false);
+      }
+      
+      // If we still don't have service ID, navigate to service provider list instead
+      console.log('⚠️ Could not fetch service ID, navigating to provider list...');
+      setIsRebookModalVisible(false);
+      
+      router.push({
+        pathname: '/serviceprovider',
+        params: {
+          serviceTitle: rebookAppointment.service_title || rebookAppointment.type,
+          selectedDate: selectedRebookDate,
+        }
+      });
+      
+      Alert.alert(
+        'Redirected to Provider List',
+        `Please select ${rebookAppointment.name} from the list to complete your booking for ${selectedRebookDate}.`,
+        [{ text: 'OK' }]
+      );
+      
+      // Reset states
+      setTimeout(() => {
+        setRebookAppointment(null);
+        setSelectedRebookDate(null);
+        setSelectedRebookSlot(null);
+        setProviderAvailability([]);
+        setRebookServiceId(null);
+      }, 500);
+      
+      return;
+    }
+
+    // Navigate with existing service ID
+    navigateToProviderProfile(rebookServiceId, availabilityId);
+  };
+
+  // Helper function to navigate to provider profile
+  const navigateToProviderProfile = (serviceId: number, availabilityId: any) => {
+    console.log('Navigating to provider profile with serviceId:', serviceId);
+    
+    // Close modal first
+    setIsRebookModalVisible(false);
+    
+    // Navigate directly to provider profile with all pre-selected values
+    router.push({
+      pathname: '/profile_serviceprovider',
+      params: {
+        serviceId: serviceId.toString(),
+        providerId: rebookAppointment?.provider_id?.toString() || '',
+        selectedDate: selectedRebookDate || '',
+        availabilityId: availabilityId?.toString() || '',
+        category: rebookAppointment?.service_title || rebookAppointment?.type || ''
+      }
+    });
+    
+    // Reset states after navigation
+    setTimeout(() => {
+      setRebookAppointment(null);
+      setSelectedRebookDate(null);
+      setSelectedRebookSlot(null);
+      setProviderAvailability([]);
+      setRebookServiceId(null);
+    }, 500);
+  };
+
   // Handle cancel backjob with reason
   const handleCancelBackjobWithReason = async () => {
     console.log('=== CANCEL BACKJOB DEBUG START ===');
@@ -2430,6 +2826,30 @@ export default function Bookings() {
                             </Text>
                           </View>
 
+                          {/* Rebook button for Completed appointments */}
+                          {b.status === "Completed" && (
+                            <TouchableOpacity 
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleRebookClick(b);
+                              }}
+                              style={{
+                                backgroundColor: '#008080',
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 15,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Ionicons name="repeat" size={16} color="white" />
+                              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                                Rebook
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
                           {/* Hide chat icon if status is Completed or Cancelled */}
                           {b.status !== "Completed" && b.status !== "Cancelled" && (
                             <TouchableOpacity onPress={() => handleChatPress(b)}>
@@ -2441,8 +2861,8 @@ export default function Bookings() {
                             </TouchableOpacity>
                           )}
 
-                          {/* Show disabled chat icon for Completed or Cancelled */}
-                          {(b.status === "Completed" || b.status === "Cancelled") && (
+                          {/* Show disabled chat icon for Cancelled */}
+                          {b.status === "Cancelled" && (
                             <View style={{ opacity: 0.3 }}>
                               <Ionicons
                                 name="chatbox-ellipses"
@@ -4324,6 +4744,369 @@ export default function Bookings() {
                 I Understand
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rebook Modal with Calendar and Time Slot Selection */}
+      <Modal
+        visible={isRebookModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setIsRebookModalVisible(false);
+          setRebookAppointment(null);
+          setSelectedRebookDate(null);
+          setSelectedRebookSlot(null);
+          setProviderAvailability([]);
+        }}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'flex-end',
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+            padding: 24,
+            maxHeight: '85%',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5,
+          }}>
+            {/* Header */}
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 20,
+              paddingBottom: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e0e0e0',
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 24,
+                  fontWeight: '700',
+                  color: '#008080',
+                  marginBottom: 4,
+                }}>
+                  Rebook Service
+                </Text>
+                {rebookAppointment && (
+                  <Text style={{
+                    fontSize: 14,
+                    color: '#666',
+                  }}>
+                    {rebookAppointment.service_title || rebookAppointment.type} • {rebookAppointment.name}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsRebookModalVisible(false);
+                  setRebookAppointment(null);
+                  setSelectedRebookDate(null);
+                  setSelectedRebookSlot(null);
+                  setProviderAvailability([]);
+                }}
+                style={{
+                  padding: 8,
+                  borderRadius: 20,
+                  backgroundColor: '#f5f5f5',
+                }}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {availabilityLoading ? (
+              <View style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingVertical: 60,
+              }}>
+                <ActivityIndicator size="large" color="#008080" />
+                <Text style={{
+                  marginTop: 16,
+                  fontSize: 16,
+                  color: '#666',
+                }}>
+                  Loading availability...
+                </Text>
+              </View>
+            ) : (
+              <ScrollView 
+                showsVerticalScrollIndicator={false}
+                style={{ maxHeight: '100%' }}
+              >
+                {/* Step 1: Select Date */}
+                <View style={{ marginBottom: 24 }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}>
+                    <View style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: selectedRebookDate ? '#4caf50' : '#008080',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 10,
+                    }}>
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>1</Text>
+                    </View>
+                    <Text style={{
+                      fontSize: 18,
+                      fontWeight: '600',
+                      color: '#333',
+                    }}>
+                      Select a Date
+                    </Text>
+                  </View>
+
+                  {getAvailableDates().length === 0 ? (
+                    <View style={{
+                      backgroundColor: '#fff3cd',
+                      padding: 16,
+                      borderRadius: 12,
+                      borderLeftWidth: 4,
+                      borderLeftColor: '#f39c12',
+                    }}>
+                      <Text style={{ color: '#856404', fontSize: 14 }}>
+                        No available dates found for this provider. They may not have set their availability yet.
+                      </Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{
+                        marginTop: 8,
+                      }}
+                      contentContainerStyle={{
+                        paddingRight: 16,
+                      }}
+                    >
+                      {getAvailableDates().slice(0, 14).map((date, index) => {
+                        const dateString = date.toISOString().split('T')[0];
+                        const isSelected = selectedRebookDate === dateString;
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        const dayNum = date.getDate();
+                        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => handleRebookDateSelect(dateString)}
+                            style={{
+                              backgroundColor: isSelected ? '#008080' : '#f5f5f5',
+                              borderRadius: 12,
+                              padding: 12,
+                              marginRight: 10,
+                              minWidth: 70,
+                              alignItems: 'center',
+                              borderWidth: 2,
+                              borderColor: isSelected ? '#008080' : '#e0e0e0',
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 12,
+                              fontWeight: '600',
+                              color: isSelected ? 'white' : '#666',
+                              marginBottom: 4,
+                            }}>
+                              {dayName}
+                            </Text>
+                            <Text style={{
+                              fontSize: 20,
+                              fontWeight: '700',
+                              color: isSelected ? 'white' : '#333',
+                              marginBottom: 2,
+                            }}>
+                              {dayNum}
+                            </Text>
+                            <Text style={{
+                              fontSize: 11,
+                              color: isSelected ? 'white' : '#999',
+                            }}>
+                              {monthName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+
+                {/* Step 2: Select Time Slot */}
+                {selectedRebookDate && (
+                  <View style={{ marginBottom: 24 }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 12,
+                    }}>
+                      <View style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: selectedRebookSlot ? '#4caf50' : '#008080',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 10,
+                      }}>
+                        <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>2</Text>
+                      </View>
+                      <Text style={{
+                        fontSize: 18,
+                        fontWeight: '600',
+                        color: '#333',
+                      }}>
+                        Select Time Slot
+                      </Text>
+                    </View>
+
+                    <View style={{
+                      backgroundColor: '#f8f9fa',
+                      padding: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
+                    }}>
+                      <Text style={{
+                        fontSize: 13,
+                        color: '#666',
+                        textAlign: 'center',
+                      }}>
+                        {new Date(selectedRebookDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </Text>
+                    </View>
+
+                    {getTimeSlotsForDate(selectedRebookDate).length === 0 ? (
+                      <View style={{
+                        backgroundColor: '#fff3cd',
+                        padding: 16,
+                        borderRadius: 12,
+                        borderLeftWidth: 4,
+                        borderLeftColor: '#f39c12',
+                      }}>
+                        <Text style={{ color: '#856404', fontSize: 14 }}>
+                          No time slots available for this date.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                      }}>
+                        {getTimeSlotsForDate(selectedRebookDate).map((slot, index) => {
+                          // Handle both camelCase and snake_case field names
+                          const availabilityId = slot.availability_id || slot.availabilityId;
+                          const startTime = slot.startTime || slot.start_time || slot.time_start;
+                          const endTime = slot.endTime || slot.end_time || slot.time_end;
+                          const availableSlots = slot.estimatedAvailableSlots || slot.estimated_available_slots || slot.available_slots;
+                          
+                          const isSelected = selectedRebookSlot?.availability_id === availabilityId || 
+                                           selectedRebookSlot?.availabilityId === availabilityId;
+                          
+                          return (
+                            <TouchableOpacity
+                              key={index}
+                              onPress={() => handleRebookSlotSelect(slot)}
+                              style={{
+                                backgroundColor: isSelected ? '#008080' : 'white',
+                                borderRadius: 10,
+                                paddingVertical: 12,
+                                paddingHorizontal: 16,
+                                borderWidth: 2,
+                                borderColor: isSelected ? '#008080' : '#e0e0e0',
+                                minWidth: '45%',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                              }}>
+                                <Ionicons 
+                                  name="time-outline" 
+                                  size={16} 
+                                  color={isSelected ? 'white' : '#008080'} 
+                                  style={{ marginRight: 6 }}
+                                />
+                                <Text style={{
+                                  fontSize: 15,
+                                  fontWeight: '600',
+                                  color: isSelected ? 'white' : '#333',
+                                }}>
+                                  {startTime} - {endTime}
+                                </Text>
+                              </View>
+                              {availableSlots !== undefined && availableSlots !== null && (
+                                <Text style={{
+                                  fontSize: 11,
+                                  color: isSelected ? 'rgba(255,255,255,0.8)' : '#999',
+                                  marginTop: 4,
+                                }}>
+                                  {availableSlots} slots left
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Confirm Button */}
+                {selectedRebookDate && selectedRebookSlot && (
+                  <TouchableOpacity
+                    onPress={handleConfirmRebook}
+                    style={{
+                      backgroundColor: '#008080',
+                      paddingVertical: 16,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      marginTop: 10,
+                      marginBottom: 20,
+                      shadowColor: '#008080',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 5,
+                    }}
+                  >
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                      <Ionicons name="checkmark-circle" size={24} color="white" style={{ marginRight: 8 }} />
+                      <Text style={{
+                        color: 'white',
+                        fontSize: 18,
+                        fontWeight: '700',
+                      }}>
+                        Continue to Booking
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
