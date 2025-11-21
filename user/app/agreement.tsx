@@ -29,7 +29,7 @@ export default function AgreementScreen() {
                 <SafeAreaView style={styles.wrapper}>
                     <View style={styles.content}>
                         <Image
-                            source={require('../assets/images/FixMo User.png')}
+                            source={require('../assets/images/Fixmo-user.png')}
                             style={styles.logo}
                             resizeMode="contain"
                         />

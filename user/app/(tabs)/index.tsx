@@ -145,25 +145,60 @@ export default function Index() {
           </Text>
         </View>
 
+      <View style={{ marginHorizontal: 20 }}>
         <LinearGradient
           colors={["#126363", "#8cc6c6"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[homeStyles.gradientBox, { flexDirection: "row", alignItems: "center", height: 180 }]}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 20,
+            height: 180,
+            borderRadius: 12,
+            overflow: "hidden",
+            position: "relative",
+          }}
         >
           <Image
-            source={require("../../assets/images/cleaning-lady.png")}
-            style={{ width: 180, height: 180, position: "absolute", right: 2, top: 5 }}
-            resizeMode="contain"
+            source={require("../../assets/images/tools.png")}
+            style={{
+              position: "absolute",
+              width: 350,
+              height: 200,
+              resizeMode: "cover",
+              opacity: 0.08,
+            }}
           />
 
-          <View style={[homeStyles.gradientBox, { flex: 1, justifyContent: "center", left: -75 }]}>
-            <Text style={{ color: "white", fontSize: 35, textAlign: "center" }}>10%</Text>
-            <Text style={{ color: "white", fontSize: 16, textAlign: "center" }}>
-              Get discount this month {"\n"} with our Skilled Hands.
+          <View style={{ flexDirection: "row", alignItems: "center", zIndex: 1 }}>
+            <Image
+              source={require("../../assets/images/AETII-logo.png")}
+              style={{
+                width: 120, height: 120, left: 18,
+                resizeMode: "contain",
+                marginRight: 10,
+              }}
+            />
+            <Image
+              source={require("../../assets/images/TESDA-logo.png")}
+              style={{
+               width: 140, height: 160, right: 18,
+                resizeMode: "contain",
+                marginLeft: 10,
+              }}
+            />
+          </View>
+
+          <View style={{ marginTop: 10, zIndex: 1 }}>
+            <Text style={{ color: "white", fontSize: 20, textAlign: "center", fontWeight: "bold", bottom: 35 }}>
+              Start your journey today!
             </Text>
           </View>
         </LinearGradient>
+      </View>
+
+              
 
         {/* Construction Services */}
         <View style={{ marginTop: 25, marginHorizontal: 20, marginBottom: 10 }}>
