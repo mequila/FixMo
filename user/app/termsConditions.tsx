@@ -93,12 +93,6 @@ const termsConditions = () => {
     <View style={styles.container}>
       <PageHeader title="Terms and Conditions" backRoute="/profile" />
       
-      {/* Header Banner */}
-      <View style={styles.headerBanner}>
-        <Ionicons name="document-text" size={32} color="#008080" />
-        <Text style={styles.headerTitle}>Terms & Conditions</Text>
-        <Text style={styles.headerSubtitle}>Last updated: November 5, 2025</Text>
-      </View>
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
@@ -114,12 +108,6 @@ const termsConditions = () => {
           />
         }
       >
-        <View style={styles.introCard}>
-          <Text style={styles.introText}>
-            By using FixMo, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
-          </Text>
-        </View>
-
         {termsList.map((item, idx) => (
           <View key={idx} style={styles.termCard}>
             <View style={styles.termHeader}>
@@ -147,19 +135,7 @@ const termsConditions = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  headerBanner: {
     backgroundColor: '#fff',
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
   },
   headerTitle: {
     fontSize: 22,
@@ -238,7 +214,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#b2d7d7',
   },
   footerText: {
     fontSize: 13,

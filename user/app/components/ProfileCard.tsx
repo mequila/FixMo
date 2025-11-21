@@ -5,6 +5,7 @@ import { StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "r
 interface ProfileCardProps {
   label: string;
   iconName?: keyof typeof Ionicons.glyphMap;
+  iconSize?: number;
   onPress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
@@ -14,6 +15,7 @@ interface ProfileCardProps {
 const ProfileCard: React.FC<ProfileCardProps> = ({
   label,
   iconName = "chevron-forward",
+  iconSize = 26,
   onPress,
   containerStyle,
   textStyle,
@@ -26,8 +28,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
           {iconName && iconName !== "chevron-forward" && (
             <Ionicons
               name={iconName}
-              size={24}
-              color={iconName === "log-out-outline" ? "#a20021" : "#008080"}
+              size={iconSize}
+              color={iconName === "log-out" ? "#a20021" : "#008080"}
               style={{ marginRight: 8 }}
             />
           )}

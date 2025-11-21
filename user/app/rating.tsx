@@ -349,7 +349,7 @@ const Rating = () => {
 
             {/* Required Notice */}
             <Text style={styles.requiredNotice}>
-              ⭐ Rating is required to continue
+              Rating is required to continue
             </Text>
               </View>
             </View>

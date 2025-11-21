@@ -37,7 +37,7 @@ const Carpentry = () => {
   const serviceCategory = category || 'Carpentry';
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {CarpentryServiceCardDetails.map((carpentry, idx) => (
           <ServiceCard

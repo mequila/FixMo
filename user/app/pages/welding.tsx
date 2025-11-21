@@ -34,7 +34,7 @@ const Welding = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingBottom: 15 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {WeldingServiceCardDetails.map((welding, idx) => (
           <ServiceCard

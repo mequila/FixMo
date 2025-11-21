@@ -37,7 +37,7 @@ const Computer = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingBottom: 15 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {ComputerServiceCardDetails.map((computer, idx) => (
           <ServiceCard

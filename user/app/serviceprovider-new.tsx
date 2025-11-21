@@ -236,7 +236,7 @@ const ServiceProvider = () => {
                     color: '#666',
                     marginBottom: 5,
                   }}>
-                    📍 {provider.provider.location}
+                    {provider.provider.location}
                   </Text>
                 )}
 

@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Picker } from '@react-native-picker/picker';
 import { homeStyles } from "./components/homeStyles";
+import PageHeader from './components/PageHeader';
 import { calculateDistance, formatDistance, parseCoordinates, sortProvidersByDistance } from "../utils/distanceCalculator";
 import { getCustomerBookedDates, formatDateForComparison, shouldDisableDate, getDisabledDateMessage } from "../utils/bookingDateHelper";
 
@@ -152,9 +153,9 @@ const ServiceProvider = () => {
       setShowDistanceWarning(false); // Reset warning flag
       const token = await AsyncStorage.getItem('token');
       
-      console.log('🔍 Fetching service providers...');
-      console.log('🔑 Token exists:', !!token);
-      console.log('🔑 Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
+  console.log('Fetching service providers...');
+  console.log('Token exists:', !!token);
+  console.log('Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'No token');
       
       if (!token) {
         Alert.alert('Error', 'Please login first');
@@ -184,8 +185,8 @@ const ServiceProvider = () => {
 
       const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
       
-      console.log('📡 API URL:', apiUrl);
-      console.log('📤 Sending request with Authorization header');
+  console.log('API URL:', apiUrl);
+  console.log('Sending request with Authorization header');
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -199,8 +200,8 @@ const ServiceProvider = () => {
         const result = await response.json();
         let serviceListings: ServiceProvider[] = result.listings || [];
         
-        console.log('📊 Total providers fetched:', serviceListings.length);
-        console.log('📊 Sample provider data:', JSON.stringify(serviceListings[0], null, 2));
+  console.log('Total providers fetched:', serviceListings.length);
+  console.log('Sample provider data:', JSON.stringify(serviceListings[0], null, 2));
         
         // Filter out inactive service listings
         serviceListings = serviceListings.filter((provider) => {
@@ -211,7 +212,7 @@ const ServiceProvider = () => {
                           (provider as any).servicelistingIsActive === true;
           
           if (!isActive) {
-            console.log('🚫 Filtered out inactive provider:', {
+            console.log('Filtered out inactive provider:', {
               name: provider.provider?.provider_name || provider.provider?.name || 'Unknown',
               id: provider.id,
               servicelisting_isactive: provider.servicelisting_isactive,
@@ -222,11 +223,11 @@ const ServiceProvider = () => {
           return isActive;
         });
         
-        console.log('✅ Active providers after filtering:', serviceListings.length);
+  console.log('Active providers after filtering:', serviceListings.length);
         
         // Get user's location from profile
         try {
-          console.log('🔍 Fetching user location for distance calculation...');
+          console.log('Fetching user location for distance calculation...');
           const profileResponse = await fetch(`${BACKEND_URL}/auth/customer-profile`, {
             method: 'GET',
             headers: {
@@ -237,24 +238,24 @@ const ServiceProvider = () => {
           
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
-            console.log('👤 User profile data:', profileData.data);
-            console.log('📍 User exact_location raw:', profileData.data?.exact_location);
+            console.log('User profile data:', profileData.data);
+            console.log('User exact_location raw:', profileData.data?.exact_location);
             
             const userLocation = parseCoordinates(profileData.data?.exact_location);
-            console.log('📍 User location parsed:', userLocation);
+            console.log('User location parsed:', userLocation);
             
             if (userLocation) {
-              console.log('✅ User location valid, calculating distances...');
+              console.log('User location valid, calculating distances...');
               
               // Calculate distance for each provider
               serviceListings = serviceListings.map((provider, index) => {
                 try {
-                  console.log(`\n🏪 Provider ${index + 1}/${serviceListings.length}:`, provider.provider?.provider_name || 'Unknown');
-                  console.log('� Full provider object:', JSON.stringify(provider.provider, null, 2));
-                  console.log('📍 Provider exact_location raw:', provider.provider?.exact_location);
+                  console.log(`Provider ${index + 1}/${serviceListings.length}:`, provider.provider?.provider_name || 'Unknown');
+                  console.log('Provider full object:', JSON.stringify(provider.provider, null, 2));
+                  console.log('Provider exact_location raw:', provider.provider?.exact_location);
                   
                   const providerLocation = parseCoordinates(provider.provider?.exact_location);
-                  console.log('📍 Provider location parsed:', providerLocation);
+                  console.log('Provider location parsed:', providerLocation);
                   
                   if (providerLocation) {
                     const distance = calculateDistance(
@@ -266,32 +267,32 @@ const ServiceProvider = () => {
                     
                     // Validate distance is a valid number
                     if (typeof distance === 'number' && !isNaN(distance) && isFinite(distance)) {
-                      console.log('📏 Distance calculated:', distance, 'km');
-                      console.log('📏 Distance formatted:', formatDistance(distance));
+                      console.log('Distance calculated:', distance, 'km');
+                      console.log('Distance formatted:', formatDistance(distance));
                       return { ...provider, distance };
                     } else {
-                      console.log('⚠️ Distance calculation returned invalid value:', distance);
+                      console.log('Distance calculation returned invalid value:', distance);
                     }
                   } else {
-                    console.log('⚠️ Provider location could not be parsed');
+                    console.log('Provider location could not be parsed');
                   }
                 } catch (distErr) {
-                  console.error('❌ Distance calc error for provider:', provider.id, distErr);
+                  console.error('Distance calc error for provider:', provider.id, distErr);
                 }
                 
                 return provider;
               });
               
-              console.log('\n🔢 Providers with distances:', serviceListings.filter(p => p.distance !== undefined).length);
-              console.log('🔢 Providers without distances:', serviceListings.filter(p => p.distance === undefined).length);
+              console.log('\nProviders with distances:', serviceListings.filter(p => p.distance !== undefined).length);
+              console.log('Providers without distances:', serviceListings.filter(p => p.distance === undefined).length);
               
               // Sort by distance (nearest first)
-              console.log('📊 Sorting providers by distance...');
+              console.log('Sorting providers by distance...');
               serviceListings = sortProvidersByDistance(serviceListings);
-              console.log('✅ Providers sorted!');
+              console.log('Providers sorted!');
               
               // Log first 3 providers with distances
-              console.log('\n🏆 Top 3 nearest providers:');
+              console.log('\nTop 3 nearest providers:');
               serviceListings.slice(0, 3).forEach((p, i) => {
                 console.log(`${i + 1}. ${p.provider?.provider_name || 'Unknown'} - ${p.distance ? formatDistance(p.distance) : 'No distance'}`);
               });
@@ -304,8 +305,8 @@ const ServiceProvider = () => {
                 p.distance !== undefined && p.distance > 8
               );
               
-              console.log(`\n📊 Providers within 8km:`, providersWithinRange.length);
-              console.log(`⚠️ Providers beyond 8km:`, providersBeyond8km.length);
+              console.log(`\nProviders within 8km:`, providersWithinRange.length);
+              console.log(`Providers beyond 8km:`, providersBeyond8km.length);
               
               // Show warning if there are providers beyond 8km
               if (providersBeyond8km.length > 0) {
@@ -315,13 +316,13 @@ const ServiceProvider = () => {
               // Use filtered list
               serviceListings = providersWithinRange;
             } else {
-              console.log('⚠️ User location could not be parsed, skipping distance calculation');
+              console.log('User location could not be parsed, skipping distance calculation');
             }
-          } else {
-            console.log('⚠️ Profile fetch failed with status:', profileResponse.status);
+            } else {
+              console.log('Profile fetch failed with status:', profileResponse.status);
           }
         } catch (profileError) {
-          console.error('❌ Error fetching user location:', profileError);
+            console.error('Error fetching user location:', profileError);
           // Continue without distance calculation
         }
         
@@ -396,31 +397,8 @@ const ServiceProvider = () => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="#e7ecec" />
-      <SafeAreaView style={{ flex: 0, backgroundColor: '#e7ecec' }} />
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
-        {/* Header with back button and title */}
-        <View style={{ 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          paddingHorizontal: 20, 
-          paddingVertical: 15,
-          backgroundColor: '#e7ecec',
-          borderBottomWidth: 1,
-          borderBottomColor: '#ddd'
-        }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 15 }}>
-            <Ionicons name="arrow-back" size={24} color="#399d9d" />
-          </TouchableOpacity>
-          <Text style={{ 
-            fontSize: 18, 
-            fontWeight: 'bold', 
-            color: 'black',
-            flex: 1
-          }}>
-            {serviceTitle ? `${serviceTitle} Providers` : "Service Providers"}
-          </Text>
-        </View>
+        <PageHeader title={serviceTitle ? `${serviceTitle} Providers` : 'Service Providers'} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -476,16 +454,16 @@ const ServiceProvider = () => {
             
             <View style={{ marginTop: 8, paddingHorizontal: 5 }}>
               <Text style={{ fontSize: 11, color: "#666", fontStyle: "italic" }}>
-                � You can book appointments up to 15 days in advance
+                You can book appointments up to 15 days in advance
               </Text>
               {bookedDates.length > 0 && (
                 <Text style={{ fontSize: 11, color: "#ff6b6b", fontStyle: "italic", marginTop: 4 }}>
-                  🚫 You have {bookedDates.length} date(s) already booked and unavailable
+                  You have {bookedDates.length} date(s) already booked and unavailable
                 </Text>
               )}
               {showDistanceWarning && (
                 <Text style={{ fontSize: 11, color: "#ff9800", fontStyle: "italic", marginTop: 4 }}>
-                  ⚠️ Some providers beyond 8km are excluded
+                  Some providers beyond 8km are excluded
                 </Text>
               )}
             </View>
@@ -549,7 +527,7 @@ const ServiceProvider = () => {
               onPress={() => {
                 // Try both possible field names from backend
                 const providerIdToPass = provider.provider?.id || provider.provider?.provider_id;
-                console.log('🔍 Navigation Debug:', {
+                console.log('Navigation Debug:', {
                   serviceId: provider.id,
                   providerId: providerIdToPass,
                   'provider.id': provider.provider?.id,
@@ -566,7 +544,7 @@ const ServiceProvider = () => {
                 // Check if provider is in 5-8km range and show warning
                 if (provider.distance !== undefined && provider.distance >= 5 && provider.distance <= 8) {
                   Alert.alert(
-                    '⚠️ Distance Warning',
+                    'Distance Warning',
                     `This provider is ${formatDistance(provider.distance)} away from your location.\n\nProvider may cancel or may ask for extra fees since your location is too far.`,
                     [
                       { text: 'Cancel', style: 'cancel' },
@@ -649,7 +627,7 @@ const ServiceProvider = () => {
               
               <View style={styles.providerInfo}>
                 <View style={styles.providerHeader}>
-                  <Text style={styles.providerName}>
+                  <Text style={styles.providerName} numberOfLines={1} ellipsizeMode="tail">
                     {(() => {
                       const prov = provider.provider as any;
                       let name = '';

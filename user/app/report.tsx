@@ -15,6 +15,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import PageHeader from './components/PageHeader';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from 'expo-image-picker';
@@ -244,7 +245,7 @@ const ReportForm = () => {
           };
         });
         
-        console.log('📸 Picked images:', processedImages.map(img => ({
+  console.log('Picked images:', processedImages.map(img => ({
           uri: img.uri,
           type: img.type,
           mimeType: img.mimeType,
@@ -379,7 +380,7 @@ const ReportForm = () => {
 
       // Add images (up to 5)
       if (images.length > 0) {
-        console.log('📸 Processing images for upload...');
+  console.log('Processing images for upload...');
         images.forEach((image, index) => {
           // React Native requires this specific structure for file uploads
           const imageFile: any = {
@@ -396,7 +397,7 @@ const ReportForm = () => {
           
           formData.append('images', imageFile);
         });
-        console.log(`✅ Total images added: ${images.length}`);
+  console.log(`Total images added: ${images.length}`);
       } else {
         console.log('ℹ️ No images to upload');
       }
@@ -510,41 +511,28 @@ const ReportForm = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
-        <SafeAreaView edges={['top']} style={{ backgroundColor: '#e7ecec' }} />
+    behavior={Platform.OS === "ios" ? "padding" : undefined}
+    style={{ flex: 1}}>
+
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <PageHeader title="Report an Issue" backRoute="/(tabs)/profile" />
         
-        {/* Header */}
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 20,
-          paddingVertical: 15,
-          backgroundColor: '#e7ecec',
-          borderBottomWidth: 1,
-          borderBottomColor: '#ddd',
-        }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 15 }}>
-            <Ionicons name="arrow-back" size={24} color="#399d9d" />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black', flex: 1 }}>
-            Report an Issue
-          </Text>
-        </View>
+        
 
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.description}>
-            Submit a report about bugs, complaints, feedback, or other issues. Our admin team will review and respond via email.
-          </Text>
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle" size={20} color="#008080" style={{ marginRight: 8 }} />
+            <Text style={styles.infoText}>
+              Our admin team will review your report and respond via email within 24-48 hours.
+            </Text>
+          </View>
 
           {/* Reporter Name */}
           <Text style={styles.label}>
-            Your Name <Text style={{ color: "red" }}>*</Text>
+            Name <Text style={{ color: "red" }}>*</Text>
           </Text>
           <TextInput
-            style={[styles.input, reporterName && { backgroundColor: '#f5f5f5', color: '#666' }]}
+            style={[styles.input, reporterName && { backgroundColor: '#fafafa', color: '#666' }]}
             placeholder="Enter your full name"
             value={reporterName}
             onChangeText={setReporterName}
@@ -561,7 +549,7 @@ const ReportForm = () => {
             Email Address <Text style={{ color: "red" }}>*</Text>
           </Text>
           <TextInput
-            style={[styles.input, reporterEmail && { backgroundColor: '#f5f5f5', color: '#666' }]}
+            style={[styles.input, reporterEmail && { backgroundColor: '#fafafa', color: '#666' }]}
             placeholder="your.email@example.com"
             value={reporterEmail}
             keyboardType="email-address"
@@ -577,7 +565,7 @@ const ReportForm = () => {
           {/* Reporter Phone (Optional) */}
           <Text style={styles.label}>Phone Number (Optional)</Text>
           <TextInput
-            style={[styles.input, reporterPhone && { backgroundColor: '#f5f5f5', color: '#666' }]}
+            style={[styles.input, reporterPhone && { backgroundColor: '#fafafa', color: '#666' }]}
             placeholder="+63 9XX XXX XXXX"
             value={reporterPhone}
             keyboardType="phone-pad"
@@ -599,13 +587,13 @@ const ReportForm = () => {
               onValueChange={(val) => setReportType(val)}
             >
               <Picker.Item label="Select report type..." value="" />
-              <Picker.Item label="🐛 Bug Report" value="bug" />
-              <Picker.Item label="💭 Feedback / Suggestion" value="feedback" />
-              <Picker.Item label="👤 Account Issue" value="account_issue" />
-              <Picker.Item label="🔧 Service Provider Issue" value="provider_issue" />
-              <Picker.Item label="⚠️ Safety Concern" value="safety_concern" />
-              <Picker.Item label="⚖️ Penalty Appeal" value="penalty_appeal" />
-              <Picker.Item label="📋 Other" value="other" />
+              <Picker.Item label="Bug Report" value="bug" />
+              <Picker.Item label="Feedback / Suggestion" value="feedback" />
+              <Picker.Item label="Account Issue" value="account_issue" />
+              <Picker.Item label="Service Provider Issue" value="provider_issue" />
+              <Picker.Item label="Safety Concern" value="safety_concern" />
+              <Picker.Item label="Penalty Appeal" value="penalty_appeal" />
+              <Picker.Item label="Other" value="other" />
             </Picker>
           </View>
 
@@ -872,7 +860,7 @@ const ReportForm = () => {
           />
 
           {/* Priority */}
-          <Text style={styles.label}>
+          <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8, color: "#333", marginTop: 16 }}>
             Priority <Text style={{ color: "red" }}>*</Text>
           </Text>
           <View style={styles.pickerWrapper}>
@@ -900,13 +888,7 @@ const ReportForm = () => {
             numberOfLines={6}
           />
 
-          {/* Information Box */}
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#008080" style={{ marginRight: 8 }} />
-            <Text style={styles.infoText}>
-              Our admin team will review your report and respond via email within 24-48 hours.
-            </Text>
-          </View>
+        </ScrollView>
 
           {/* Submit Button */}
           <TouchableOpacity 
@@ -921,8 +903,6 @@ const ReportForm = () => {
             )}
           </TouchableOpacity>
 
-          <View style={{ height: 40 }} />
-        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );
@@ -946,17 +926,17 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d1d1",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    borderColor: "#b2d7d7",
+    borderRadius: 12,
+    paddingBottom: 12, 
+    padding: 16,
     fontSize: 14,
     backgroundColor: "#fafafa",
   },
   pickerWrapper: {
     borderWidth: 1,
-    borderColor: "#d1d1d1",
-    borderRadius: 8,
+    borderColor: "#b2d7d7",
+    borderRadius: 12,
     marginBottom: 16,
     backgroundColor: "#fafafa",
   },
@@ -972,7 +952,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: "#008080",
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     backgroundColor: "#f0fafa",
@@ -992,7 +972,7 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#f5f5f5',
@@ -1011,10 +991,10 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     backgroundColor: '#e6f7f7',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   infoText: {
     flex: 1,
@@ -1024,14 +1004,12 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#008080",
+    marginHorizontal: 20,
+    marginBottom: 18,
+    marginTop: 10,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   buttonText: {
     color: "#fff",

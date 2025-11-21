@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
     modalButton: {
         paddingVertical: 10,
         paddingHorizontal: 16,
-        borderRadius: 8,
+        borderRadius: 12,
         marginLeft: 8,
     },
     modalCancelText: {
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#e7ecec',
-        borderRadius: 8,
+        borderRadius: 12,
         paddingHorizontal: 15,
         marginHorizontal: 20,
         marginBottom: 8,
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
     },
     passwordRequirements: {
         backgroundColor: '#f9f9f9',
-        borderRadius: 8,
+        borderRadius: 12,
         padding: 12,
         marginHorizontal: 20,
         marginBottom: 8,

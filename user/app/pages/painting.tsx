@@ -33,7 +33,7 @@ const Painting = () => {
   const serviceCategory = category || 'Painting';
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {PaintingServiceCardDetails.map((painting, idx) => (
           <ServiceCard

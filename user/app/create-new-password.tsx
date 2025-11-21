@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 1,
         borderColor: "#ccc",
-        borderRadius: 10,
+        borderRadius: 12,
         marginBottom: 20,
         paddingHorizontal: 10,
     },
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     passwordRequirements: {
         backgroundColor: "#f5f5f5",
         padding: 12,
-        borderRadius: 8,
+        borderRadius: 12,
         marginBottom: 20,
     },
     requirementsTitle: {
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     button: {
         backgroundColor: "#008080",
         paddingVertical: 15,
-        borderRadius: 10,
+        borderRadius: 12,
         alignItems: "center",
     },
     buttonDisabled: {

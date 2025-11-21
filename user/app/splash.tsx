@@ -1,3 +1,4 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
@@ -105,8 +106,12 @@ export default function Splash() {
                     // Continue with normal login flow if profile check fails
                 }
 
-                // Navigate directly without alert
-                router.replace("/(tabs)");
+                Alert.alert("Success", "Login successful!", [
+                    {
+                        text: "OK",
+                        onPress: () => router.replace("/(tabs)"),
+                    },
+                ]);
             } else {
                 Alert.alert(
                     "Login Failed",
@@ -127,12 +132,14 @@ export default function Splash() {
         <>
             <Stack.Screen options={{ headerShown: false }} />
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
                 style={styles.container}
             >
                 <ScrollView
+                    style={{ flex: 1 }}
                     contentContainerStyle={styles.scrollContainer}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
                 >
                     {/* Logo Section */}
                     <View style={styles.logoContainer}>
@@ -417,7 +424,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     loginButtonDisabled: {
-        backgroundColor: "#ccc",
+        backgroundColor: "#b2d7d7",
     },
     loginButtonText: {
         color: "#fff",

@@ -25,7 +25,7 @@ const Aircon = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {AirconServiceCardDetails.map((aircon, idx) => (
           <ServiceCard

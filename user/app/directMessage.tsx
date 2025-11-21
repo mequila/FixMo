@@ -365,18 +365,18 @@ const DirectMessage = () => {
 
   // Helper function to add a message while maintaining chronological order
   const addMessageInOrder = (newMessage: ApiMessage) => {
-    console.log('🔄 [ADD_MESSAGE] Attempting to add message:', newMessage.message_id);
-    console.log('📝 [ADD_MESSAGE] Message content preview:', newMessage.content?.substring(0, 30) + '...');
-    console.log('👤 [ADD_MESSAGE] Sender type:', newMessage.sender_type);
-    console.log('📅 [ADD_MESSAGE] Created at:', newMessage.created_at);
+    console.log('[ADD_MESSAGE] Attempting to add message:', newMessage.message_id);
+    console.log('[ADD_MESSAGE] Message content preview:', newMessage.content?.substring(0, 30) + '...');
+    console.log('[ADD_MESSAGE] Sender type:', newMessage.sender_type);
+    console.log('[ADD_MESSAGE] Created at:', newMessage.created_at);
     
     setMessages(prev => {
-      console.log('📊 [ADD_MESSAGE] Current messages count before add:', prev.length);
+  console.log('[ADD_MESSAGE] Current messages count before add:', prev.length);
       
       // Check if message already exists
       const messageExists = prev.some(msg => msg.message_id === newMessage.message_id);
       if (messageExists) {
-        console.log('💡 [ADD_MESSAGE] Message already exists, not adding duplicate');
+  console.log('[ADD_MESSAGE] Message already exists, not adding duplicate');
         return prev;
       }
 
@@ -385,9 +385,9 @@ const DirectMessage = () => {
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
-      console.log('✅ [ADD_MESSAGE] Successfully added message in chronological order');
-      console.log('📊 [ADD_MESSAGE] New messages count after add:', updatedMessages.length);
-      console.log('🕐 [ADD_MESSAGE] UI should update now at:', new Date().toISOString());
+  console.log('[ADD_MESSAGE] Successfully added message in chronological order');
+  console.log('[ADD_MESSAGE] New messages count after add:', updatedMessages.length);
+  console.log('[ADD_MESSAGE] UI should update now at:', new Date().toISOString());
       
       return updatedMessages;
     });
@@ -555,7 +555,7 @@ const DirectMessage = () => {
         userType as 'customer' | 'provider'
       );
       
-      console.log('📸 Image upload result:', result);
+  console.log('Image upload result:', result);
 
       if (result.success) {
         // Add message immediately to UI
@@ -564,7 +564,7 @@ const DirectMessage = () => {
         
         // Backup refresh
         setTimeout(() => {
-          console.log('🔄 Backup refresh after image send');
+          console.log('Backup refresh after image send');
           loadMessages(1);
         }, 1500);
       } else {
@@ -759,7 +759,7 @@ const DirectMessage = () => {
             color: isMyMessage ? "#fff" : "#333", 
             fontSize: 14 
           }}>
-            {item.content}
+            { (item.content || '').replace(/📸|📷/g, '') }
           </Text>
           
           <View style={{
@@ -844,13 +844,10 @@ const DirectMessage = () => {
             <TouchableOpacity 
               onPress={handlePhoneCall} 
               style={{ 
-                marginLeft: 8,
-                padding: 8,
-                borderRadius: 20,
-                backgroundColor: 'rgba(0,128,128,0.1)'
+                marginRight: 20,
               }}
             >
-              <Ionicons name="call-outline" size={20} color="#008080" />
+              <Ionicons name="call" size={24} color="#008080" />
             </TouchableOpacity>
           )}
         </View>
@@ -881,11 +878,9 @@ const DirectMessage = () => {
 
       {/* CHAT */}
       <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 20}
-        enabled={true}
-      >
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}   >    
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -962,13 +957,11 @@ const DirectMessage = () => {
           <TouchableOpacity
             onPress={handleImagePicker}
             style={{
-              marginRight: 10,
-              padding: 8,
-              borderRadius: 20,
-              backgroundColor: "#f0f0f0"
+              marginLeft: 10,
+            
             }}
           >
-            <Ionicons name="camera-outline" size={20} color="#008080" />
+            <Ionicons name="camera" size={28} color="#008080" />
           </TouchableOpacity>
           
           <TextInput
@@ -988,6 +981,7 @@ const DirectMessage = () => {
               borderColor: "#b2d7d7",
               maxHeight: 100,
               minHeight: Platform.OS === "android" ? 40 : 36,
+              marginHorizontal: 10,
             }}
             textAlignVertical="top"
           />
@@ -996,7 +990,7 @@ const DirectMessage = () => {
             onPress={handleSend}
             disabled={sending || message.trim() === ""}
             style={{
-              marginLeft: 10,
+              marginRight: 5,
               alignItems: "center",
               justifyContent: "center",
               opacity: (sending || message.trim() === "") ? 0.5 : 1

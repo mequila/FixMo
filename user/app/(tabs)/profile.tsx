@@ -307,33 +307,34 @@ const Profile = () => {
 
       <ProfileCard
         label="Edit Profile"
-        iconName="create-outline"
+        iconName="create"
         onPress={() => router.push("/editprofile")}
       />
 
       <ProfileCard
         label="Fix-Score"
-        iconName="speedometer-outline"
+        iconName="speedometer"
         onPress={() => router.push("/penalty-score-details")}
       />
 
       <ProfileCard
         label="Report an Issue"
-        iconName="flag-outline"
+        iconName="flag"
         onPress={() => router.push("/report")}
       />      <View style={homeStyles.profilePartition} />
 
 
       <ProfileCard
         label="FAQ"
-        iconName="help-circle-outline"
+        iconName="help-circle"
+        iconSize={29}
         onPress={() => router.push("/faq")}
       />
 
 
       <ProfileCard
         label="Terms and Conditions"
-        iconName="book-outline"
+        iconName="book"
         onPress={() => router.push("/termsConditions")}
       />
 
@@ -343,9 +344,10 @@ const Profile = () => {
 
       <ProfileCard
         label="Logout"
-        iconName="log-out-outline"
+        iconName="log-out"
         onPress={handleLogout}
-      />      </ScrollView>
+      />      
+      </ScrollView>
 
       {/* Deactivated Account Modal */}
       <Modal

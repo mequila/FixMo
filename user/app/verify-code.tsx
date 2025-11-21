@@ -51,7 +51,7 @@ export default function VerifyCode() {
 
     useEffect(() => {
         if (value.length === CELL_COUNT) {
-            // ✅ Replace this with actual verification logic
+            // Replace this with actual verification logic
             Alert.alert("Success", `Email ${email} verified successfully!`);
             router.push({
                 pathname: "/create-new-password",
@@ -61,7 +61,7 @@ export default function VerifyCode() {
     }, [value]);
 
     const handleResend = () => {
-        // ✅ Replace this with actual resend logic
+        // Replace this with actual resend logic
         Alert.alert("OTP Sent", `OTP has been resent to ${email}`);
         setTimer(40);
         setIsResendVisible(false);

@@ -14,6 +14,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import PageHeader from './components/PageHeader';
 import AnimatedScoreCircle from './components/AnimatedScoreCircle';
 import {
   getPenaltyInfo,
@@ -92,8 +93,8 @@ const PenaltyScorePage = () => {
       // Process violations
       const violationsList = violationsRes.success ? (violationsRes.data.violations || []) : [];
       setViolations(violationsList);
-      console.log('📊 Violations count:', violationsList.length);
-      console.log('📊 Sample violation:', violationsList[0]);
+  console.log('Violations count:', violationsList.length);
+  console.log('Sample violation:', violationsList[0]);
       
       // Check if violations list includes any restorations (points with positive values)
       // Some backends might return restorations as part of violations with different status
@@ -111,18 +112,18 @@ const PenaltyScorePage = () => {
         points_restored: Math.abs(v.penalty_points_deducted || v.points_deducted || v.penalty_points || v.points || 0)
       }));
       
-      console.log('📊 Actual violations:', actualViolations.length);
-      console.log('📊 Inline restorations found:', inlineRestorations.length);
+  console.log('Actual violations:', actualViolations.length);
+  console.log('Inline restorations found:', inlineRestorations.length);
       
       // Process restorations
-      console.log('✅ Restorations Response Full:', JSON.stringify(restorationsRes, null, 2));
-      console.log('✅ Restorations success flag:', restorationsRes.success);
-      console.log('✅ Restorations error:', restorationsRes.error);
+  console.log('Restorations Response Full:', JSON.stringify(restorationsRes, null, 2));
+  console.log('Restorations success flag:', restorationsRes.success);
+  console.log('Restorations error:', restorationsRes.error);
       
       const restorationsList = restorationsRes.success ? (restorationsRes.data || []) : [];
-      console.log('✅ Restorations list after processing:', restorationsList);
-      console.log('✅ Restorations count:', restorationsList.length);
-      console.log('✅ Restorations data sample:', restorationsList[0]);
+  console.log('Restorations list after processing:', restorationsList);
+  console.log('Restorations count:', restorationsList.length);
+  console.log('Restorations data sample:', restorationsList[0]);
       
       console.log('🧪 Using real backend data');
       
@@ -133,8 +134,8 @@ const PenaltyScorePage = () => {
         ...restorationsList.map((r: any) => ({ ...r, type: 'restoration' }))
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
-      console.log('📋 Combined history count:', combinedHistory.length);
-      console.log('📋 Combined history sample:', combinedHistory.slice(0, 3));
+  console.log('Combined history count:', combinedHistory.length);
+  console.log('Combined history sample:', combinedHistory.slice(0, 3));
       
       setHistory(combinedHistory);
       
@@ -178,26 +179,22 @@ const PenaltyScorePage = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#399d9d" />
+        <ActivityIndicator size="large" color="#008080" />
         <Text style={styles.loadingText}>Loading penalty information...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#e7ecec" />
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#399d9d" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Fix-Score</Text>
-          <TouchableOpacity onPress={() => setInfoModalVisible(true)} style={styles.infoButton}>
-            <Ionicons name="information-circle-outline" size={24} color="#399d9d" />
-          </TouchableOpacity>
-        </View>
+    <View style={{flex: 1, backgroundColor: "#fff"}}>
+        <PageHeader
+          title="Fix-Score"
+          onBack={() => router.back()}
+          rightIcon="information-circle-outline"
+          onRightPress={() => setInfoModalVisible(true)}
+        />
+      <View >
+        
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -407,7 +404,7 @@ const PenaltyScorePage = () => {
           </View>
         </Modal>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -416,7 +413,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
   const getDescription = () => {
     if (isSuspended || points <= 50) {
       return {
-        icon: '❌',
         text: 'Your account is deactivated. Contact admin support for reactivation.',
         bgColor: '#FEE2E2',
         textColor: '#991B1B',
@@ -424,7 +420,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
     }
     if (points >= 81) {
       return {
-        icon: '✅',
         text: 'No restrictions. Full access to all booking features.',
         bgColor: '#D1FAE5',
         textColor: '#065F46',
@@ -432,7 +427,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
     }
     if (points >= 71) {
       return {
-        icon: '⚠️',
         text: 'No restrictions yet, but maintain good behavior to avoid penalties.',
         bgColor: '#FEF3C7',
         textColor: '#92400E',
@@ -440,7 +434,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
     }
     if (points >= 61) {
       return {
-        icon: '🔶',
         text: userType === 'customer' 
           ? 'Limited access. Maximum 2 bookings at a time.'
           : 'Limited access. Maximum 3 slots per day.',
@@ -449,7 +442,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
       };
     }
     return {
-      icon: '🚫',
       text: userType === 'customer'
         ? 'Heavily restricted. Only 1 booking allowed at a time.'
         : 'Heavily restricted. Only 2 slots allowed per day.',
@@ -462,7 +454,6 @@ const StatusDescription = ({ points, isSuspended, userType }: { points: number; 
 
   return (
     <View style={[styles.statusDescriptionBox, { backgroundColor: description.bgColor }]}>
-      <Text style={styles.statusDescriptionIcon}>{description.icon}</Text>
       <Text style={[styles.statusDescriptionText, { color: description.textColor }]}>
         {description.text}
       </Text>
@@ -751,7 +742,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   suspendedText: {
     fontSize: 14,
@@ -766,7 +757,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#399d9d',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 12,
     elevation: 2,
     shadowColor: '#399d9d',
@@ -898,7 +889,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 12,
     backgroundColor: '#FEF3C7',
-    borderRadius: 8,
+    borderRadius: 12,
     fontSize: 13,
     color: '#92400E',
   },

@@ -200,10 +200,10 @@ export default function profile_serviceprovider() {
   };
 
   useEffect(() => {
-    console.log('🔍 URL Params:', { serviceId, providerId, selectedDate, category, availabilityId });
-    console.log('🔍 Provider ID type:', typeof providerId, 'Value:', providerId);
-    console.log('🆔 Availability ID type:', typeof availabilityId, 'Value:', availabilityId);
-    console.log('🏷️ Category from navigation:', category);
+    console.log('URL Params:', { serviceId, providerId, selectedDate, category, availabilityId });
+    console.log('Provider ID type:', typeof providerId, 'Value:', providerId);
+    console.log('Availability ID type:', typeof availabilityId, 'Value:', availabilityId);
+    console.log('Category from navigation:', category);
     fetchAllData();
     fetchCustomerProfile();
     checkBookingAvailability();
@@ -363,13 +363,13 @@ export default function profile_serviceprovider() {
       const currentProviderId = providerId || fetchedProviderId;
       
       if (currentProviderId) {
-        console.log('🔍 Using provider ID:', currentProviderId);
+        console.log('Using provider ID:', currentProviderId);
         // Then fetch provider professions
         await fetchProviderProfessions(currentProviderId);
         // Finally fetch ratings with statistics
         await fetchProviderRatingsWithStats(currentProviderId);
       } else {
-        console.log('⚠️ No provider ID available after service fetch');
+        console.log('No provider ID available after service fetch');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -384,7 +384,7 @@ export default function profile_serviceprovider() {
       const token = await AsyncStorage.getItem('token');
       if (!token || !serviceId) return null;
 
-      console.log('🔍 Fetching service details for ID:', serviceId);
+  console.log('Fetching service details for ID:', serviceId);
 
       // First try to get from service listings endpoint (enhanced data)
       const listingsResponse = await fetch(`${BACKEND_URL}/auth/service-listings`, {
@@ -424,7 +424,7 @@ export default function profile_serviceprovider() {
           };
           
           setServiceData(transformedService);
-          console.log('✅ Service data loaded from listings:', transformedService);
+          console.log('Service data loaded from listings:', transformedService);
           return service.provider.id;
         }
       }
@@ -479,8 +479,8 @@ export default function profile_serviceprovider() {
                 }] : [])
               };
               
-              setServiceData(transformedService);
-              console.log('✅ Service data loaded from by-title endpoint:', transformedService);
+        setServiceData(transformedService);
+      console.log('Service data loaded from by-title endpoint:', transformedService);
               return enhancedService.provider.id;
             }
           }
@@ -504,12 +504,12 @@ export default function profile_serviceprovider() {
           };
           
           setServiceData(transformedService);
-          console.log('✅ Service data loaded from provider services (fallback):', transformedService);
+          console.log('Service data loaded from provider services (fallback):', transformedService);
           return transformedService.provider.id;
         }
       }
     } catch (error) {
-      console.error('❌ Error fetching service details:', error);
+      console.error('Error fetching service details:', error);
     }
     
     return null;
@@ -520,11 +520,11 @@ export default function profile_serviceprovider() {
       const providerIdToUse = currentProviderId || providerId;
       
       if (!providerIdToUse) {
-        console.log('ℹ️ No provider ID available for fetching professions');
+        console.log('No provider ID available for fetching professions');
         return;
       }
 
-      console.log('🔍 Fetching provider professions for ID:', providerIdToUse);
+        console.log('Fetching provider professions for ID:', providerIdToUse);
 
       // This is a public endpoint according to the documentation
       const response = await fetch(`${BACKEND_URL}/api/serviceProvider/professions/${providerIdToUse}`, {
@@ -536,7 +536,7 @@ export default function profile_serviceprovider() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Provider professions response:', result);
+  console.log('Provider professions response:', result);
         
         if (result.success && result.data) {
           let professionsData: ProviderProfession[] = [];
@@ -563,13 +563,13 @@ export default function profile_serviceprovider() {
           }
           
           setProviderProfessions(professionsData);
-          console.log('✅ Provider professions loaded:', professionsData);
+          console.log('Provider professions loaded:', professionsData);
         } else {
-          console.log('ℹ️ No professions found for provider');
+          console.log('No professions found for provider');
           setProviderProfessions([]);
         }
       } else if (response.status === 404) {
-        console.log('ℹ️ Provider professions endpoint not found (404) - provider may not have professions data');
+  console.log('Provider professions endpoint not found (404) - provider may not have professions data');
         setProviderProfessions([]);
         
         // Try to fallback to service category as profession
@@ -580,14 +580,14 @@ export default function profile_serviceprovider() {
             experience: 'Experience information not available'
           };
           setProviderProfessions([fallbackProfession]);
-          console.log('✅ Using service category as fallback profession:', fallbackProfession);
+          console.log('Using service category as fallback profession:', fallbackProfession);
         }
       } else {
-        console.log('ℹ️ Provider professions endpoint returned:', response.status);
+  console.log('Provider professions endpoint returned:', response.status);
         setProviderProfessions([]);
       }
-    } catch (error) {
-      console.error('❌ Error fetching provider professions:', error);
+  } catch (error) {
+  console.error('Error fetching provider professions:', error);
       setProviderProfessions([]);
       
       // Fallback to service category if available
@@ -598,7 +598,7 @@ export default function profile_serviceprovider() {
           experience: 'Experience information not available'
         };
         setProviderProfessions([fallbackProfession]);
-        console.log('✅ Using service category as fallback profession after error:', fallbackProfession);
+        console.log('Using service category as fallback profession after error:', fallbackProfession);
       }
     }
   };
@@ -612,7 +612,7 @@ export default function profile_serviceprovider() {
         return;
       }
 
-      console.log('🔍 Fetching ratings for provider ID:', providerIdToUse);
+  console.log('Fetching ratings for provider ID:', providerIdToUse);
 
       // Fetch first page with pagination
       const response = await fetch(`${BACKEND_URL}/api/ratings/provider/${providerIdToUse}?page=1&limit=3`, {
@@ -624,7 +624,7 @@ export default function profile_serviceprovider() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Ratings response:', result);
+  console.log('Ratings response:', result);
         
         // Handle the response structure from the ratings endpoint
         let ratingsData = [];
@@ -686,14 +686,14 @@ export default function profile_serviceprovider() {
           });
         }
         
-        console.log('✅ Ratings loaded:', transformedRatings.length, 'reviews, average:', averageRating);
+  console.log('Ratings loaded:', transformedRatings.length, 'reviews, average:', averageRating);
       } else {
         console.log('ℹ️ No ratings available or endpoint returned:', response.status);
         setRatings([]);
         setProviderRating(0);
       }
     } catch (error) {
-      console.error('❌ Error fetching ratings:', error);
+      console.error('Error fetching ratings:', error);
       setRatings([]);
       setProviderRating(0);
     }
@@ -817,7 +817,7 @@ export default function profile_serviceprovider() {
 
   const handleSlotSelect = (slot: TimeSlot) => {
     setSelectedSlot(slot);
-    console.log('🕐 Slot selected:', slot);
+    console.log('Slot selected:', slot);
   };
 
   const handleContinueToBooking = () => {
@@ -1245,7 +1245,7 @@ export default function profile_serviceprovider() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#399d9d" />
+        <ActivityIndicator size="large" color="#3008080" />
         <Text style={{ marginTop: 10, fontSize: 16, color: '#666' }}>
           Loading service details...
         </Text>
@@ -1262,7 +1262,7 @@ export default function profile_serviceprovider() {
         </Text>
         <TouchableOpacity 
           onPress={() => router.back()}
-          style={{ marginTop: 20, padding: 10, backgroundColor: '#399d9d', borderRadius: 8 }}
+          style={{ marginTop: 20, padding: 10, backgroundColor: '#008080', borderRadius: 8 }}
         >
           <Text style={{ color: 'white', fontWeight: 'bold' }}>Go Back</Text>
         </TouchableOpacity>
@@ -1283,7 +1283,7 @@ export default function profile_serviceprovider() {
           {/* Header with back button */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#399d9d" />
+              <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Service Details</Text>
           </View>
@@ -1573,7 +1573,7 @@ export default function profile_serviceprovider() {
                   <View style={{ marginTop: 16,
                         backgroundColor: "#008080",
                         paddingVertical: 12,
-                        borderRadius: 25,
+                        borderRadius: 12,
                         alignItems: "center",
                       }}>
                     <Text
@@ -1826,10 +1826,10 @@ export default function profile_serviceprovider() {
                     alignItems: 'center',
                     marginBottom: 3,
                   }}>
-                    <Ionicons name="time-outline" size={16} color="#399d9d" />
+                    <Ionicons name="time-outline" size={16} color="#008080" />
                     <Text style={{
                       fontSize: 14,
-                      color: '#399d9d',
+                      color: '#008080',
                       fontWeight: '600',
                       marginLeft: 5,
                     }}>
@@ -2099,7 +2099,7 @@ export default function profile_serviceprovider() {
               onPress={() => setShowAllRatings(false)}
               style={{ marginRight: 15 }}
             >
-              <Ionicons name="arrow-back" size={24} color="#399d9d" />
+              <Ionicons name="arrow-back" size={24} color="#008080" />
             </TouchableOpacity>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black', flex: 1 }}>
               All Reviews ({ratingsPagination.totalRatings})
@@ -2248,7 +2248,7 @@ export default function profile_serviceprovider() {
             {/* Loading indicator */}
             {ratingsLoading && (
               <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#399d9d" />
+                <ActivityIndicator size="large" color="#008080" />
               </View>
             )}
 
@@ -2428,7 +2428,7 @@ export default function profile_serviceprovider() {
               <TouchableOpacity
                 onPress={handleContinueToBooking}
                 style={{
-                  backgroundColor: selectedSlot ? '#399d9d' : '#ccc',
+                  backgroundColor: selectedSlot ? '#008080' : '#b2d7d7',
                   paddingVertical: 15,
                   borderRadius: 10,
                   alignItems: 'center',

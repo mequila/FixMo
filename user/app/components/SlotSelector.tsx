@@ -34,15 +34,15 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
   const loadSlots = async () => {
     setLoading(true);
     try {
-      console.log('📅 Loading slots for provider:', providerId, 'on date:', selectedDate);
-      const result = await fetchProviderSlots(providerId, selectedDate);
+  console.log('Loading slots for provider:', providerId, 'on date:', selectedDate);
+  const result = await fetchProviderSlots(providerId, selectedDate);
       
-      console.log('📊 Fetch result:', JSON.stringify(result, null, 2));
+  console.log('Fetch result:', JSON.stringify(result, null, 2));
       
       if (result.success && result.data) {
         const allSlots = result.data.slots || [];
         
-        console.log('📋 All slots from backend:', allSlots.map(s => ({
+  console.log('All slots from backend:', allSlots.map(s => ({
           id: s.availability_id,
           time: s.displayTime,
           isAvailable: s.isAvailable,
@@ -74,13 +74,13 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
             const isPastTime = slotTimeInMinutes < (currentTime - 30);
             
             if (isPastTime) {
-              console.log('⏰ Filtering out past slot:', slot.displayTime, `(${startTime})`);
+              console.log('Filtering out past slot:', slot.displayTime, `(${startTime})`);
             }
             
             return !isPastTime;
           });
           
-          console.log(`⏰ Filtered ${allSlots.length - filteredSlots.length} past time slots for today`);
+          console.log(`Filtered ${allSlots.length - filteredSlots.length} past time slots for today`);
         }
         
         // Filter for truly available slots (not booked and not fully booked)
@@ -88,8 +88,8 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
           slot.isAvailable && !slot.isBooked && !slot.isFullyBooked
         );
         
-        console.log('✅ Loaded', availableSlots.length, 'available slots out of', result.data.totalSlots, 'total');
-        console.log('❌ Booked/Full slots:', filteredSlots.filter(s => s.isBooked || s.isFullyBooked).length);
+  console.log('Loaded', availableSlots.length, 'available slots out of', result.data.totalSlots, 'total');
+  console.log('Booked/Full slots:', filteredSlots.filter(s => s.isBooked || s.isFullyBooked).length);
         
         // TEMP: Show alert with debug info
         console.warn('DEBUG INFO:', {
@@ -104,7 +104,7 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
         
         if (result.message && result.message.includes('Mock')) {
           // Show a toast or alert that mock data is being used
-          console.warn('⚠️ Using mock data - backend not connected:', result.message);
+          console.warn('Using mock data - backend not connected:', result.message);
         }
         
         if (availableSlots.length === 0 && filteredSlots.length > 0) {
@@ -114,14 +114,14 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
           );
         }
       } else {
-        console.error('❌ Failed to load slots:', result.message);
+        console.error('Failed to load slots:', result.message);
         Alert.alert(
           'Unable to Load Slots', 
           result.message || 'Failed to load available slots. The backend may not be configured yet.'
         );
       }
     } catch (error) {
-      console.error('❌ Error loading slots:', error);
+      console.error('Error loading slots:', error);
       Alert.alert('Error', 'Failed to load available time slots. Please check your connection and try again.');
     } finally {
       setLoading(false);
@@ -132,7 +132,7 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
     const isSelected = selectedSlotId === slot.availability_id;
     const isDisabled = slot.isBooked || !slot.isAvailable;
 
-    console.log('🎨 Rendering slot:', {
+    console.log('Rendering slot:', {
       id: slot.availability_id,
       displayTime: slot.displayTime,
       isSelected,

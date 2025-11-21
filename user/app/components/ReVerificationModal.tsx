@@ -202,7 +202,7 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
         }
         
         Alert.alert(
-          'Location Found! 📍',
+          'Location Found!',
           'Map centered on your area. You can adjust the pin by tapping elsewhere on the map.',
           [{ text: 'OK' }]
         );
@@ -264,8 +264,8 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
 
     if (!result.canceled && result.assets && result.assets[0]) {
       const uri = result.assets[0].uri;
-      console.log('📸 Profile photo selected:', uri);
-      console.log('📸 Photo details:', {
+  console.log('Profile photo selected:', uri);
+  console.log('Photo details:', {
         width: result.assets[0].width,
         height: result.assets[0].height,
         type: result.assets[0].type,
@@ -583,7 +583,7 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
 
           {/* Instructions */}
           <View style={styles.instructions}>
-            <Text style={styles.instructionsTitle}>📋 Required Information</Text>
+            <Text style={styles.instructionsTitle}>Required Information</Text>
             <Text style={styles.instructionsText}>
               Please provide the following information to re-verify your account:
             </Text>
@@ -864,8 +864,8 @@ const ReVerificationModal: React.FC<ReVerificationModalProps> = ({
               <Ionicons name="information-circle" size={20} color="#008080" />
               <Text style={styles.mapInstructionsText}>
                 {selectedBarangay 
-                  ? '🎯 Map auto-centered on your area. Tap the map to pin your exact location.'
-                  : '📍 Tap anywhere on the map to pin your location'}
+                  ? 'Map auto-centered on your area. Tap the map to pin your exact location.'
+                  : 'Tap anywhere on the map to pin your location'}
               </Text>
             </View>
 

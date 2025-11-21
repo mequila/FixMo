@@ -106,7 +106,7 @@ export default function Login() {
         // Initialize push notifications after successful login
         try {
           await initializePushNotifications(data.userId, 'customer');
-          console.log('✅ Push notifications initialized after login');
+          console.log('Push notifications initialized after login');
         } catch (pushError) {
           console.error('Error initializing push notifications:', pushError);
           // Don't block login if push notifications fail

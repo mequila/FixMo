@@ -661,14 +661,11 @@ export default function Account() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      >
         <PageHeader 
           title="Edit Profile" 
           backRoute="/(tabs)/profile" 
         />
+      <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* OTP Request Section - Only for approved users */}
         {userData?.verification_status === 'approved' && (
@@ -676,7 +673,7 @@ export default function Account() {
             {!otpRequested ? (
               <View style={{
                 backgroundColor: '#e6f7ff',
-                borderRadius: 10,
+                borderRadius: 12,
                 padding: 15,
                 borderWidth: 1,
                 borderColor: '#008080',
@@ -694,8 +691,8 @@ export default function Account() {
                   onPress={requestOTP}
                   disabled={requestingOtp}
                   style={{
-                    backgroundColor: requestingOtp ? '#ccc' : '#008080',
-                    borderRadius: 10,
+                    backgroundColor: requestingOtp ? '#b2d7d7' : '#008080',
+                    borderRadius: 12,
                     paddingVertical: 12,
                     alignItems: 'center',
                   }}
@@ -712,13 +709,12 @@ export default function Account() {
             ) : (
               <View style={{
                 backgroundColor: '#e8f5e9',
-                borderRadius: 10,
+                borderRadius: 12,
                 padding: 15,
                 borderWidth: 1,
                 borderColor: '#4caf50',
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                  <Ionicons name="checkmark-circle" size={24} color="#4caf50" style={{ marginRight: 10 }} />
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#4caf50' }}>
                     Code Sent
                   </Text>
@@ -737,7 +733,7 @@ export default function Account() {
                     disabled={requestingOtp}
                     style={{
                       backgroundColor: '#008080',
-                      borderRadius: 10,
+                      borderRadius: 12,
                       paddingVertical: 10,
                       alignItems: 'center',
                       marginTop: 10,
@@ -759,7 +755,7 @@ export default function Account() {
             marginHorizontal: 20,
             marginTop: 15,
             backgroundColor: '#fff3e0',
-            borderRadius: 10,
+            borderRadius: 12,
             padding: 15,
             borderWidth: 1,
             borderColor: '#ff9800',
@@ -786,7 +782,7 @@ export default function Account() {
             marginHorizontal: 20,
             marginTop: 15,
             backgroundColor: '#ffe6e6',
-            borderRadius: 10,
+            borderRadius: 12,
             padding: 15,
             borderWidth: 1,
             borderColor: '#ff4444',
@@ -822,12 +818,14 @@ export default function Account() {
             </Text>
             <TextInput
               style={{
-                backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e9e9e9" : "#e7ecec",
-                borderRadius: 10,
+                backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e7ecec" : "#fafafa",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "#b2d7d7",
                 paddingHorizontal: 15,
                 paddingVertical: 12,
                 fontSize: 16,
-                color: (userData?.verification_status === 'approved' && !otpRequested) ? '#999' : '#000',
+                color: (userData?.verification_status === 'approved' && !otpRequested) ? '#555' : '#000',
                 opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
               }}
               placeholder="email@example.com"
@@ -844,7 +842,7 @@ export default function Account() {
             )}
             {email !== originalEmail && otpRequested && (
               <Text style={{ fontSize: 11, color: '#ff9800', marginTop: 3 }}>
-                ⚠️ Changing email requires additional verification
+                Changing email requires additional verification
               </Text>
             )}
           </View>
@@ -852,18 +850,21 @@ export default function Account() {
           {/* Phone Number */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Phone Number *
+              Phone Number 
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={{ fontSize: 16, marginRight: 10 }}>🇵🇭 +63</Text>
               <TextInput
                 style={{
-                  backgroundColor: "#e7ecec",
-                  borderRadius: 10,
+                  backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e7ecec" : "#fafafa",
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#b2d7d7",
                   paddingHorizontal: 15,
                   paddingVertical: 12,
                   fontSize: 16,
                   flex: 1,
+                  color: (userData?.verification_status === 'approved' && !otpRequested) ? '#555' : '#000',
                   opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
                 }}
                 placeholder="912 345 6789"
@@ -882,76 +883,59 @@ export default function Account() {
           {/* Home Address */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontWeight: "bold", marginBottom: 5, fontSize: 14 }}>
-              Home Address *
+              Home Address 
             </Text>
             <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
               Select your Province, Municipality, and Barangay
             </Text>
             
-            {/* Province Picker */}
-            <TouchableOpacity
-              onPress={() => setShowProvincePicker(true)}
-              disabled={userData?.verification_status === 'approved' && !otpRequested}
-              style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                paddingHorizontal: 15,
-                paddingVertical: 12,
-                marginBottom: 10,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                opacity: (userData?.verification_status === 'approved' && !otpRequested) ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: selectedProvince ? '#000' : '#999' }}>
-                {selectedProvince || 'Choose your Province/District'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#008080" />
-            </TouchableOpacity>
+            <View style={{ 
+              borderWidth: 1, 
+              borderColor: '#b2d7d7',
+              backgroundColor: (userData?.verification_status === 'approved' && !otpRequested) ? "#e7ecec" : "#fafafa",
+              borderRadius: 12, 
+              padding: 6, 
+              marginBottom: 10 }}>
+              <Picker
+                selectedValue={selectedProvince}
+                onValueChange={(value) => {
+                  setSelectedProvince(value);
+                  setSelectedMunicipality('');
+                  setSelectedBarangay('');
+                }}
+                enabled={!(userData?.verification_status === 'approved' && !otpRequested)}
+              >
+                <Picker.Item label="Province/District" value="" />
+                {getProvinces().map((province) => (
+                  <Picker.Item key={province} label={province} value={province} />
+                ))}
+              </Picker>
 
-            {/* Municipality Picker */}
-            <TouchableOpacity
-              onPress={() => setShowMunicipalityPicker(true)}
-              disabled={!selectedProvince || (userData?.verification_status === 'approved' && !otpRequested)}
-              style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                paddingHorizontal: 15,
-                paddingVertical: 12,
-                marginBottom: 10,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                opacity: (!selectedProvince || (userData?.verification_status === 'approved' && !otpRequested)) ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: selectedMunicipality ? '#000' : '#999' }}>
-                {selectedMunicipality || 'Choose your City/Municipality'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#008080" />
-            </TouchableOpacity>
+              <Picker
+                selectedValue={selectedMunicipality}
+                onValueChange={(value) => {
+                  setSelectedMunicipality(value);
+                  setSelectedBarangay('');
+                }}
+                enabled={!!selectedProvince && !(userData?.verification_status === 'approved' && !otpRequested)}
+              >
+                <Picker.Item label="City/Municipality" value="" />
+                {getMunicipalities().map((municipality) => (
+                  <Picker.Item key={municipality} label={municipality} value={municipality} />
+                ))}
+              </Picker>
 
-            {/* Barangay Picker */}
-            <TouchableOpacity
-              onPress={() => setShowBarangayPicker(true)}
-              disabled={!selectedMunicipality || (userData?.verification_status === 'approved' && !otpRequested)}
-              style={{
-                backgroundColor: "#e7ecec",
-                borderRadius: 10,
-                paddingHorizontal: 15,
-                paddingVertical: 12,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                opacity: (!selectedMunicipality || (userData?.verification_status === 'approved' && !otpRequested)) ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: selectedBarangay ? '#000' : '#999' }}>
-                {selectedBarangay || 'Choose your Barangay'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#008080" />
-            </TouchableOpacity>
+              <Picker
+                selectedValue={selectedBarangay}
+                onValueChange={(value) => setSelectedBarangay(value)}
+                enabled={!!selectedMunicipality && !(userData?.verification_status === 'approved' && !otpRequested)}
+              >
+                <Picker.Item label="Barangay" value="" />
+                {getBarangays().map((barangay: string) => (
+                  <Picker.Item key={barangay} label={barangay} value={barangay} />
+                ))}
+              </Picker>
+            </View>
 
             {homeAddress && (
               <Text style={{ fontSize: 12, color: '#008080', marginTop: 5 }}>
@@ -968,7 +952,7 @@ export default function Account() {
                   backgroundColor: isGeocoding ? '#ccc' : '#fff',
                   borderWidth: 2,
                   borderColor: '#008080',
-                  borderRadius: 10,
+                  borderRadius: 12,
                   paddingHorizontal: 15,
                   paddingVertical: 12,
                   marginTop: 10,
@@ -999,31 +983,33 @@ export default function Account() {
             )}
           </View>
 
-          {/* Birthday field removed */}
 
-          {/* Save Button */}
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving || (userData?.verification_status === 'approved' && !otpRequested)}
-            style={{
-              backgroundColor: (saving || (userData?.verification_status === 'approved' && !otpRequested)) ? '#ccc' : '#008080',
-              borderRadius: 10,
-              paddingVertical: 15,
-              alignItems: 'center',
-              marginTop: 10,
-              marginBottom: 20,
-            }}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
-                {userData?.verification_status === 'rejected' ? 'Resubmit for Verification' : 'Save Changes'}
-              </Text>
-            )}
-          </TouchableOpacity>
+          
         </View>
       </ScrollView>
+
+      {/* Save Button (outside ScrollView) */}
+      <TouchableOpacity
+        onPress={handleSave}
+        disabled={saving || (userData?.verification_status === 'approved' && !otpRequested)}
+        style={{
+          backgroundColor: (saving || (userData?.verification_status === 'approved' && !otpRequested)) ? '#b2d7d7' : '#008080',
+          marginHorizontal: 20,
+          marginBottom: 18,
+          marginTop: 10,
+          padding: 16,
+          borderRadius: 12,
+          alignItems: 'center',
+        }}
+      >
+        {saving ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+            {userData?.verification_status === 'rejected' ? 'Resubmit for Verification' : 'Save Changes'}
+          </Text>
+        )}
+      </TouchableOpacity>
 
       {/* Province Picker Modal */}
       <Modal
@@ -1187,12 +1173,11 @@ export default function Account() {
             maxWidth: 400,
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-              <Ionicons name="shield-checkmark" size={32} color="#008080" />
-              <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, flex: 1 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', flex: 1 }}>
                 Verify Identity
               </Text>
               <TouchableOpacity onPress={() => setShowOtpModal(false)}>
-                <Ionicons name="close-circle" size={28} color="#999" />
+                <Ionicons name="close-circle" size={28} color="#008080" />
               </TouchableOpacity>
             </View>
 
@@ -1204,7 +1189,6 @@ export default function Account() {
             </Text>
 
             <TextInput
-              placeholder="Enter 6-digit code"
               value={otp}
               onChangeText={(text) => {
                 // Only allow digits and trim whitespace
@@ -1214,9 +1198,9 @@ export default function Account() {
               keyboardType="number-pad"
               maxLength={6}
               style={{
-                borderWidth: 2,
+                borderWidth: 1.5,
                 borderColor: '#008080',
-                borderRadius: 10,
+                borderRadius: 12,
                 padding: 15,
                 fontSize: 18,
                 textAlign: 'center',
@@ -1250,8 +1234,8 @@ export default function Account() {
               onPress={submitProfileUpdate}
               disabled={saving || !otp || otp.trim().length !== 6}
               style={{
-                backgroundColor: (saving || !otp || otp.trim().length !== 6) ? '#ccc' : '#008080',
-                borderRadius: 10,
+                backgroundColor: (saving || !otp || otp.trim().length !== 6) ? '#b2d7d7' : '#008080',
+                borderRadius: 12,
                 paddingVertical: 15,
                 alignItems: 'center',
                 marginBottom: 10,
@@ -1272,7 +1256,7 @@ export default function Account() {
                 setOtp('');
               }}
               style={{
-                borderRadius: 10,
+                borderRadius: 12,
                 paddingVertical: 12,
                 alignItems: 'center',
               }}
@@ -1339,14 +1323,13 @@ export default function Account() {
               keyboardType="number-pad"
               maxLength={6}
               style={{
-                borderWidth: 2,
+                borderWidth: 1.5,
                 borderColor: '#008080',
-                borderRadius: 10,
+                borderRadius: 12,
                 padding: 15,
                 fontSize: 18,
                 textAlign: 'center',
-                letterSpacing: 8,
-                fontWeight: '600',
+                fontWeight: '500',
                 marginBottom: 20,
               }}
               placeholderTextColor="#999"
@@ -1357,8 +1340,8 @@ export default function Account() {
               onPress={verifySecondEmailOtp}
               disabled={saving || !secondOtp || secondOtp.trim().length !== 6}
               style={{
-                backgroundColor: (saving || !secondOtp || secondOtp.trim().length !== 6) ? '#ccc' : '#008080',
-                borderRadius: 10,
+                backgroundColor: (saving || !secondOtp || secondOtp.trim().length !== 6) ? '#b2d7d7' : '#008080',
+                borderRadius: 12,
                 paddingVertical: 15,
                 alignItems: 'center',
                 marginBottom: 10,
@@ -1380,7 +1363,7 @@ export default function Account() {
                 setSaving(false);
               }}
               style={{
-                borderRadius: 10,
+                borderRadius: 12,
                 paddingVertical: 12,
                 alignItems: 'center',
               }}

@@ -46,8 +46,8 @@ const PenaltyScoreCard: React.FC<PenaltyScoreCardProps> = ({
           <View style={styles.limitBanner}>
             <Text style={styles.limitText}>
               {userType === 'customer' 
-                ? `📊 Limit: ${bookingLimit} appointment${bookingLimit > 1 ? 's' : ''} at a time`
-                : `📊 Limit: ${bookingLimit} slot${bookingLimit > 1 ? 's' : ''} per day`}
+                ? `Limit: ${bookingLimit} appointment${bookingLimit > 1 ? 's' : ''} at a time`
+                : `Limit: ${bookingLimit} slot${bookingLimit > 1 ? 's' : ''} per day`}
             </Text>
           </View>
         )}

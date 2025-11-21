@@ -1,37 +1,47 @@
-
 import { Ionicons } from '@expo/vector-icons'
 import React, { useState } from 'react'
 import { ScrollView, Text, TouchableOpacity, View, RefreshControl, StyleSheet } from 'react-native'
 import PageHeader from './components/PageHeader'
 
-const faqCardDetails = [
+const faqCardDetails: Array<{
+  question: string;
+  answer: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+}> = [
   {
     question: "What is FixMo?",
-    answer: "FixMo is a mobile app that connects homeowners with TESDA-certified service providers for home maintenance and repair."
+    answer: "FixMo is a mobile app that connects homeowners with TESDA-certified service providers for home maintenance and repair.",
+    icon: "information-circle"
   },
   {
     question: "What services can I book?",
-    answer: "Plumbing, electrical work, carpentry, air conditioning and refrigeration, masonry, painting, welding, appliance repair, and computer servicing"
+    answer: "Plumbing, electrical work, carpentry, air conditioning and refrigeration, masonry, painting, welding, appliance repair, and computer servicing",
+    icon: "construct"
   },
   {
     question: "How do I know providers are qualified?",
-    answer: "All providers are TESDA-certified and verified through valid IDs, certificates, and admin approval."
+    answer: "All providers are TESDA-certified and verified through valid IDs, certificates, and admin approval.",
+    icon: "shield-checkmark"
   },
   {
     question: "Is FixMo available nationwide?",
-    answer: "Currently, FixMo operates within Metro Manila."
+    answer: "Currently, FixMo operates within Metro Manila.",
+    icon: "map"
   },
   {
     question: "How do I pay for services?",
-    answer: "Currently, FixMo only supports cash payments, which are paid directly to the service provider after the job is completed."
+    answer: "Currently, FixMo only supports cash payments, which are paid directly to the service provider after the job is completed.",
+    icon: "cash"
   },
   {
     question: "Can I rate and review a provider?",
-    answer: "Yes, after each service you can provide ratings and feedback."
-  }, 
+    answer: "Yes, after each service you can provide ratings and feedback.",
+    icon: "star"
+  },
   {
     question: "What if I encounter issues with a provider?",
-    answer: "You can report the issue through the in-app messaging or contact support."
+    answer: "You can report the issue through the in-app messaging or contact support.",
+    icon: "alert"
   }
 ]
 
@@ -57,13 +67,6 @@ const FAQ = () => {
   return (
     <View style={styles.container}>
       <PageHeader title="FAQ" backRoute="/(tabs)/profile" />
-      
-      {/* Header Banner */}
-      <View style={styles.headerBanner}>
-        <Ionicons name="help-circle" size={32} color="#008080" />
-        <Text style={styles.headerTitle}>Frequently Asked Questions</Text>
-        <Text style={styles.headerSubtitle}>Find answers to common questions</Text>
-      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -78,6 +81,7 @@ const FAQ = () => {
           />
         }
       >
+
         <View style={{ paddingBottom: 20 }}>
           {faqCardDetails.map((item, idx) => {
             const isOpen = expanded.includes(idx);
@@ -96,25 +100,23 @@ const FAQ = () => {
                 >
                   <View style={styles.questionTextContainer}>
                     <View style={styles.iconBadge}>
-                      <Ionicons name="help-circle-outline" size={20} color="#008080" />
+                      <Ionicons name={item.icon} size={20} color="#008080" />
                     </View>
                     <Text style={styles.questionText}>{item.question}</Text>
                   </View>
+
                   <View style={[styles.expandButton, isOpen && styles.expandButtonOpen]}>
                     <Ionicons
                       name={isOpen ? 'chevron-up' : 'chevron-down'}
                       size={22}
-                      color='#fff'
+                      color="#fff"
                     />
                   </View>
                 </TouchableOpacity>
-                
+
                 {isOpen && (
                   <View style={styles.answerContainer}>
                     <View style={styles.answerDivider} />
-                    <View style={styles.answerIconContainer}>
-                      <Ionicons name="checkmark-circle" size={18} color="#4caf50" />
-                    </View>
                     <Text style={styles.answerText}>{item.answer}</Text>
                   </View>
                 )}
@@ -123,12 +125,12 @@ const FAQ = () => {
           })}
         </View>
 
-        {/* Help Footer */}
         <View style={styles.helpFooter}>
-          <Ionicons name="chatbubble-ellipses" size={28} color="#008080" />
+          <Ionicons name="help-circle" size={45} color="#008080" />
           <Text style={styles.helpText}>Still have questions?</Text>
           <Text style={styles.helpSubtext}>Contact our support team for assistance</Text>
         </View>
+
       </ScrollView>
     </View>
   )
@@ -137,53 +139,32 @@ const FAQ = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  headerBanner: {
     backgroundColor: '#fff',
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
   },
   faqCard: {
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 12,    
+    borderWidth: 0.5,
+    borderColor: '#b2d7d7',         
     backgroundColor: '#fff',
-    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 12,             
     elevation: 2,
   },
   faqCardExpanded: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#008080',
+    borderWidth: 1.5,
+    borderColor: '#b2d7d7',
+    borderRadius: 12,     
+      
   },
   questionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
+    justifyContent: 'space-between',
   },
   questionTextContainer: {
     flex: 1,
@@ -195,7 +176,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#e6f7ff',
+    backgroundColor: '#cceded',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -205,19 +186,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
     color: '#333',
-    lineHeight: 22,
   },
   expandButton: {
-    padding: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#008080',
-    borderRadius: 20,
-    width: 36,
-    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   expandButtonOpen: {
-    backgroundColor: '#006666',
+    backgroundColor: '#008080',
   },
   answerContainer: {
     paddingHorizontal: 16,
@@ -228,35 +207,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#e1e5e9',
     marginBottom: 12,
   },
-  answerIconContainer: {
-    marginBottom: 8,
-  },
   answerText: {
     color: '#555',
     fontSize: 15,
     lineHeight: 24,
-    paddingLeft: 0,
   },
   helpFooter: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: 12,              
+    padding: 20,
     margin: 16,
-    marginTop: 24,
+    marginTop: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderColor: '#b2d7d7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 12,             
     elevation: 2,
+    overflow: 'hidden',          
   },
   helpText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginTop: 12,
+    color: '#008080',
   },
   helpSubtext: {
     fontSize: 14,

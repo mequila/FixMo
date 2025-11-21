@@ -41,7 +41,7 @@ const Tile = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingBottom: 15 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {TileServiceCardDetails.map((tile, idx) => (
           <ServiceCard

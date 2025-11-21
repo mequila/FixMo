@@ -196,14 +196,14 @@ export default function Bookings() {
 
   // Global overdue appointment check (works across all tabs)
   useOverdueAppointmentCheck((overdueAppointment) => {
-    console.log('🚨 OVERDUE APPOINTMENT DETECTED:', {
+  console.log('OVERDUE APPOINTMENT DETECTED:', {
       appointment_id: overdueAppointment.appointment_id,
       scheduled_date: overdueAppointment.scheduled_date,
       provider: overdueAppointment.name,
       service: overdueAppointment.service_title,
     });
 
-    console.log('🔍 Modal states:', {
+  console.log('Modal states:', {
       isModalVisible,
       isBackjobModalVisible,
       isNoShowModalVisible,
@@ -213,7 +213,7 @@ export default function Bookings() {
 
     // Only show modal if no other modals are open
     if (!isModalVisible && !isBackjobModalVisible && !isNoShowModalVisible && !isAutoNoShowPromptVisible && !isProviderConfirmationVisible) {
-      console.log('✅ Showing provider confirmation modal for overdue appointment');
+  console.log('Showing provider confirmation modal for overdue appointment');
       setConfirmationAppointment({
         ...overdueAppointment,
         statusColor: '#ff9800'
@@ -222,7 +222,7 @@ export default function Bookings() {
       setShowPriceInput(false);
       setIsProviderConfirmationVisible(true);
     } else {
-      console.log('⚠️ Another modal is already open, not showing overdue modal');
+  console.log('Another modal is already open, not showing overdue modal');
     }
   }, true);
 
@@ -1053,7 +1053,7 @@ export default function Bookings() {
               slot_day_of_week: appointment.slot_day_of_week || appointment.availability?.dayOfWeek,
             };
             
-            console.log('🔍 SLOT TIME EXTRACTION:', {
+            console.log('SLOT TIME EXTRACTION:', {
               availability_id: transformedAppointment.availability_id,
               slot_start_time: transformedAppointment.slot_start_time,
               slot_end_time: transformedAppointment.slot_end_time,
@@ -1124,7 +1124,7 @@ export default function Bookings() {
     
     // Debug log
     if (status.toLowerCase().includes('progress') || status.toLowerCase() === 'ongoing') {
-      console.log(`📊 Status Mapping: "${status}" → "${mapped}"`);
+  console.log(`Status Mapping: "${status}" → "${mapped}"`);
     }
     
     return mapped;
@@ -1818,9 +1818,9 @@ export default function Bookings() {
           
           if (providerListing) {
             setRebookServiceId(providerListing.id);
-            console.log('✅ Service listing ID found:', providerListing.id);
+            console.log('Service listing ID found:', providerListing.id);
           } else {
-            console.log('⚠️ No matching service listing found for provider');
+            console.log('No matching service listing found for provider');
             // Set a fallback - we can still navigate even without service ID
             setRebookServiceId(null);
           }
@@ -1849,10 +1849,10 @@ export default function Bookings() {
       const result = await AvailabilityService.getProviderWeeklySchedule(providerId, weekStart);
 
       if (result.success && result.data) {
-        console.log('✅ Successfully loaded weekly schedule');
-        console.log('📊 Summary:', result.data.summary);
-        console.log('📅 Active days:', result.data.summary.activeDays);
-        console.log('🔢 Available slots:', result.data.summary.availableSlots);
+  console.log('Successfully loaded weekly schedule');
+  console.log('Summary:', result.data.summary);
+  console.log('Active days:', result.data.summary.activeDays);
+  console.log('Available slots:', result.data.summary.availableSlots);
 
         setWeeklySchedule(result.data);
 
@@ -1878,7 +1878,7 @@ export default function Bookings() {
         await fetchServiceListingId(providerId, serviceTitle);
         
       } else {
-        console.error('❌ Failed to load weekly schedule:', result.message);
+  console.error('Failed to load weekly schedule:', result.message);
         setWeeklySchedule(null);
         
         Alert.alert(
@@ -1899,7 +1899,7 @@ export default function Bookings() {
       console.log('=== END FETCHING WEEKLY SCHEDULE ===');
       
     } catch (error) {
-      console.error('❌ Error fetching provider weekly schedule:', error);
+  console.error('Error fetching provider weekly schedule:', error);
       setWeeklySchedule(null);
       Alert.alert(
         'Unable to Load Availability',
@@ -1945,13 +1945,13 @@ export default function Bookings() {
   const fetchTimeSlotsForDate = async (dateString: string) => {
     if (!rebookAppointment?.provider_id) return;
     
-    console.log('🔍 fetchTimeSlotsForDate called with dateString:', dateString);
+  console.log('fetchTimeSlotsForDate called with dateString:', dateString);
     
     setAvailabilityLoading(true);
     try {
       const dayOfWeek = AvailabilityService.getDayOfWeek(dateString);
-      console.log('🕐 Fetching time slots for:', dayOfWeek, dateString);
-      console.log('📍 Provider ID:', rebookAppointment.provider_id);
+  console.log('Fetching time slots for:', dayOfWeek, dateString);
+  console.log('Provider ID:', rebookAppointment.provider_id);
 
       const result = await AvailabilityService.getAvailableTimeSlotsForDay(
         rebookAppointment.provider_id,
@@ -1960,9 +1960,9 @@ export default function Bookings() {
       );
 
       if (result.success && result.data) {
-        console.log('✅ Time slots loaded:', result.data.summary.available, 'available');
-        console.log('📅 API returned date:', result.data.date);
-        console.log('📅 API returned day:', result.data.dayOfWeek);
+  console.log('Time slots loaded:', result.data.summary.available, 'available');
+  console.log('API returned date:', result.data.date);
+  console.log('API returned day:', result.data.dayOfWeek);
         
         // Filter to show only future time slots (important for today's date)
         const futureSlots = AvailabilityService.filterFutureTimeSlots(
@@ -1970,8 +1970,8 @@ export default function Bookings() {
           result.data.availableTimeSlots
         );
         
-        console.log('📅 Future slots after filtering:', futureSlots.length);
-        console.log('📅 All slots from API:', result.data.availableTimeSlots.length);
+  console.log('Future slots after filtering:', futureSlots.length);
+  console.log('All slots from API:', result.data.availableTimeSlots.length);
         setDayTimeSlots(futureSlots);
         
         // Also get the day schedule from weekly schedule for consistency
@@ -1991,12 +1991,12 @@ export default function Bookings() {
           setRebookStep('time');
         }
       } else {
-        console.error('❌ Failed to load time slots:', result.message);
+        console.error('Failed to load time slots:', result.message);
         setDayTimeSlots([]);
         Alert.alert('Error', result.message || 'Unable to load time slots for this date.');
       }
     } catch (error) {
-      console.error('❌ Error fetching time slots:', error);
+      console.error('Error fetching time slots:', error);
       setDayTimeSlots([]);
     } finally {
       setAvailabilityLoading(false);
@@ -2010,8 +2010,8 @@ export default function Bookings() {
 
   // Handle date selection in rebook modal
   const handleRebookDateSelect = async (dateString: string) => {
-    console.log('📅 Date selected:', dateString);
-    console.log('📅 Date type:', typeof dateString);
+  console.log('Date selected:', dateString);
+  console.log('Date type:', typeof dateString);
     
     setSelectedRebookDate(dateString);
     setSelectedRebookSlot(null);
@@ -2074,7 +2074,7 @@ export default function Bookings() {
               
               if (providerListing && providerListing.id) {
                 setRebookServiceId(providerListing.id);
-                console.log('✅ Service ID fetched successfully:', providerListing.id);
+                console.log('Service ID fetched successfully:', providerListing.id);
                 
                 // Navigate with the fetched service ID
                 navigateToProviderProfile(providerListing.id, selectedRebookSlot.availability_id);
@@ -2090,7 +2090,7 @@ export default function Bookings() {
       }
       
       // If we still don't have service ID, navigate to service provider list instead
-      console.log('⚠️ Could not fetch service ID, navigating to provider list...');
+  console.log('Could not fetch service ID, navigating to provider list...');
       setIsRebookModalVisible(false);
       
       router.push({
@@ -2460,7 +2460,7 @@ export default function Bookings() {
         }
 
         Alert.alert(
-          'Warranty Request Approved! ✅',
+          'Warranty Request Approved!',
           'Your warranty request has been automatically approved. The service provider will be notified and can now reschedule your appointment or dispute the claim if needed.',
           [
             {
@@ -2772,7 +2772,7 @@ export default function Bookings() {
                               marginBottom: 8,
                             }}
                           >
-                            <Text style={{ fontSize: 16, marginRight: 4 }}>⏰</Text>
+                            <Text style={{ fontSize: 16, marginRight: 4 }}></Text>
                             <Text
                               style={{
                                 color: "#4caf50",
@@ -2799,7 +2799,7 @@ export default function Bookings() {
                               borderLeftColor: "#ff6b00",
                             }}
                           >
-                            <Text style={{ fontSize: 16, marginRight: 6 }}>⚠️</Text>
+                            <Text style={{ fontSize: 16, marginRight: 6 }}></Text>
                             <Text
                               style={{
                                 color: "#856404",
@@ -3160,7 +3160,7 @@ export default function Bookings() {
 
                           // Show Fix-Score warning before canceling
                           Alert.alert(
-                            '⚠️ Fix-Score Warning',
+                            'Fix-Score Warning',
                             'Cancelling this appointment may result in penalty points being deducted from your Fix-Score, especially if cancelled within 24 hours of the scheduled time.\n\nAre you sure you want to continue?',
                             [
                               {
@@ -3327,7 +3327,7 @@ export default function Bookings() {
                   <View style={{ marginTop: 16 }}>
                     <TouchableOpacity 
                       onPress={() => {
-                        console.log('🚨 Report No-Show button clicked!');
+                        console.log('Report No-Show button clicked!');
                         console.log('Selected booking:', selectedBooking?.appointment_id);
                         // Close the appointment details modal first
                         setIsModalVisible(false);
@@ -3420,7 +3420,7 @@ export default function Bookings() {
                     style={{ 
                       backgroundColor: "#008080",
                       paddingVertical: 12,
-                      borderRadius: 25,
+                      borderRadius: 12,
                       alignItems: "center",
                     }}
                   >
@@ -3449,9 +3449,9 @@ export default function Bookings() {
                       );
                     }} 
                     style={{ 
-                      backgroundColor: "#008080",
+                      backgroundColor: "#228b22",
                       paddingVertical: 12,
-                      borderRadius: 25,
+                      borderRadius: 12,
                       alignItems: "center",
                     }}
                   >
@@ -3460,7 +3460,7 @@ export default function Bookings() {
                       fontSize: 16,
                       fontWeight: "700",
                     }}>
-                      Repair Complete
+                      Repair Completed
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -3666,7 +3666,7 @@ export default function Bookings() {
               width: '100%',
               maxWidth: 400,
               borderWidth: 2,
-              borderColor: "#ff6b35",
+              borderColor: "#cceded",
             }}
           >
             <Text style={{
@@ -3691,7 +3691,8 @@ export default function Bookings() {
 
             <View style={{ marginBottom: 15 }}>
               <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' }}>
-                Describe the issue: *
+                Describe the issue
+                <Text style={homeStyles.requiredAsterisk}> *</Text>
               </Text>
               <TextInput 
                 value={backjobReason} 
@@ -3699,7 +3700,7 @@ export default function Bookings() {
                 placeholder="Describe what's still not working correctly..." 
                 style={{ 
                   borderWidth: 1, 
-                  borderColor: backjobReason.trim() ? '#ff6b35' : '#ddd', 
+                  borderColor: backjobReason.trim() ? '#cceded' : '#ddd', 
                   borderRadius: 8, 
                   padding: 12,
                   fontSize: 14,
@@ -3714,7 +3715,8 @@ export default function Bookings() {
             
             <View style={{ marginBottom: 20 }}>
               <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' }}>
-                Evidence Description *
+                Evidence Description
+                <Text style={homeStyles.requiredAsterisk}> *</Text>
               </Text>
               <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
                 Required if no photos are uploaded. Describe the issue in detail.
@@ -3725,7 +3727,7 @@ export default function Bookings() {
                 placeholder="Describe the damage, what you observed, when it started happening..." 
                 style={{ 
                   borderWidth: 1, 
-                  borderColor: (!backjobEvidence.trim() && selectedImageUris.length === 0) ? '#ff6b6b' : '#ddd', 
+                  borderColor: (!backjobEvidence.trim() && selectedImageUris.length === 0) ? '#ddd' : '#cceded', 
                   borderRadius: 8, 
                   padding: 12,
                   fontSize: 14,
@@ -3741,7 +3743,8 @@ export default function Bookings() {
             {/* Image Upload Section */}
             <View style={{ marginBottom: 20 }}>
               <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' }}>
-                Evidence Photos *
+                Evidence Photos 
+                <Text style={homeStyles.requiredAsterisk}> *</Text>
               </Text>
               <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
                 Required if no description is provided. Photos help prove the issue.
@@ -3750,15 +3753,15 @@ export default function Bookings() {
               {/* Evidence Requirement Status */}
               {!backjobEvidence.trim() && selectedImageUris.length === 0 && (
                 <View style={{
-                  backgroundColor: '#fff3cd',
-                  borderColor: '#ffeaa7',
+                  backgroundColor: '#cceded',
+                  borderColor: '#b2d7d7',
                   borderWidth: 1,
                   borderRadius: 6,
                   padding: 8,
                   marginBottom: 10,
                 }}>
-                  <Text style={{ fontSize: 12, color: '#d63031' }}>
-                    ⚠️ Please provide either a detailed description OR upload photos as evidence
+                  <Text style={{ fontSize: 12, color: '#008080' }}>
+                    Please provide either a detailed description OR upload photos as evidence
                   </Text>
                 </View>
               )}
@@ -3834,7 +3837,7 @@ export default function Bookings() {
                       <Text style={{
                         fontSize: 24,
                         color: (backjobLoading || imageUploadLoading) ? '#999' : '#008080',
-                      }}>📷</Text>
+                      }}><Ionicons name="camera" size={24} color={(backjobLoading || imageUploadLoading) ? '#999' : '#008080'} /></Text>
                       <Text style={{
                         fontSize: 10,
                         color: (backjobLoading || imageUploadLoading) ? '#999' : '#008080',
@@ -3878,7 +3881,7 @@ export default function Bookings() {
                 disabled={backjobLoading || !backjobReason.trim()}
                 style={{
                   flex: 1,
-                  backgroundColor: backjobLoading || !backjobReason.trim() ? '#ffb399' : '#ff6b35',
+                  backgroundColor: backjobLoading || !backjobReason.trim() ? '#b2d7d7' : '#008080',
                   paddingVertical: 12,
                   borderRadius: 8,
                   alignItems: 'center',
@@ -4217,7 +4220,7 @@ export default function Bookings() {
                       Scheduled Appointment:
                     </Text>
                     <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                      📅 {new Date(overdueAppointment.scheduled_date || overdueAppointment.date || '').toLocaleDateString('en-US', {
+                      {new Date(overdueAppointment.scheduled_date || overdueAppointment.date || '').toLocaleDateString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -4226,14 +4229,14 @@ export default function Bookings() {
                     </Text>
                     {overdueAppointment.slot_start_time && (
                       <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                        ⏰ {overdueAppointment.slot_start_time} - {overdueAppointment.slot_end_time}
+                        {overdueAppointment.slot_start_time} - {overdueAppointment.slot_end_time}
                       </Text>
                     )}
                     <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                      👤 {overdueAppointment.name}
+                      {overdueAppointment.name}
                     </Text>
                     <Text style={{ fontSize: 14, color: '#666' }}>
-                      🔧 {overdueAppointment.service_title || overdueAppointment.type}
+                      {overdueAppointment.service_title || overdueAppointment.type}
                     </Text>
                   </View>
                 )}
@@ -4500,7 +4503,7 @@ export default function Bookings() {
                 marginBottom: 20
               }}>
                 <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                  📅 {new Date(confirmationAppointment.scheduled_date || confirmationAppointment.date || '').toLocaleDateString('en-US', {
+                   {new Date(confirmationAppointment.scheduled_date || confirmationAppointment.date || '').toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -4509,14 +4512,14 @@ export default function Bookings() {
                 </Text>
                 {confirmationAppointment.slot_start_time && (
                   <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                    ⏰ {confirmationAppointment.slot_start_time} - {confirmationAppointment.slot_end_time}
+                     {confirmationAppointment.slot_start_time} - {confirmationAppointment.slot_end_time}
                   </Text>
                 )}
                 <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
-                  👤 {confirmationAppointment.name}
+                  {confirmationAppointment.name}
                 </Text>
                 <Text style={{ fontSize: 14, color: '#666' }}>
-                  🔧 {confirmationAppointment.service_title || confirmationAppointment.type}
+                   {confirmationAppointment.service_title || confirmationAppointment.type}
                 </Text>
                 <View style={{
                   marginTop: 10,

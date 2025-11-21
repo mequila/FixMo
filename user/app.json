@@ -4,8 +4,8 @@
     "slug": "FixMo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "scheme": "fixmo",
+    "icon": "./assets/images/Fixmo-user.png",
+    "scheme": "FixMo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/images/Fixmo-user.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -39,14 +39,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/Fixmo-user.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/adaptive-icon.png",
+          "icon": "./assets/images/Fixmo-user.png",
           "color": "#008080",
           "sounds": []
         }
@@ -54,7 +54,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/Fixmo-user.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -79,6 +79,6 @@
         "projectId": "ed4d16b9-00a5-4e3b-ae15-0ef48e44f122"
       }
     },
-    "owner": "fixmo"
+    "owner": "FixMo"
   }
 }

@@ -33,7 +33,7 @@ const Masonry = () => {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {MasonryServiceCardDetails.map((masonry, idx) => (
           <ServiceCard

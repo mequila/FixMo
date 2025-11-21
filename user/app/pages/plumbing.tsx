@@ -40,7 +40,7 @@ const Plumbing = () => {
   const serviceCategory = category || 'Plumbing';
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingBottom: 15 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {PlumbingServiceCardDetails.map((plumbing, idx) => (
           <ServiceCard

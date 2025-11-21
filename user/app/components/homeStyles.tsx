@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 
 export const homeStyles = StyleSheet.create({
   safeArea: {
-    marginBottom: 20,
+    paddingTop: 8,
     backgroundColor: "#e7ecec",
     borderWidth: 0.5,
     borderColor: "#b2d7d7",
@@ -36,6 +36,10 @@ export const homeStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#333",
+  },
+  headerName: {
+    color: "#008080",
+    fontWeight: "bold",
   },
   header: {
     paddingTop: 5,
@@ -126,6 +130,7 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: "#cceded",
     marginHorizontal: 20,
     marginTop: 12,
+    marginBottom: 5,
     borderRadius: 15,
     padding: 10,
     alignContent: "center",

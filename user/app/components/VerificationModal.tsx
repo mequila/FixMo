@@ -265,7 +265,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
 
           {/* Instructions */}
           <View style={styles.instructions}>
-            <Text style={styles.instructionsTitle}>📋 Required Information</Text>
+            <Text style={styles.instructionsTitle}>Required Information</Text>
             <Text style={styles.instructionsText}>
               Please provide the following information to verify your account:
             </Text>
