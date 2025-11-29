@@ -176,34 +176,79 @@ const ServiceProvider = () => {
 
       const formattedDate = formatDateForAPI(selectedDate);
 
-      const params = new URLSearchParams();
-      params.append('search', serviceTitle as string);
-      params.append('date', formattedDate);
-      params.append('page', '1');
-      params.append('limit', '50');
+      // Fetch all pages of results
+      let allServiceListings: ServiceProvider[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const limitPerPage = 50;
 
-      const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
-      
-      console.log('📡 API URL:', apiUrl);
-      console.log('📤 Sending request with Authorization header');
+      console.log('📡 Fetching service listings with pagination...');
 
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
+      while (hasMorePages) {
+        const params = new URLSearchParams();
+        params.append('search', serviceTitle as string);
+        params.append('date', formattedDate);
+        params.append('page', currentPage.toString());
+        params.append('limit', limitPerPage.toString());
+
+        const apiUrl = `${BACKEND_URL}/auth/service-listings?${params.toString()}`;
+        
+        console.log(`� Fetching page ${currentPage}:`, apiUrl);
+
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          console.error('❌ Failed to fetch page', currentPage);
+          break;
+        }
+
         const result = await response.json();
-        let serviceListings: ServiceProvider[] = result.listings || [];
+        const pageListings: ServiceProvider[] = result.listings || [];
         
-        console.log('📊 Total providers fetched:', serviceListings.length);
-        console.log('📊 Sample provider data:', JSON.stringify(serviceListings[0], null, 2));
+        console.log(`📊 Page ${currentPage}: ${pageListings.length} providers`);
         
-        // Filter out inactive service listings
-        serviceListings = serviceListings.filter((provider) => {
+        if (pageListings.length > 0) {
+          allServiceListings = [...allServiceListings, ...pageListings];
+        }
+        
+        // Check if there are more pages
+        // Adjust this logic based on your API's pagination response structure
+        if (result.pagination) {
+          hasMorePages = result.pagination.hasNextPage || 
+                        (result.pagination.currentPage < result.pagination.totalPages);
+          console.log('📄 Pagination info:', result.pagination);
+        } else if (result.totalPages) {
+          hasMorePages = currentPage < result.totalPages;
+        } else {
+          // If no pagination info, stop if we got less than limit (means last page)
+          hasMorePages = pageListings.length >= limitPerPage;
+        }
+        
+        if (hasMorePages) {
+          currentPage++;
+        }
+      }
+
+      console.log('✅ Total providers fetched across all pages:', allServiceListings.length);
+      
+      if (allServiceListings.length === 0) {
+        console.log('ℹ️ No service providers found for this search');
+        setProviders([]);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('📊 Total providers fetched:', allServiceListings.length);
+      console.log('📊 Sample provider data:', JSON.stringify(allServiceListings[0], null, 2));
+      
+      // Filter out inactive service listings
+      let serviceListings = allServiceListings.filter((provider) => {
           // Check if servicelisting_isactive is true (must be explicitly true)
           // Handle both camelCase and snake_case field names
           const isActive = provider.servicelisting_isactive === true || 
@@ -326,9 +371,6 @@ const ServiceProvider = () => {
         }
         
         setProviders(serviceListings);
-      } else {
-        Alert.alert('Error', 'Failed to load service providers');
-      }
     } catch (error) {
       console.error('Error fetching service providers:', error);
       Alert.alert('Error', 'Network error while loading providers');

@@ -473,8 +473,8 @@ export default function ProfileScreen() {
     const handleNext = () => {
         if (!validateRequiredFields()) return;
 
-        // Navigate to LocationScreen
-        router.push('/LocationScreen');
+        // Navigate to ID verification
+        router.push('/id-photo-capture');
     };
 
     return (

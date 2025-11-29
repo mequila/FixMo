@@ -16,6 +16,7 @@ import {Ionicons} from "@expo/vector-icons";
 import {useRouter, useLocalSearchParams} from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_LINK || process.env.BACKEND_LINK || 'http://localhost:3000';
 
@@ -116,6 +117,12 @@ export default function UserInfoScreen() {
         setLoading(true);
 
         try {
+            // Get verification data from AsyncStorage
+            const idPhotoUri = await AsyncStorage.getItem('registration_id_photo');
+            const selfieUri = await AsyncStorage.getItem('registration_selfie');
+            const faceVerified = await AsyncStorage.getItem('registration_face_verified');
+            const confidenceScore = await AsyncStorage.getItem('registration_confidence_score');
+            
             const formData = new FormData();
             
             // Required fields
@@ -126,26 +133,56 @@ export default function UserInfoScreen() {
             formData.append('password', password);
             formData.append('phone_number', phoneNumber.trim());
 
+            // Set verification_status to 'approved' for auto-approval
+            formData.append('verification_status', 'approved');
+            formData.append('customer_isVerified', 'true');
+
             // Optional fields
             if (birthday) formData.append('birthday', birthday);
             if (userLocation.trim()) formData.append('user_location', userLocation.trim());
             if (exactLocation.trim()) formData.append('exact_location', exactLocation.trim());
 
-            // Optional files
-            if (profilePhoto) {
-                formData.append('profile_photo', {
-                    uri: profilePhoto.uri,
-                    type: profilePhoto.type || 'image/jpeg',
-                    name: profilePhoto.fileName || 'profile.jpg',
-                } as any);
+            // Add face verification data
+            if (faceVerified) {
+                formData.append('face_verified', faceVerified);
             }
-            if (validId) {
+            if (confidenceScore) {
+                formData.append('face_confidence_score', confidenceScore);
+            }
+
+            // Use captured ID photo as valid_id
+            if (idPhotoUri) {
+                formData.append('valid_id', {
+                    uri: idPhotoUri,
+                    type: 'image/jpeg',
+                    name: 'valid_id.jpg',
+                } as any);
+            } else if (validId) {
+                // Fallback to manually uploaded ID
                 formData.append('valid_id', {
                     uri: validId.uri,
                     type: validId.type || 'image/jpeg',
                     name: validId.fileName || 'id.jpg',
                 } as any);
             }
+
+            // Use captured selfie as profile photo
+            if (selfieUri) {
+                formData.append('profile_photo', {
+                    uri: selfieUri,
+                    type: 'image/jpeg',
+                    name: 'profile_photo.jpg',
+                } as any);
+            } else if (profilePhoto) {
+                // Fallback to manually uploaded photo
+                formData.append('profile_photo', {
+                    uri: profilePhoto.uri,
+                    type: profilePhoto.type || 'image/jpeg',
+                    name: profilePhoto.fileName || 'profile.jpg',
+                } as any);
+            }
+
+            console.log('📤 Registering with auto-approval...');
 
             const response = await fetch(`${BACKEND_URL}/auth/register`, {
                 method: 'POST',
@@ -158,9 +195,20 @@ export default function UserInfoScreen() {
             const data = await response.json();
 
             if (response.ok) {
+                // Clear registration data from AsyncStorage
+                await AsyncStorage.multiRemove([
+                    'registration_email',
+                    'registration_otp',
+                    'registration_id_photo',
+                    'registration_selfie',
+                    'registration_face_verified',
+                    'registration_confidence_score',
+                    'registration_requires_manual_verification',
+                ]);
+
                 Alert.alert(
                     'Success!',
-                    'Your account has been created successfully. Please login to continue.',
+                    'Your account has been created and verified! You can now login.',
                     [
                         {
                             text: 'OK',

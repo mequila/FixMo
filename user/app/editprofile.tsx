@@ -350,8 +350,8 @@ export default function Account() {
       return;
     }
 
-    if (!phone || phone.length !== 11) {
-      Alert.alert('Validation Error', 'Please enter a valid 11-digit phone number');
+    if (!phone || phone.length !== 10) {
+      Alert.alert('Validation Error', 'Please enter a valid 10-digit phone number');
       return;
     }
 

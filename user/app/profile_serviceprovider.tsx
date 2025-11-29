@@ -359,6 +359,11 @@ export default function profile_serviceprovider() {
       // First fetch service details from specific service endpoint
       const fetchedProviderId = await fetchServiceFromSpecificEndpoint();
       
+      // Fetch service photos separately
+      if (serviceId) {
+        await fetchServicePhotos(serviceId as string);
+      }
+      
       // Use the provider ID from URL params or from the fetched service data
       const currentProviderId = providerId || fetchedProviderId;
       
@@ -386,8 +391,8 @@ export default function profile_serviceprovider() {
 
       console.log('🔍 Fetching service details for ID:', serviceId);
 
-      // First try to get from service listings endpoint (enhanced data)
-      const listingsResponse = await fetch(`${BACKEND_URL}/auth/service-listings`, {
+      // ✅ Use direct service listing endpoint by ID
+      const serviceResponse = await fetch(`${BACKEND_URL}/auth/service-listing/${serviceId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -395,43 +400,88 @@ export default function profile_serviceprovider() {
         },
       });
 
-      if (listingsResponse.ok) {
-        const listingsResult = await listingsResponse.json();
-        const service = listingsResult.listings?.find((s: any) => s.id === parseInt(serviceId as string));
+      console.log('📡 Service response status:', serviceResponse.status);
+
+      if (serviceResponse.ok) {
+        const result = await serviceResponse.json();
+        console.log('📄 RAW SERVICE DATA:', JSON.stringify(result, null, 2));
         
-        if (service) {
+        // ✅ Handle the actual API response structure with "listing"
+        const listing = result.listing;
+        const serviceProvider = listing?.serviceProvider;
+        
+        console.log('🔍 Listing object keys:', Object.keys(listing || {}));
+        console.log('🔍 Service photos in listing:', listing?.service_photos);
+        console.log('🔍 Service photos in serviceProvider:', serviceProvider?.service_photos);
+        console.log('🔍 Photos in listing.photos:', listing?.photos);
+        console.log('🔍 Photos in listing.servicePhotos:', listing?.servicePhotos);
+        
+        if (listing && serviceProvider) {
+          // Get category info from specific_services
+          const specificService = listing.specific_services?.[0];
+          const category = specificService?.category;
+          
+          // Try multiple possible locations for service photos
+          const servicePhotos = listing.service_photos || 
+                               listing.servicePhotos || 
+                               listing.photos || 
+                               serviceProvider.service_photos ||
+                               [];
+          
           // Transform and set service data with category information
           const transformedService: ServiceListing = {
-            id: service.id,
-            title: service.title,
-            description: service.description,
-            startingPrice: service.startingPrice,
-            category_id: service.category_id,
-            category_name: service.category_name,
-            service_photos: service.service_photos || [],
+            id: listing.service_id,
+            title: listing.service_title,
+            description: listing.service_description,
+            startingPrice: listing.service_startingprice,
+            category_id: category?.category_id || specificService?.category_id,
+            category_name: category?.category_name,
+            service_photos: servicePhotos,
             provider: {
-              id: service.provider.id,
-              name: service.provider.name,
-              userName: service.provider.userName,
-              rating: service.provider.rating,
-              location: service.provider.location,
-              profilePhoto: service.provider.profilePhoto
+              id: serviceProvider.provider_id,
+              name: `${serviceProvider.provider_first_name} ${serviceProvider.provider_last_name}`,
+              userName: serviceProvider.provider_userName,
+              rating: serviceProvider.provider_rating || 0,
+              location: serviceProvider.provider_location,
+              profilePhoto: serviceProvider.provider_profile_photo
             },
-            categories: service.categories || (service.category_name ? [{
-              category_id: service.category_id,
-              category_name: service.category_name
-            }] : [])
+            categories: category ? [{
+              category_id: category.category_id,
+              category_name: category.category_name
+            }] : []
           };
           
+          console.log('📸 Service photos from API:', servicePhotos);
+          console.log('📸 Number of service photos:', servicePhotos?.length || 0);
+          
           setServiceData(transformedService);
-          console.log('✅ Service data loaded from listings:', transformedService);
-          return service.provider.id;
+          console.log('✅ Service data loaded successfully');
+          return serviceProvider.provider_id;
+        } else {
+          console.log('⚠️ No listing or serviceProvider in response');
         }
+      } else {
+        const errorText = await serviceResponse.text();
+        console.error('❌ Service endpoint failed:', serviceResponse.status, errorText);
       }
 
-      // If not found in listings, try the specific service by title endpoint
-      // We'll need the service title first, so let's get it from provider services
-      const providerServicesResponse = await fetch(`${BACKEND_URL}/api/services/services`, {
+      console.error('❌ Service not found');
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching service details:', error);
+      return null;
+    }
+  };
+
+  const fetchServicePhotos = async (serviceListingId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      console.log('📸 Fetching service photos for service ID:', serviceListingId);
+
+      // Try the service photos endpoint
+      const response = await fetch(`${BACKEND_URL}/api/service-photos/${serviceListingId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -439,80 +489,60 @@ export default function profile_serviceprovider() {
         },
       });
 
-      if (providerServicesResponse.ok) {
-        const providerResult = await providerServicesResponse.json();
-        const providerService = providerResult.data?.find((s: any) => s.service_id === parseInt(serviceId as string));
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📸 Service photos API response:', result);
         
-        if (providerService && providerService.service_title) {
-          // Now use the title to get enhanced data
-          const titleResponse = await fetch(`${BACKEND_URL}/api/serviceProvider/services/by-title?title=${encodeURIComponent(providerService.service_title)}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
+        // Handle different response structures
+        let photos = [];
+        if (result.success && result.data) {
+          photos = Array.isArray(result.data) ? result.data : result.data.photos || [];
+        } else if (Array.isArray(result)) {
+          photos = result;
+        }
 
-          if (titleResponse.ok) {
-            const titleResult = await titleResponse.json();
-            const enhancedService = titleResult.data?.find((s: any) => s.id === parseInt(serviceId as string));
-            
-            if (enhancedService) {
-              const transformedService: ServiceListing = {
-                id: enhancedService.id,
-                title: enhancedService.title,
-                description: enhancedService.description,
-                startingPrice: enhancedService.startingPrice,
-                category_id: enhancedService.category_id,
-                category_name: enhancedService.category_name,
-                service_photos: enhancedService.service_photos || [],
-                provider: {
-                  id: enhancedService.provider.id,
-                  name: enhancedService.provider.name,
-                  userName: enhancedService.provider.userName,
-                  rating: enhancedService.provider.rating,
-                  location: enhancedService.provider.location,
-                  profilePhoto: enhancedService.provider.profilePhoto
-                },
-                categories: enhancedService.categories || (enhancedService.category_name ? [{
-                  category_id: enhancedService.category_id,
-                  category_name: enhancedService.category_name
-                }] : [])
-              };
-              
-              setServiceData(transformedService);
-              console.log('✅ Service data loaded from by-title endpoint:', transformedService);
-              return enhancedService.provider.id;
-            }
+        console.log('📸 Parsed service photos:', photos);
+
+        // Update service data with photos
+        if (photos.length > 0 && serviceData) {
+          setServiceData({
+            ...serviceData,
+            service_photos: photos
+          });
+          console.log('✅ Service photos updated:', photos.length, 'photos');
+        }
+      } else {
+        console.log('ℹ️ Service photos endpoint returned:', response.status);
+        // Try alternative endpoint
+        const altResponse = await fetch(`${BACKEND_URL}/auth/service-listing/${serviceListingId}/photos`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (altResponse.ok) {
+          const result = await altResponse.json();
+          console.log('📸 Alternative service photos response:', result);
+          
+          let photos = [];
+          if (result.success && result.data) {
+            photos = Array.isArray(result.data) ? result.data : result.data.photos || [];
           }
 
-          // Fallback: use basic provider service data
-          const transformedService: ServiceListing = {
-            id: providerService.service_id,
-            title: providerService.service_title,
-            description: providerService.service_description,
-            startingPrice: providerService.service_startingprice,
-            category_id: providerService.category_id,
-            service_photos: providerService.service_photos || [],
-            provider: {
-              id: providerId ? parseInt(providerId as string) : 0,
-              name: 'Service Provider',
-              userName: 'provider',
-              rating: 0,
-              location: 'Location not specified',
-              profilePhoto: undefined
-            }
-          };
-          
-          setServiceData(transformedService);
-          console.log('✅ Service data loaded from provider services (fallback):', transformedService);
-          return transformedService.provider.id;
+          if (photos.length > 0 && serviceData) {
+            setServiceData({
+              ...serviceData,
+              service_photos: photos
+            });
+            console.log('✅ Service photos updated from alternative endpoint:', photos.length, 'photos');
+          }
         }
       }
     } catch (error) {
-      console.error('❌ Error fetching service details:', error);
+      console.error('❌ Error fetching service photos:', error);
     }
-    
-    return null;
   };
 
   const fetchProviderProfessions = async (currentProviderId?: string | number | string[]) => {
@@ -816,8 +846,9 @@ export default function profile_serviceprovider() {
   };
 
   const handleSlotSelect = (slot: TimeSlot) => {
+    console.log('🕐 Slot selected - FULL DATA:', JSON.stringify(slot, null, 2));
+    console.log('🕐 Slot availability_id:', slot.availability_id);
     setSelectedSlot(slot);
-    console.log('🕐 Slot selected:', slot);
   };
 
   const handleContinueToBooking = () => {
@@ -1018,6 +1049,7 @@ export default function profile_serviceprovider() {
       console.log('Using service_id:', finalServiceId, '(from navigation:', serviceId, ')');
       console.log('Backend URL:', BACKEND_URL);
       console.log('User ID:', userId, 'Provider ID:', providerId, 'Provider ID Number:', providerIdNumber);
+      console.log('📤 REQUEST PAYLOAD:', JSON.stringify(appointmentData, null, 2));
 
       // Create abort controller for timeout
       const controller = new AbortController();
@@ -1035,6 +1067,8 @@ export default function profile_serviceprovider() {
 
       clearTimeout(timeoutId); // Clear timeout if request completes
 
+      console.log('📥 RESPONSE STATUS:', response.status, response.statusText);
+      
       if (response.ok) {
         const result = await response.json();
         console.log('Appointment created successfully:', result);
@@ -1057,8 +1091,9 @@ export default function profile_serviceprovider() {
           ]
         );
       } else {
-        console.error('Appointment creation failed:', response.status, response.statusText);
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('❌ Appointment creation failed:', response.status, response.statusText);
+        console.error('📄 ERROR RESPONSE:', JSON.stringify(errorData, null, 2));
         
         // Check if it's a booking limit error
         if (response.status === 400 && errorData.message?.includes('Booking limit reached')) {
@@ -1320,22 +1355,40 @@ export default function profile_serviceprovider() {
               )}
               
               {/* Service Photos */}
-              {serviceData.service_photos?.map((photo, index) => (
-                <View key={photo.id} style={styles.imageContainer}>
-                  <Image
-                    source={{ uri: photo.imageUrl }}
-                    style={styles.galleryImage}
-                    resizeMode="cover"
-                    onError={() => {
-                      console.log(`❌ Failed to load service photo ${index + 1}`);
-                      setImageErrors(prev => new Set(prev.add(photo.id)));
-                    }}
-                  />
-                  <View style={styles.imageLabel}>
-                    <Text style={styles.imageLabelText}>Service Photo {index + 1}</Text>
+              {serviceData.service_photos?.map((photo, index) => {
+                // Handle imageUrl that might be relative or absolute
+                const imageUri = photo.imageUrl?.startsWith('http') 
+                  ? photo.imageUrl 
+                  : `${BACKEND_URL}/${photo.imageUrl}`;
+                
+                console.log(`📸 Service photo ${index + 1} URL:`, imageUri);
+                
+                return (
+                  <View key={photo.id} style={styles.imageContainer}>
+                    <TouchableOpacity 
+                      onPress={() => handleImageClick(imageUri)}
+                      style={{ width: '100%', height: '100%' }}
+                    >
+                      <Image
+                        source={{ uri: imageUri }}
+                        style={styles.galleryImage}
+                        resizeMode="cover"
+                        onError={(error) => {
+                          console.log(`❌ Failed to load service photo ${index + 1}:`, error.nativeEvent);
+                          console.log(`❌ Attempted URL:`, imageUri);
+                          setImageErrors(prev => new Set(prev.add(photo.id)));
+                        }}
+                        onLoad={() => {
+                          console.log(`✅ Service photo ${index + 1} loaded successfully`);
+                        }}
+                      />
+                      <View style={styles.imageLabel}>
+                        <Text style={styles.imageLabelText}>Service Photo {index + 1}</Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              ))}
+                );
+              })}
               
               {/* Fallback Image */}
               {(!serviceData.provider.profilePhoto && (!serviceData.service_photos || serviceData.service_photos.length === 0)) && (
@@ -2414,6 +2467,7 @@ export default function profile_serviceprovider() {
                   selectedDate={selectedDate as string}
                   onSlotSelect={handleSlotSelect}
                   selectedSlotId={selectedSlot?.availability_id}
+                  serviceId={serviceId ? parseInt(serviceId as string) : undefined}
                 />
               );
             })()}

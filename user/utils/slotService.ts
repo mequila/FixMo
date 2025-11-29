@@ -150,7 +150,8 @@ export const fetchBookedSlotsForDay = async (
  */
 export const fetchProviderSlots = async (
   providerId: number,
-  date: string
+  date: string,
+  serviceId?: number
 ): Promise<SlotAvailabilityResponse> => {
   try {
     const token = await AsyncStorage.getItem('token');
@@ -171,7 +172,47 @@ export const fetchProviderSlots = async (
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
     console.log('📅 Day of week:', dayOfWeek);
 
-    // Use the auth service-listings endpoint
+    // STRATEGY 1: If we have serviceId, fetch service listing directly (most reliable)
+    if (serviceId) {
+      console.log('📡 Strategy 1: Fetching via service listing ID:', serviceId);
+      try {
+        const serviceListingUrl = `${BACKEND_URL}/auth/service-listing/${serviceId}`;
+        console.log('📡 Calling service listing API:', serviceListingUrl);
+        
+        const serviceResponse = await fetch(serviceListingUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (serviceResponse.ok) {
+          const serviceResult = await serviceResponse.json();
+          console.log('✅ Got service listing data');
+          
+          const listing = serviceResult.listing;
+          const serviceProvider = listing?.serviceProvider;
+          
+          if (serviceProvider?.provider_availability) {
+            console.log('✅ Found provider availability in service listing');
+            return await processAvailabilitySlots(
+              providerId, 
+              date, 
+              dayOfWeek, 
+              serviceProvider.provider_availability
+            );
+          }
+        } else {
+          console.warn('⚠️ Service listing endpoint returned:', serviceResponse.status);
+        }
+      } catch (serviceError) {
+        console.warn('⚠️ Service listing fetch failed:', serviceError);
+      }
+    }
+
+    // STRATEGY 2: Use the auth service-listings endpoint (paginated)
+    console.log('📡 Strategy 2: Searching paginated service listings...');
     const apiUrl = `${BACKEND_URL}/auth/service-listings`;
     console.log('📡 Calling API:', apiUrl);
 
@@ -223,11 +264,66 @@ export const fetchProviderSlots = async (
     console.log('🔍 Found listing:', listing ? 'YES' : 'NO');
 
     if (!listing || !listing.provider) {
-      console.warn('⚠️ Provider not found in service listings');
+      console.warn('⚠️ Provider not found in service listings, trying direct provider availability endpoint...');
+      
+      // Try fetching provider availability directly
+      try {
+        const providerAvailUrl = `${BACKEND_URL}/api/serviceProvider/professions/${providerId}`;
+        console.log('📡 Trying provider professions endpoint:', providerAvailUrl);
+        
+        const providerResponse = await fetch(providerAvailUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (providerResponse.ok) {
+          const providerData = await providerResponse.json();
+          console.log('✅ Got provider data:', JSON.stringify(providerData, null, 2));
+          
+          // Check if provider data has availability
+          if (providerData.data?.availability) {
+            const availabilitySlots = providerData.data.availability;
+            // Continue with normal processing below using these slots
+            return await processAvailabilitySlots(providerId, date, dayOfWeek, availabilitySlots);
+          }
+        } else {
+          console.warn('⚠️ Provider endpoint failed:', providerResponse.status);
+        }
+      } catch (providerError) {
+        console.warn('⚠️ Error fetching provider data:', providerError);
+      }
+      
+      // Fall back to mock if all else fails
+      console.warn('⚠️ Using mock slots as fallback');
       return generateMockSlots(providerId, date, dayOfWeek);
     }
 
     const availabilitySlots = listing.provider.available_time_slots || listing.provider.availability || [];
+    console.log('📋 Provider availability slots:', availabilitySlots);
+    console.log('📋 Number of availability slots:', availabilitySlots.length);
+
+    return await processAvailabilitySlots(providerId, date, dayOfWeek, availabilitySlots);
+  } catch (error: any) {
+    console.error('❌ Error fetching provider slots:', error.message);
+    return {
+      success: false,
+      message: error.message || 'Failed to load slots',
+    };
+  }
+};
+
+/**
+ * Process availability slots and merge with booking data
+ */
+async function processAvailabilitySlots(
+  providerId: number,
+  date: string,
+  dayOfWeek: string,
+  availabilitySlots: any[]
+): Promise<SlotAvailabilityResponse> {
+  try {
     console.log('📋 Provider availability slots:', availabilitySlots);
     console.log('📋 Number of availability slots:', availabilitySlots.length);
 

@@ -130,7 +130,7 @@ const LocationScreen: React.FC = () => {
       );
       return;
     }
-    router.push('/id-verification');
+    router.push('/login-register/userinfo');
   };
 
   return (

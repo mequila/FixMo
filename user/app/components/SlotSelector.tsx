@@ -16,6 +16,7 @@ interface SlotSelectorProps {
   selectedDate: string;
   onSlotSelect: (slot: TimeSlot) => void;
   selectedSlotId?: number | null;
+  serviceId?: number;
 }
 
 const SlotSelector: React.FC<SlotSelectorProps> = ({
@@ -23,6 +24,7 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
   selectedDate,
   onSlotSelect,
   selectedSlotId,
+  serviceId,
 }) => {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +36,8 @@ const SlotSelector: React.FC<SlotSelectorProps> = ({
   const loadSlots = async () => {
     setLoading(true);
     try {
-      console.log('📅 Loading slots for provider:', providerId, 'on date:', selectedDate);
-      const result = await fetchProviderSlots(providerId, selectedDate);
+      console.log('📅 Loading slots for provider:', providerId, 'on date:', selectedDate, 'serviceId:', serviceId);
+      const result = await fetchProviderSlots(providerId, selectedDate, serviceId);
       
       console.log('📊 Fetch result:', JSON.stringify(result, null, 2));
       
