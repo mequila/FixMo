@@ -223,17 +223,14 @@ export default function Splash() {
                             )}
                         </TouchableOpacity>
 
-                        {/* Register link - to be implemented later */}
+                        {/* Register link */}
                         <View style={styles.registerContainer}>
                             <Text style={styles.registerText}>
                                 Don't have an account?{" "}
                             </Text>
                             <TouchableOpacity
                                 onPress={() => {
-                                    Alert.alert(
-                                        "Coming Soon",
-                                        "Registration feature will be implemented soon!"
-                                    );
+                                    router.push('/register-email');
                                 }}
                             >
                                 <Text style={styles.registerLink}>
