@@ -237,7 +237,7 @@ export default function Splash() {
                                 Don't have an account?{" "}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => router.push("/id-photo-capture")}
+                                onPress={() => router.push("/register-email")}
                             >
                                 <Text style={styles.registerLink}>
                                     Sign Up

@@ -24,6 +24,7 @@ export default function FaceVerificationScreen() {
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [confidenceScore, setConfidenceScore] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [retryAttempt, setRetryAttempt] = useState<number>(0);
 
   useEffect(() => {
     loadPhotos();
@@ -53,12 +54,16 @@ export default function FaceVerificationScreen() {
     }
   };
 
-  const verifyFaces = async (idPhoto: string, selfie: string) => {
+  const verifyFaces = async (idPhoto: string, selfie: string, retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 3000; // 3 seconds between retries
+    
     setVerifying(true);
     setVerificationStatus('pending');
+    setRetryAttempt(retryCount);
 
     try {
-      console.log('🔍 Starting face verification...');
+      console.log(`🔍 Starting face verification... (attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
 
       // Create FormData
       const formData = new FormData();
@@ -79,41 +84,87 @@ export default function FaceVerificationScreen() {
 
       console.log('📤 Sending verification request to:', `${FACE_VERIFICATION_API}/api/verify`);
 
-      const response = await fetch(`${FACE_VERIFICATION_API}/api/verify`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+      // Create AbortController for timeout (120 seconds - face detection can take time)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Request timeout after 120 seconds');
+        controller.abort();
+      }, 120000); // 120 second timeout for face verification
 
-      const result = await response.json();
-      console.log('📥 Verification result:', result);
+      try {
+        const response = await fetch(`${FACE_VERIFICATION_API}/api/verify`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        });
 
-      if (response.ok) {
-        if (result.match) {
-          // Success!
-          setVerificationStatus('success');
-          setConfidenceScore(result.confidence_score);
+        clearTimeout(timeoutId);
+
+        const result = await response.json();
+        console.log('📥 Verification result:', result);
+
+        // Check for 502 or service unavailable errors - retry if we haven't exceeded max retries
+        if (response.status === 502 || result.code === 502 || result.status === 'error') {
+          console.error(`🔴 Verification service error (502) - attempt ${retryCount + 1}`);
           
-          // Save verification result
-          await AsyncStorage.setItem('registration_face_verified', 'true');
-          await AsyncStorage.setItem('registration_confidence_score', result.confidence_score.toString());
-
-          // Show success and navigate to LocationScreen after delay
-          setTimeout(() => {
-            router.push('/LocationScreen');
-          }, 2000);
-        } else {
-          // Failed match
-          setVerificationStatus('failed');
-          setErrorMessage(result.message || 'Face verification failed. The faces do not match.');
-          setConfidenceScore(result.confidence_score || 0);
+          if (retryCount < MAX_RETRIES) {
+            console.log(`🔄 Retrying in ${RETRY_DELAY / 1000} seconds... (${MAX_RETRIES - retryCount} retries left)`);
+            setVerifying(true);
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            
+            // Recursive retry with incremented count
+            return verifyFaces(idPhoto, selfie, retryCount + 1);
+          } else {
+            console.error('❌ Max retries exceeded');
+            setVerificationStatus('failed');
+            setErrorMessage(
+              'The face verification service is temporarily unavailable. Please try again in a few moments, or contact support if the issue persists.'
+            );
+            return;
+          }
         }
-      } else {
-        // Error response
-        setVerificationStatus('failed');
-        setErrorMessage(result.message || 'Verification failed. Please try again.');
+
+        if (response.ok) {
+          if (result.match) {
+            // Success!
+            setVerificationStatus('success');
+            setConfidenceScore(result.confidence_score);
+            
+            // Save verification result
+            await AsyncStorage.setItem('registration_face_verified', 'true');
+            await AsyncStorage.setItem('registration_confidence_score', result.confidence_score.toString());
+
+            // Show success and navigate to LocationScreen after delay
+            setTimeout(() => {
+              router.push('/LocationScreen');
+            }, 2000);
+          } else {
+            // Failed match
+            setVerificationStatus('failed');
+            setErrorMessage(result.message || 'Face verification failed. The faces do not match.');
+            setConfidenceScore(result.confidence_score || 0);
+          }
+        } else {
+          // Error response
+          setVerificationStatus('failed');
+          setErrorMessage(result.message || 'Verification failed. Please try again.');
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // Check if it's an abort error (timeout)
+        if (fetchError.name === 'AbortError') {
+          console.error('⏰ Request timed out');
+          setVerificationStatus('failed');
+          setErrorMessage('Verification is taking too long. The server might be busy. Please try again.');
+        } else {
+          throw fetchError; // Re-throw to be caught by outer catch
+        }
       }
     } catch (error: any) {
       console.error('❌ Face verification error:', error);
@@ -140,6 +191,12 @@ export default function FaceVerificationScreen() {
         },
       ]
     );
+  };
+
+  const handleRetryVerification = () => {
+    if (idPhotoUri && selfieUri) {
+      verifyFaces(idPhotoUri, selfieUri);
+    }
   };
 
   const handleContinueAnyway = async () => {
@@ -173,8 +230,16 @@ export default function FaceVerificationScreen() {
           {verifying && (
             <>
               <ActivityIndicator size="large" color="#399d9d" />
-              <Text style={styles.verifyingText}>Verifying your identity...</Text>
-              <Text style={styles.verifyingSubtext}>This may take a few moments</Text>
+              <Text style={styles.verifyingText}>
+                {retryAttempt > 0 
+                  ? `Connecting to server... (attempt ${retryAttempt + 1}/4)`
+                  : 'Verifying your identity...'}
+              </Text>
+              <Text style={styles.verifyingSubtext}>
+                {retryAttempt > 0 
+                  ? 'Server is waking up, please wait...'
+                  : 'This may take a few moments'}
+              </Text>
             </>
           )}
 
@@ -207,6 +272,17 @@ export default function FaceVerificationScreen() {
 
         {!verifying && verificationStatus === 'failed' && (
           <View style={styles.buttonsContainer}>
+            {/* Show "Try Again" button if it's a service error */}
+            {errorMessage.includes('temporarily unavailable') && (
+              <TouchableOpacity
+                style={[styles.retryButton, { backgroundColor: '#FF9800' }]}
+                onPress={handleRetryVerification}
+              >
+                <Ionicons name="refresh" size={20} color="#fff" />
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={styles.retryButton}
               onPress={handleRetry}
@@ -216,7 +292,9 @@ export default function FaceVerificationScreen() {
             </TouchableOpacity>
 
             <Text style={styles.helpText}>
-              Tips: Ensure good lighting, remove glasses, and look directly at the camera
+              {errorMessage.includes('temporarily unavailable')
+                ? 'The verification service may be experiencing issues. Try again in a moment.'
+                : 'Tips: Ensure good lighting, remove glasses, and look directly at the camera'}
             </Text>
           </View>
         )}

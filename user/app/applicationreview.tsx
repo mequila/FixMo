@@ -281,15 +281,7 @@ export default function ApplicationReview() {
             />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>ID Verification</Text>
-            <InfoRow label="ID Type" value={data.idType} />
-            {data.idPhotoFront && (
-              <View style={styles.idPhotoContainer}>
-                <Image source={{ uri: data.idPhotoFront }} style={styles.idPhoto} />
-              </View>
-            )}
-          </View>
+         
         </ScrollView>
 
         <View style={styles.footer}>

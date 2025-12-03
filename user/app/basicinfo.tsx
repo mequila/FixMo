@@ -152,31 +152,24 @@ export default function ProfileScreen() {
     // --- PHOTO SELECTION ---
     const [showPhotoGuidelines, setShowPhotoGuidelines] = useState(false);
     const selectPhotoOption = () => {
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
-                    cancelButtonIndex: 0,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex === 1) {
-                        openCamera();
-                    } else if (buttonIndex === 2) {
-                        openGallery();
-                    }
-                }
-            );
-        } else {
-            Alert.alert(
-                'Select Photo',
-                'Choose an option',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Take Photo', onPress: openCamera },
-                    { text: 'Choose from Gallery', onPress: openGallery },
-                ]
-            );
-        }
+        console.log('📷 selectPhotoOption called, Platform:', Platform.OS);
+        
+        // Use Alert for both platforms - more reliable than ActionSheetIOS
+        Alert.alert(
+            'Select Photo',
+            'Choose an option',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Take Photo', onPress: () => {
+                    console.log('📷 Take Photo selected');
+                    openCamera();
+                }},
+                { text: 'Choose from Gallery', onPress: () => {
+                    console.log('📷 Gallery selected');
+                    openGallery();
+                }},
+            ]
+        );
     };
 
     const openCamera = async () => {
@@ -470,11 +463,22 @@ export default function ProfileScreen() {
     };
 
     // --- Next Button ---
-    const handleNext = () => {
+    const handleNext = async () => {
         if (!validateRequiredFields()) return;
 
-        // Navigate to ID verification
-        router.push('/id-photo-capture');
+        // Check if user already completed Didit verification (e.g., went back to fix a typo)
+        const diditVerified = await AsyncStorage.getItem('didit_verified');
+        console.log('🔍 didit_verified flag:', diditVerified);
+        
+        if (diditVerified === 'true') {
+            console.log('✅ Already verified, skipping to LocationScreen');
+            // Skip Didit and go directly to LocationScreen
+            router.push('/LocationScreen');
+        } else {
+            console.log('➡️ Not verified yet, going to Didit');
+            // First time - go to Didit verification
+            router.push('/didit-verification');
+        }
     };
 
     return (
@@ -517,9 +521,13 @@ export default function ProfileScreen() {
                                 <TouchableOpacity
                                     style={styles.modalButton}
                                     onPress={() => {
+                                        console.log('📷 Proceed button pressed');
                                         setShowPhotoGuidelines(false);
-                                        // after dismissing, open camera/gallery options
-                                        selectPhotoOption();
+                                        // Add delay before showing alert to ensure modal is fully dismissed
+                                        setTimeout(() => {
+                                            console.log('📷 Calling selectPhotoOption after delay');
+                                            selectPhotoOption();
+                                        }, 500);
                                     }}
                                 >
                                     <Text style={styles.modalButtonText}>{PHOTO_GUIDELINES.proceed}</Text>
